@@ -3,265 +3,194 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>设计风格选择器 · Design Intake</title>
+<title>设计选择器 · Design Intake 全维度</title>
 <style>
   :root{
     --bg:#0b0f16; --panel:#111823; --panel2:#0e141d; --line:#243044;
     --fg:#e9f0fb; --muted:#8fa0ba; --dim:#5b6a82;
-    --accent:#4ea8ff;
+    --accent:#4ea8ff; --ok:#5eead4; --lock:#fbbf24;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{background:radial-gradient(1200px 700px at 70% -10%, #16223a 0%, var(--bg) 60%);
     color:var(--fg);font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;min-height:100vh}
-  .wrap{max-width:1320px;margin:0 auto;padding:40px 28px 80px}
-  header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:26px}
-  h1{font-size:30px;margin:0;letter-spacing:.5px}
-  .sub{color:var(--muted);font-size:14px;margin-top:8px;line-height:1.6}
+  .wrap{max-width:1400px;margin:0 auto;padding:40px 28px 80px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}
+  h1{font-size:28px;margin:0;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:8px;line-height:1.6}
   .mono{font-family:"JetBrains Mono",Consolas,monospace}
   .badge{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;letter-spacing:2px;
     color:var(--dim);border:1px solid var(--line);padding:6px 10px;border-radius:999px}
-
-  .layout{display:grid;grid-template-columns:1fr 380px;gap:26px}
-  @media(max-width:1080px){.layout{grid-template-columns:1fr}}
-
-  .styles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .layout{display:grid;grid-template-columns:1fr 430px;gap:26px}
+  @media(max-width:1150px){.layout{grid-template-columns:1fr}}
+  .styles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   @media(max-width:900px){.styles{grid-template-columns:repeat(2,1fr)}}
-
   .card{background:linear-gradient(170deg,var(--panel),var(--panel2));border:1px solid var(--line);
     border-radius:14px;overflow:hidden;cursor:pointer;transition:.2s;position:relative}
   .card:hover{transform:translateY(-3px);border-color:#3a4b68}
   .card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 12px 40px rgba(78,168,255,.18)}
   .card.sel::after{content:"✓";position:absolute;right:10px;top:8px;width:22px;height:22px;border-radius:50%;
     background:var(--accent);color:#04121f;font-size:14px;display:flex;align-items:center;justify-content:center;font-weight:800}
-  .preview{height:132px;position:relative;overflow:hidden}
-  .meta{padding:12px 14px 14px}
-  .meta b{font-size:15px}
-  .meta p{margin:6px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
-
-  /* ── 六种预览 ── */
+  .preview{height:120px;position:relative;overflow:hidden}
+  .meta{padding:10px 12px 12px}
+  .meta b{font-size:14px}
+  .meta p{margin:5px 0 0;font-size:11.5px;color:var(--muted);line-height:1.55}
+  /* ── 预览：8 种视觉语言 ── */
   .p-blueprint{background:#0a2038}
   .p-blueprint::before{content:"";position:absolute;inset:0;
     background-image:linear-gradient(rgba(120,190,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(120,190,255,.14) 1px,transparent 1px);
     background-size:22px 22px}
-  .p-blueprint .wire{position:absolute;left:34px;top:34px;width:120px;height:64px;border:1px solid #cfe8ff;
+  .p-blueprint .wire{position:absolute;left:30px;top:30px;width:110px;height:56px;border:1px solid #cfe8ff;
     transform:rotate(-6deg);animation:bp 4s ease-in-out infinite}
-  .p-blueprint .dot{position:absolute;right:26px;bottom:24px;width:9px;height:9px;border-radius:50%;background:#ff8c42;
+  .p-blueprint .dot{position:absolute;right:24px;bottom:20px;width:9px;height:9px;border-radius:50%;background:#ff8c42;
     box-shadow:0 0 0 4px rgba(255,140,66,.16);animation:pulse 2.4s ease-in-out infinite}
   @keyframes bp{0%,100%{transform:rotate(-6deg) scale(1)}50%{transform:rotate(-3deg) scale(1.04)}}
   @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
-
   .p-editorial{background:#f4efe6}
-  .p-editorial .h{position:absolute;left:24px;top:30px;font-family:Georgia,serif;color:#1a1712;font-size:22px;font-weight:700;letter-spacing:.3px}
-  .p-editorial .rule{position:absolute;left:24px;right:24px;height:1px;background:#c9bfae}
-  .p-editorial .rule.a{top:64px}.p-editorial .rule.b{top:96px;width:110px;right:auto;background:#b4452f;height:2px}
-  .p-editorial .body{position:absolute;left:24px;top:72px;font-size:9px;color:#6b6155;letter-spacing:.6px}
-
+  .p-editorial .h{position:absolute;left:22px;top:26px;font-family:Georgia,serif;color:#1a1712;font-size:20px;font-weight:700}
+  .p-editorial .rule{position:absolute;left:22px;right:22px;height:1px;background:#c9bfae}
+  .p-editorial .rule.a{top:58px}.p-editorial .rule.b{top:88px;width:100px;right:auto;background:#b4452f;height:2px}
+  .p-editorial .body{position:absolute;left:22px;top:64px;font-size:8.5px;color:#6b6155;letter-spacing:.6px}
   .p-neon{background:#07070d}
-  .p-neon .blob{position:absolute;width:84px;height:84px;border-radius:50%;filter:blur(22px);opacity:.85}
-  .p-neon .b1{left:24px;top:22px;background:#ff2d95;animation:drift 6s ease-in-out infinite}
-  .p-neon .b2{right:26px;bottom:18px;background:#00e5ff;animation:drift 7s ease-in-out infinite reverse}
-  .p-neon .bar{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:96px;height:3px;
+  .p-neon .blob{position:absolute;width:76px;height:76px;border-radius:50%;filter:blur(20px);opacity:.85}
+  .p-neon .b1{left:20px;top:18px;background:#ff2d95;animation:drift 6s ease-in-out infinite}
+  .p-neon .b2{right:22px;bottom:14px;background:#00e5ff;animation:drift 7s ease-in-out infinite reverse}
+  .p-neon .bar{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88px;height:3px;
     background:linear-gradient(90deg,#ff2d95,#00e5ff);box-shadow:0 0 18px #ff2d95}
   @keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-8px)}}
-
+  .p-mech{background:#05060c}
+  .p-mech::before{content:"";position:absolute;inset:0;opacity:.5;
+    background-image:radial-gradient(rgba(0,229,255,.16) 1px,transparent 1.4px);background-size:9px 9px}
+  .p-mech .ring{position:absolute;left:50%;top:50%;width:86px;height:86px;margin:-43px 0 0 -43px;border-radius:50%;
+    border:2px solid #00e5ff;box-shadow:0 0 16px rgba(0,229,255,.5),inset 0 0 14px rgba(0,229,255,.25);
+    animation:spin 9s linear infinite}
+  .p-mech .ring::before{content:"";position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;
+    border-radius:50%;background:#ff2d95;box-shadow:0 0 10px #ff2d95}
+  .p-mech .plate{position:absolute;right:14px;top:14px;width:44px;height:30px;border:1px solid #2a3a55;background:#0b111e}
+  .p-mech .plate::after{content:"";position:absolute;inset:4px;border:1px dashed #33455f}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .p-minimal{background:#fbfbfb}
-  .p-minimal .t{position:absolute;left:24px;top:34px;width:150px;height:14px;background:#111}
-  .p-minimal .t2{position:absolute;left:24px;top:56px;width:96px;height:8px;background:#c9c9c9}
-  .p-minimal .dot{position:absolute;right:26px;bottom:26px;width:10px;height:10px;border-radius:50%;background:#111}
-
+  .p-minimal .t{position:absolute;left:22px;top:30px;width:140px;height:13px;background:#111}
+  .p-minimal .t2{position:absolute;left:22px;top:50px;width:90px;height:7px;background:#c9c9c9}
+  .p-minimal .dot{position:absolute;right:24px;bottom:22px;width:10px;height:10px;border-radius:50%;background:#111}
   .p-brutal{background:#eae6dd}
-  .p-brutal .box{position:absolute;left:26px;top:28px;width:120px;height:66px;border:3px solid #111;
+  .p-brutal .box{position:absolute;left:22px;top:24px;width:112px;height:60px;border:3px solid #111;
     box-shadow:7px 7px 0 #111;display:flex;align-items:center;justify-content:center;
     font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:800;color:#111;background:#fff}
-
   .p-soft{background:#eef1f6}
-  .p-soft .blob{position:absolute;left:30px;top:26px;width:104px;height:74px;border-radius:26px;
+  .p-soft .blob{position:absolute;left:26px;top:22px;width:98px;height:68px;border-radius:24px;
     background:linear-gradient(135deg,#a5c8ff,#d7b8ff);box-shadow:0 18px 40px rgba(120,140,200,.35);
     animation:soft 5s ease-in-out infinite}
-  .p-soft .blob2{position:absolute;right:30px;bottom:22px;width:42px;height:42px;border-radius:50%;
+  .p-soft .blob2{position:absolute;right:26px;bottom:18px;width:40px;height:40px;border-radius:50%;
     background:linear-gradient(135deg,#ffd6a5,#ffb3c7);box-shadow:0 12px 26px rgba(200,140,140,.35)}
   @keyframes soft{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-3deg)}}
-
+  .p-term{background:#040a06}
+  .p-term::before{content:"";position:absolute;inset:0;opacity:.4;
+    background-image:linear-gradient(rgba(74,222,128,.12) 1px,transparent 1px);background-size:100% 14px}
+  .p-term .line{position:absolute;left:16px;font-family:"JetBrains Mono",monospace;font-size:10px;color:#4ade80;white-space:nowrap}
+  .p-term .l1{top:20px}.p-term .l2{top:38px;color:#2f7d4f}.p-term .l3{top:56px}
+  .p-term .cur{position:absolute;left:16px;top:74px;width:7px;height:12px;background:#4ade80;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
   /* ── 选项区 ── */
   .opts{background:linear-gradient(170deg,var(--panel),var(--panel2));border:1px solid var(--line);
-    border-radius:14px;padding:22px 22px 6px;margin-top:18px}
-  .row{margin-bottom:22px}
-  .row .label{font-size:13px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    border-radius:14px;padding:20px 22px 8px;margin-top:16px}
+  .sect{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:2px;color:var(--dim);
+    margin:18px 0 6px;padding-top:14px;border-top:1px solid #1a2536}
+  .sect:first-child{border-top:none;margin-top:0;padding-top:0}
+  .row{margin-bottom:18px}
+  .row .label{font-size:12.5px;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .row .label i{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--dim)}
+  .row .label .tip{font-size:11px;color:#4b5c76}
+  .row .label .auto{font-size:10.5px;color:var(--ok);border:1px solid rgba(94,234,212,.3);border-radius:999px;padding:1px 8px}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{border:1px solid var(--line);background:#0c131d;color:var(--muted);border-radius:999px;
-    padding:7px 14px;font-size:13px;cursor:pointer;transition:.18s;user-select:none}
+    padding:7px 13px;font-size:12.5px;cursor:pointer;transition:.18s;user-select:none}
   .chip:hover{border-color:#3a4b68;color:var(--fg)}
   .chip.sel{background:rgba(78,168,255,.12);border-color:var(--accent);color:#cfe6ff}
-  .swatch{width:100%;height:100%;border-radius:7px}
-  .sw{width:34px;height:34px;padding:0;border-radius:9px;overflow:hidden;border:2px solid transparent}
+  .chip.sel::before{content:"● ";font-size:9px;vertical-align:1px}
+  .chip.multi.sel{background:rgba(94,234,212,.10);border-color:var(--ok);color:#c8f4ea}
+  .sw{width:32px;height:32px;padding:0;border-radius:9px;overflow:hidden;border:2px solid transparent;cursor:pointer}
   .sw.sel{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
-
+  .swatch{width:100%;height:100%}
+  .txt{width:100%;background:#0c131d;border:1px solid var(--line);border-radius:9px;color:var(--fg);
+    padding:9px 12px;font-size:13px;font-family:inherit}
+  .txt:focus{outline:none;border-color:var(--accent)}
+  .locked{display:flex;flex-wrap:wrap;gap:8px}
+  .lockchip{border:1px dashed #3a3324;background:rgba(251,191,36,.05);color:#b9a15c;border-radius:999px;
+    padding:6px 12px;font-size:11.5px;font-family:"JetBrains Mono",monospace}
+  .lockchip::before{content:"🔒 "}
   /* ── 右侧输出 ── */
   .panel{background:linear-gradient(170deg,var(--panel),var(--panel2));border:1px solid var(--line);
-    border-radius:14px;padding:20px;position:sticky;top:24px;height:fit-content}
-  .panel h2{font-size:14px;margin:0 0 14px;color:var(--muted);letter-spacing:1px;font-weight:600}
-  .kv{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px dashed #1c2839}
-  .kv span:first-child{color:var(--dim)}
-  pre{background:#070b12;border:1px solid var(--line);border-radius:10px;padding:14px;font-size:11.5px;
-    line-height:1.65;color:#a9c7e8;overflow:auto;max-height:330px;margin:14px 0 12px;
+    border-radius:14px;padding:18px;position:sticky;top:20px;height:fit-content}
+  .panel h2{font-size:13px;margin:0 0 12px;color:var(--muted);letter-spacing:1px;font-weight:600}
+  .kv{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px dashed #1c2839;gap:10px}
+  .kv span:first-child{color:var(--dim);white-space:nowrap}
+  .kv span:last-child{text-align:right;color:#cfe0f5}
+  .kv.warn span:last-child{color:var(--lock)}
+  .tabs{display:flex;gap:6px;margin:12px 0 8px}
+  .tab{flex:1;text-align:center;font-size:11.5px;font-family:"JetBrains Mono",monospace;color:var(--dim);
+    border:1px solid var(--line);border-radius:8px;padding:7px 4px;cursor:pointer}
+  .tab.sel{color:#cfe6ff;border-color:var(--accent);background:rgba(78,168,255,.08)}
+  pre{background:#070b12;border:1px solid var(--line);border-radius:10px;padding:13px;font-size:10.8px;
+    line-height:1.6;color:#a9c7e8;overflow:auto;max-height:360px;margin:0 0 12px;
     font-family:"JetBrains Mono",Consolas,monospace;white-space:pre-wrap;word-break:break-all}
-  .btns{display:flex;gap:10px}
-  button{flex:1;border:none;border-radius:10px;padding:11px 14px;font-size:13.5px;cursor:pointer;font-weight:600;
+  .btns{display:flex;gap:8px}
+  button{flex:1;border:none;border-radius:10px;padding:10px 12px;font-size:12.5px;cursor:pointer;font-weight:600;
     font-family:inherit;transition:.18s}
   .primary{background:linear-gradient(135deg,#2f7fd8,#4ea8ff);color:#03101d}
   .primary:hover{filter:brightness(1.08)}
   .ghost{background:#0c131d;border:1px solid var(--line);color:var(--muted)}
   .ghost:hover{color:var(--fg);border-color:#3a4b68}
-  .hint{font-size:11.5px;color:var(--dim);margin-top:12px;line-height:1.6}
+  .hint{font-size:11px;color:var(--dim);margin-top:10px;line-height:1.6}
   .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);opacity:0;
     background:#12324f;border:1px solid #2f6ea8;color:#cfe6ff;padding:10px 18px;border-radius:10px;
-    font-size:13px;transition:.25s;pointer-events:none}
+    font-size:13px;transition:.25s;pointer-events:none;z-index:9}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
-  footer{margin-top:26px;color:var(--dim);font-size:12px;line-height:1.7}
-  code{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:#9fc3e8;background:#0b131e;padding:2px 6px;border-radius:5px}
+  footer{margin-top:24px;color:var(--dim);font-size:12px;line-height:1.7}
+  code{font-family:"JetBrains Mono",monospace;font-size:11px;color:#9fc3e8;background:#0b131e;padding:2px 6px;border-radius:5px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
-      <h1>设计风格选择器</h1>
-      <div class="sub">选完把右侧 JSON 复制回来即可。它是 <code>design-intake</code> 阶段的输入，<br>会自动并进 brief 的 style / forbidden 字段。</div>
+      <h1>设计选择器 · 全维度</h1>
+      <div class="sub"><b>61 个决策维度</b> + 6 条锁定铁律，九区：项目交付 / 视觉 / 动效特效 / 运镜切换 /
+        标题字幕 / 声音 / 受众 / 结构交付 / 参考内容。输出三件套：<b>JSON</b>（粘回对话）·
+        <b>paperpipe.yaml</b>（直接放进运行目录）· <b>design-intake.md</b>（放 <code>0-brief/</code>）。<br>
+        事实源对齐 <code>paperpipe/registry/</code>：路由 / 阶段合同 / 子智能体触发；动效与参考条目自带可执行路径。</div>
     </div>
-    <div class="badge">DESIGN INTAKE v1</div>
+    <div class="badge">DESIGN INTAKE v2 · FULL</div>
   </header>
 
   <div class="layout">
     <div>
-      <div class="styles" id="styles">
-        <div class="card sel" data-style="blueprint">
-          <div class="preview p-blueprint"><div class="wire"></div><div class="dot"></div></div>
-          <div class="meta"><b>工程蓝图</b><p>深蓝方格纸、线框零件、尺寸标注。理性、可拆解，适合讲机制。</p></div>
-        </div>
-        <div class="card" data-style="editorial">
-          <div class="preview p-editorial">
-            <div class="h">Editorial</div><div class="rule a"></div><div class="body">A QUIET, PRINTED PACE</div><div class="rule b"></div>
-          </div>
-          <div class="meta"><b>编辑纸本</b><p>暖白、衬线、细分割线。适合组会与长文讲解，阅读负担低。</p></div>
-        </div>
-        <div class="card" data-style="neon">
-          <div class="preview p-neon"><div class="blob b1"></div><div class="blob b2"></div><div class="bar"></div></div>
-          <div class="meta"><b>暗场霓虹</b><p>近黑底、高饱和发光。适合社媒短片，前 2 秒抓人。</p></div>
-        </div>
-        <div class="card" data-style="minimal">
-          <div class="preview p-minimal"><div class="t"></div><div class="t2"></div><div class="dot"></div></div>
-          <div class="meta"><b>极简白</b><p>大量留白、单一强调色。适合产品发布与高端品牌。</p></div>
-        </div>
-        <div class="card" data-style="brutalist">
-          <div class="preview p-brutal"><div class="box">NO DECOR</div></div>
-          <div class="meta"><b>粗野主义</b><p>超粗字、硬边框、硬阴影。态度强，适合观点类内容。</p></div>
-        </div>
-        <div class="card" data-style="soft3d">
-          <div class="preview p-soft"><div class="blob"></div><div class="blob2"></div></div>
-          <div class="meta"><b>柔和立体</b><p>浅底、圆角、柔和渐变与投影。亲和，适合大众科普。</p></div>
-        </div>
-      </div>
-
-      <div class="opts">
-        <div class="row">
-          <div class="label"><i>01</i>主强调色</div>
-          <div class="chips" id="palette">
-            <div class="chip sw sel" data-palette="cool-blue" style="background:#4ea8ff" title="冷蓝"></div>
-            <div class="chip sw" data-palette="warm-orange" style="background:#ff8c42" title="暖橙"></div>
-            <div class="chip sw" data-palette="mint" style="background:#5eead4" title="薄荷绿"></div>
-            <div class="chip sw" data-palette="magenta" style="background:#f472b6" title="品红"></div>
-            <div class="chip sw" data-palette="amber" style="background:#fbbf24" title="琥珀"></div>
-            <div class="chip sw" data-palette="violet" style="background:#a78bfa" title="紫罗兰"></div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="label"><i>02</i>运动性格</div>
-          <div class="chips" id="motion">
-            <div class="chip sel" data-motion="precise">克制精确 · 短缓动无回弹</div>
-            <div class="chip" data-motion="lively">轻快 · 小回弹快切</div>
-            <div class="chip" data-motion="cinematic">电影感 · 慢推拉景深</div>
-            <div class="chip" data-motion="bouncy">弹跳 · 明显 overshoot</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="label"><i>03</i>转场方式</div>
-          <div class="chips" id="transition">
-            <div class="chip sel" data-transition="morph">形变 · 同一元素变形</div>
-            <div class="chip" data-transition="cut">硬切 · 按拍点切</div>
-            <div class="chip" data-transition="camera">运镜 · 推拉环绕</div>
-            <div class="chip" data-transition="type">文字驱动 · 字块入场</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="label"><i>04</i>画面密度</div>
-          <div class="chips" id="density">
-            <div class="chip sel" data-density="focus">每屏一个焦点</div>
-            <div class="chip" data-density="medium">主图 + 2–3 条标注</div>
-            <div class="chip" data-density="dense">信息密集 · 仪表盘式</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="label"><i>05</i>配音与音乐</div>
-          <div class="chips" id="audio">
-            <div class="chip sel" data-audio="male">中文男声 + 极简铺底</div>
-            <div class="chip" data-audio="female">中文女声 + 极简铺底</div>
-            <div class="chip" data-audio="sub">无旁白，只字幕</div>
-            <div class="chip" data-audio="music">只音乐，无旁白</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="label"><i>06</i>时长</div>
-          <div class="chips" id="pacing">
-            <div class="chip" data-pacing="45-90">45–90 秒预告</div>
-            <div class="chip" data-pacing="180">约 3 分钟速览</div>
-            <div class="chip sel" data-pacing="300-420">5–7 分钟深讲</div>
-            <div class="chip" data-pacing="600+">10 分钟以上</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="label"><i>07</i>画幅</div>
-          <div class="chips" id="format">
-            <div class="chip sel" data-format="16:9">16:9 横版</div>
-            <div class="chip" data-format="9:16">9:16 竖版</div>
-            <div class="chip" data-format="1:1">1:1 方形</div>
-            <div class="chip" data-format="both">横竖各一版</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="label"><i>08</i>受众</div>
-          <div class="chips" id="audience">
-            <div class="chip" data-audience="peer">组会 / 同行</div>
-            <div class="chip sel" data-audience="technical">泛技术读者</div>
-            <div class="chip" data-audience="lay">完全外行</div>
-            <div class="chip" data-audience="investor">投资人 / 客户</div>
-          </div>
-        </div>
-      </div>
+      <div class="styles" id="styles"><!-- JS 渲染 8 张风格卡 --></div>
+      <div class="opts" id="opts"><!-- JS 渲染全部行 --></div>
     </div>
 
     <aside class="panel">
       <h2>YOUR BRIEF</h2>
       <div id="kvs"></div>
-      <pre id="json"></pre>
-      <div class="btns">
-        <button class="primary" id="copy">复制 JSON</button>
-        <button class="ghost" id="download">下载 .md</button>
+      <div class="tabs" id="tabs">
+        <div class="tab sel" data-tab="json">JSON</div>
+        <div class="tab" data-tab="yaml">paperpipe.yaml</div>
+        <div class="tab" data-tab="md">design-intake.md</div>
       </div>
-      <div class="hint">把 JSON 粘贴回对话，或把下载的 md 放进项目 <code>0-brief/</code> 目录。</div>
+      <pre id="out"></pre>
+      <div class="btns">
+        <button class="primary" id="copy">复制当前页签</button>
+        <button class="ghost" id="download">下载 design-intake.md</button>
+        <button class="ghost" id="dlYaml">下载 .yaml</button>
+      </div>
+      <div class="hint" id="outHint"></div>
     </aside>
   </div>
 
   <footer>
-    风格名只是起点：真正的概念要从主题本身长出来。选完风格后，<code>prompt-forge</code> 仍会要求写一句"风格内核"，说明这套语言为什么适合这篇内容。
+    风格名只是起点：真正的概念要从主题本身长出来（<code>design-taste-frontend</code>）。选完后
+    <code>prompt-forge</code> 仍要求一句话「风格内核」；「延续上一集」字段决定 NEON ORBIT 等内核的保留/更换清单。
+    锁定项是工作流铁律（motion-doctrine 向量法则 / 三区隔离 / 逐句字幕 / 编码规范 / 响度 / faststart），不提供选项。
   </footer>
 </div>
 
@@ -269,116 +198,718 @@
 
 <script>
 "use strict";
+/* ═══════════════ 选项定义（唯一事实源，渲染与输出都从这里来） ═══════════════ */
+const STYLES = [
+  {v:"mech-neon", name:"机械霓虹 · NEON ORBIT", cls:"p-mech", d:"近黑底+半调点阵+发光轨道环，机甲内核。EP03/EP04 系列默认，跨集延续首选。"},
+  {v:"blueprint", name:"工程蓝图", cls:"p-blueprint", d:"深蓝方格纸、线框零件、尺寸标注。理性可拆解，适合讲机制。"},
+  {v:"editorial", name:"编辑纸本", cls:"p-editorial", d:"暖白、衬线、细分割线。组会与长文讲解，阅读负担低。"},
+  {v:"neon",      name:"暗场霓虹", cls:"p-neon", d:"近黑底高饱和发光，社媒短片，前 2 秒抓人。"},
+  {v:"minimal",   name:"极简白", cls:"p-minimal", d:"大量留白单一强调色。产品发布与高端品牌。"},
+  {v:"brutalist", name:"粗野主义", cls:"p-brutal", d:"超粗字硬边框硬阴影。态度强，观点类内容（EP02 用过）。"},
+  {v:"soft3d",    name:"柔和立体", cls:"p-soft", d:"浅底圆角柔和渐变投影。亲和，大众科普。"},
+  {v:"terminal",  name:"示波终端", cls:"p-term", d:"黑底绿码扫描线，CRT 终端感。适合信号/时序/代码类主题。"},
+];
+const ACCENTS = [
+  {v:"neon-cyan",  hex:"#00e5ff", name:"霓虹青"},
+  {v:"neon-pink",  hex:"#ff2d95", name:"霓虹品红"},
+  {v:"cool-blue",  hex:"#4ea8ff", name:"冷蓝"},
+  {v:"ice",        hex:"#93c5fd", name:"冰蓝"},
+  {v:"terminal-green", hex:"#4ade80", name:"终端绿"},
+  {v:"warm-orange",hex:"#ff8c42", name:"暖橙"},
+  {v:"amber",      hex:"#fbbf24", name:"琥珀"},
+  {v:"signal-red", hex:"#ef4444", name:"信号红"},
+  {v:"mint",       hex:"#5eead4", name:"薄荷绿"},
+  {v:"magenta",    hex:"#f472b6", name:"品红"},
+  {v:"violet",     hex:"#a78bfa", name:"紫罗兰"},
+  {v:"gold",       hex:"#eab308", name:"鎏金"},
+];
+const SECTIONS = [
+ {"sect":"A · 项目与交付", rows:[
+  {key:"project_type", label:"项目类型", type:"single", opts:[
+    {v:"paper-full", t:"论文全篇讲解长片", tip:"21 章级，默认拆 fact_checker"},
+    {v:"topic-deep", t:"单主题深挖", tip:"位置编码式 12 章"},
+    {v:"social-cut", t:"社媒切片 45–90s", tip:"8 镜结构合同"},
+    {v:"seminar", t:"组会分享"},
+    {v:"product", t:"产品发布短片"}]},
+  {key:"route", label:"成片路线（registry/routes.yaml）", type:"single", opts:[
+    {v:"remotion", t:"C · Remotion 定制（默认）"},
+    {v:"template", t:"A · 文稿模板 knowledge-explainer"},
+    {v:"beamer", t:"B · Beamer 幻灯片"},
+    {v:"hyperframes", t:"D · HTML→hyperframes"},
+    {v:"commercial", t:"E · 商业片 lieflat/business"}]},
+  {key:"target", label:"交付目标 target（终止阶段）", type:"single", opts:[
+    {v:"publish", t:"publish · 全链+复盘+发布（终 publish）"},
+    {v:"video", t:"video · 到 QA（终 qa）"},
+    {v:"figures", t:"figures · 到图解（终 figures）"},
+    {v:"md", t:"md · 只到深读（终 xray）"}]},
+  {key:"style_source", label:"风格来源", type:"single", opts:[
+    {v:"continue", t:"延续上一集内核（填下方保留/更换）"},
+    {v:"new", t:"全新风格（写明为何适合本主题）"}]},
+  {key:"title", label:"标题 / 主题（写进 brief.subject）", type:"text", ph:"例：位置编码：为什么是正弦波"},
+  {key:"keep", label:"延续：保留什么", type:"text", ph:"例：NEON ORBIT 色板 / 视差星场 / SEC 章节卡 / 语速+50%"},
+  {key:"change", label:"延续：更换什么", type:"text", ph:"例：K05 波形改用 wise-motion sine-grid；结尾卡加评论区问题"},
+ ]},
+ {"sect":"B · 视觉系统", rows:[
+  {key:"visual_language", label:"视觉语言（8 选 1）", type:"style"},
+  {key:"accent", label:"主强调色（含 EP 系列实际用色）", type:"swatch"},
+  {key:"palette_temp", label:"辅色阶倾向（halftone 12 阶映射方向）", type:"single", opts:[
+    {v:"cool", t:"冷阶 · 蓝→青"}, {v:"warm", t:"暖阶 · 橙→红"}, {v:"neutral", t:"中性 · 灰阶+强调色"}]},
+  {key:"typography", label:"排版气质", type:"single", opts:[
+    {v:"mono-eng", t:"工程等宽 · JetBrains Mono"},
+    {v:"sans-bold", t:"无衬线现代 · 粗标题细正文"},
+    {v:"serif", t:"衬线书卷 · Georgia/Noto Serif"},
+    {v:"heavy", t:"超粗标题 · 900 字重冲击"}]},
+  {key:"background", label:"背景系统", type:"single", opts:[
+    {v:"starfield", t:"视差星场 · 3 层（EP03/04）"},
+    {v:"grid", t:"工程网格"},
+    {v:"halftone", t:"半调点阵"},
+    {v:"scanline", t:"示波扫描线"},
+    {v:"flat", t:"纯色/渐变"}]},
+  {key:"density", label:"画面密度", type:"single", opts:[
+    {v:"focus", t:"每屏一个焦点"},
+    {v:"medium", t:"主图 + 2–3 标注"},
+    {v:"dense", t:"信息密集 · 仪表盘式"}]},
+ ]},
+ {"sect":"C · 动效与特效（用什么动效）", rows:[
+  {key:"motion", label:"运动性格", type:"single", opts:[
+    {v:"mechanical", t:"机械档位 · 齿轮咬合感（EP 系列）"},
+    {v:"precise", t:"克制精确 · 短缓动无回弹"},
+    {v:"lively", t:"轻快 · 小回弹快切"},
+    {v:"cinematic", t:"电影感 · 慢推拉景深"},
+    {v:"bouncy", t:"弹跳 · 明显 overshoot"}]},
+  {key:"transitions", label:"转场方式（可多选，按拍点轮换）", type:"multi", opts:[
+    {v:"shutter", t:"机械快门 · 9f 上下闸门+危险条"},
+    {v:"morph", t:"同构形变"},
+    {v:"explode", t:"拆解重组"},
+    {v:"iris", t:"光圈叶片"},
+    {v:"wipe", t:"扫描擦除"},
+    {v:"camera", t:"运镜转场"},
+    {v:"cut", t:"硬切"}]},
+  {key:"easing", label:"缓动偏好（选型须标注 cut-the-curve 出处）", type:"single", opts:[
+    {v:"spring", t:"spring 标准"},
+    {v:"back", t:"back 轻回弹"},
+    {v:"ease-out", t:"ease-out 克制"},
+    {v:"mixed", t:"混用 · 按元素角色"}]},
+  {key:"holds", label:"停持策略", type:"single", opts:[
+    {v:"end-5s", t:"结尾卡 ≥5s + 关键数字 ≥1s"},
+    {v:"end-2s", t:"结尾 ≥2s"},
+    {v:"none", t:"不停持（社媒快节奏）"}]},
+  {key:"bold_level", label:"大胆变换档位（WORKFLOW §10.5）", type:"single", opts:[
+    {v:"bold", t:"大胆（默认）：图形族≥3 · 每章形变≥2 · 形式转场 45s≥1 · 主视觉≥35%"},
+    {v:"wild", t:"狂野：再加尺度对比+等距爆炸图"},
+    {v:"restrained", t:"克制：仅位移/淡入（内部过稿）"}]},
+  {key:"families", label:"图形族（可多选，≥3 套可互相变形）", type:"multi", opts:[
+    {v:"halftone-dots", t:"半调点阵"}, {v:"gears", t:"齿轮"}, {v:"gauges", t:"仪表盘"},
+    {v:"iso-explode", t:"等距爆炸图"}, {v:"oscilloscope", t:"示波器"}, {v:"rivet-plate", t:"铆接板"},
+    {v:"radar", t:"雷达"}, {v:"curves", t:"真曲线"}, {v:"heatmap", t:"热力图"}, {v:"wireframe3d", t:"线框 3D"}]},
+  {key:"effect_lookup", label:"动效库检索策略（每章动手前先查库，结果登记进 3-figures）", type:"single", opts:[
+    {v:"wise-first", t:"wise-motion 优先 · Remotion 运行时（match.mjs 语义检索）"},
+    {v:"lab-first", t:"motion-lab 优先 · HTML/CSS（索引即源码）"},
+    {v:"both", t:"双库都查 · 对比后选型（EP04 做法）"}]},
+  {key:"wm_categories", label:"wise-motion 分类偏好（可多选，registry 12 类）", type:"multi", opts:[
+    {v:"entrance", t:"入场与展开"}, {v:"glyph", t:"文字与字形"}, {v:"numchart", t:"数字与图表"},
+    {v:"scan", t:"扫描与信号"}, {v:"layout", t:"布局与层次"}, {v:"scroll", t:"滚动与轮播"},
+    {v:"path", t:"路径与描绘"}, {v:"follow", t:"跟随与回弹"}, {v:"grow", t:"变形与生长"},
+    {v:"3d", t:"立体与镜头"}, {v:"accent", t:"强调与配色"}, {v:"atmo", t:"光效与氛围"}]},
+  {key:"text_fx", label:"文字动效风格", type:"single", opts:[
+    {v:"block-float", t:"整块浮现 · type-reveal 式（EP04 标题）"},
+    {v:"char-pop", t:"逐字弹入"},
+    {v:"typewriter", t:"打字机"},
+    {v:"scan-reveal", t:"扫描揭示"},
+    {v:"mixed", t:"混用 · 标题整块/数据逐字"}]},
+  {key:"chapter_fx_count", label:"每章动效数量", type:"single", opts:[
+    {v:"2-3", t:"2–3 · 克制"},
+    {v:"4-6", t:"4–6 · 长片标准（EP04=5）"},
+    {v:"6-plus", t:"6+ · 详细最大化"}]},
+  {key:"fx_density", label:"特效密集程度（叠加层）", type:"single", opts:[
+    {v:"restrained", t:"克制 · 仅关键节点单层"},
+    {v:"standard", t:"标准 · 每镜 1–2 处"},
+    {v:"dense", t:"密集 · 每镜 2–4 处 + 粒子/辉光叠加（EP 系列）"},
+    {v:"maximum", t:"最大化 · 粒子+辉光+视差+噪声全叠"}]},
+  {key:"glow", label:"辉光 glow", type:"single", opts:[
+    {v:"all", t:"全量 · 标题/线条/图形（EP03 公式装配）"},
+    {v:"titles", t:"仅标题与强调元素"},
+    {v:"none", t:"无辉光"}]},
+  {key:"particles", label:"粒子系统", type:"single", opts:[
+    {v:"stardust", t:"星尘 · 配视差星场"},
+    {v:"data-stream", t:"数据流 · 沿路径流动"},
+    {v:"none", t:"无粒子"}]},
+  {key:"noise", label:"纹理噪声", type:"single", opts:[
+    {v:"film-grain", t:"胶片颗粒"},
+    {v:"scanline", t:"扫描线噪声"},
+    {v:"none", t:"无（默认，保清晰度）"}]},
+ ]},
+ {"sect":"D · 运镜与场景切换（怎么运镜 / 场景怎么切换）", rows:[
+  {key:"camera_moves", label:"机位库（可多选，cue 前 反算 screen 保证不出画）", type:"multi", opts:[
+    {v:"punch", t:"punch 推近（收敛 s≤1.08）"},
+    {v:"pull", t:"pull 拉远"},
+    {v:"orbit", t:"orbit 环绕"},
+    {v:"pan", t:"pan 横摇"},
+    {v:"dolly", t:"dolly 纵移"},
+    {v:"tilt", t:"tilt 俯仰"},
+    {v:"hold", t:"hold 停持"}]},
+  {key:"camera_cues", label:"每章机位 cue 数", type:"single", opts:[
+    {v:"2-4", t:"2–4 · 社媒切片标准"},
+    {v:"5-7", t:"5–7 · 长片标准（EP03=7）"},
+    {v:"7-plus", t:"7+ · 详细最大化"}]},
+  {key:"camera_rhythm", label:"运镜节奏（cue 何时切）", type:"single", opts:[
+    {v:"per-sentence", t:"每句一 cue（旁白驱动）"},
+    {v:"per-semantic", t:"每语义段一 cue（默认）"},
+    {v:"on-beat", t:"按拍点切（BPM 对齐）"}]},
+  {key:"orbit_speed", label:"环绕/推拉速度", type:"single", opts:[
+    {v:"slow", t:"慢 · 电影感"},
+    {v:"mid", t:"中速 · 默认"},
+    {v:"fast", t:"快 · 社媒节奏"}]},
+  {key:"parallax", label:"视差背景强度", type:"single", opts:[
+    {v:"3-layer", t:"3 层强视差（EP03/04 星场）"},
+    {v:"2-layer", t:"2 层弱视差"},
+    {v:"none", t:"无视差"}]},
+  {key:"chapter_switch", label:"章间场景切换", type:"single", opts:[
+    {v:"shutter", t:"机械快门 · 9f 上下闸门+危险条+SEC 标签（EP 系列）"},
+    {v:"iris", t:"光圈叶片闭合→新构图打开"},
+    {v:"explode", t:"拆解重组 · 旧图形炸开新图形收拢"},
+    {v:"scale-contrast", t:"尺度对比 · 巨大局部→拉远揭示整体"},
+    {v:"camera", t:"运镜穿越 · exit=entry 无缝"},
+    {v:"cut", t:"硬切"}]},
+  {key:"inner_switch", label:"章内场景切换", type:"single", opts:[
+    {v:"morph", t:"同构形变 · 参数化点线插值"},
+    {v:"wipe", t:"扫描擦除"},
+    {v:"camera", t:"运镜滑移"},
+    {v:"cut", t:"硬切"}]},
+  {key:"form_transition_rate", label:"形式转场频率（WORKFLOW §10.5）", type:"single", opts:[
+    {v:"per-45s", t:"每 45s ≥1 次（大胆档硬指标）"},
+    {v:"per-chapter", t:"每章 ≥1 次"},
+    {v:"loose", t:"不强制"}]},
+ ]},
+ {"sect":"E · 标题与字幕", rows:[
+  {key:"chapter_card", label:"章节卡样式", type:"single", opts:[
+    {v:"sec-chip", t:"SEC 0X 芯片 + kicker + 大标题（EP 系列）"},
+    {v:"big-number", t:"编号大字"},
+    {v:"progress", t:"进度条章节"},
+    {v:"none", t:"无章节卡"}]},
+  {key:"captions", label:"字幕样式", type:"single", opts:[
+    {v:"sentence-audio", t:"逐句音频驱动 · 左缘强调色边框（铁律）"},
+    {v:"highlight", t:"逐句 + 当前字高亮"},
+    {v:"karaoke", t:"卡拉OK 逐字"},
+    {v:"none", t:"无字幕（纯音乐片）"}]},
+  {key:"caption_size", label:"字幕字号（安全区内）", type:"single", opts:[
+    {v:"36", t:"36px"}, {v:"42", t:"42px（默认）"}, {v:"48", t:"48px"}, {v:"56", t:"56px 大字幕"}]},
+ ]},
+ {"sect":"F · 声音系统", rows:[
+  {key:"voice", label:"旁白声音（edge-tts）", type:"single", opts:[
+    {v:"zh-CN-YunjianNeural", t:"男声 · 云健（EP 系列默认）"},
+    {v:"zh-CN-YunxiNeural", t:"男声 · 云希（年轻）"},
+    {v:"zh-CN-XiaoxiaoNeural", t:"女声 · 晓晓"},
+    {v:"zh-CN-XiaoyiNeural", t:"女声 · 晓伊"},
+    {v:"none", t:"无旁白"}]},
+  {key:"rate", label:"语速（改动必须先测样句，实测标在选项上）", type:"single", opts:[
+    {v:"+0%", t:"+0% 慢速精讲"},
+    {v:"+25%", t:"+25% 从容"},
+    {v:"+50%", t:"+50% ≈6.8 字/秒 舒适（推荐）"},
+    {v:"+65%", t:"+65% ≈7.6 字/秒"},
+    {v:"+80%", t:"+80% ≈8.2 字/秒 偏赶"}]},
+  {key:"bgm", label:"配乐气质", type:"single", opts:[
+    {v:"minimal-pad", t:"极简铺底"},
+    {v:"mechanical-pulse", t:"机械脉冲"},
+    {v:"synthwave", t:"合成器浪潮"},
+    {v:"drum-drive", t:"鼓点驱动"},
+    {v:"none", t:"无配乐"}]},
+  {key:"bpm", label:"配乐 BPM（转场按拍点对齐）", type:"single", opts:[
+    {v:"90", t:"90"}, {v:"100", t:"100"}, {v:"120", t:"120（默认）"}, {v:"140", t:"140"}]},
+  {key:"sfx", label:"音效 SFX", type:"single", opts:[
+    {v:"node-only", t:"仅关键节点（whoosh/click/thud）"},
+    {v:"none", t:"无音效"}]},
+  {key:"duration", label:"时长", type:"single", opts:[
+    {v:"45-90s", t:"45–90 秒"}, {v:"180s", t:"约 3 分钟"}, {v:"300-420s", t:"5–7 分钟"},
+    {v:"480-600s", t:"8–10 分钟"}, {v:"600s-plus", t:"10 分钟以上"}]},
+ ]},
+ {"sect":"G · 受众与理解", rows:[
+  {key:"audience", label:"受众", type:"single", opts:[
+    {v:"technical", t:"泛技术读者"}, {v:"ai-practitioner", t:"AI 从业者"},
+    {v:"peer", t:"组会 / 同行"}, {v:"lay", t:"完全外行"}, {v:"investor", t:"投资人 / 客户"}]},
+  {key:"math", label:"数学画像（reader_profile.math）", type:"single", opts:[
+    {v:"intuition", t:"直觉级 · 会看曲线不碰公式"},
+    {v:"formula", t:"公式级 · 能跟读公式（默认）"},
+    {v:"derivation", t:"推导级 · 要手算例子"}]},
+  {key:"hands_on", label:"动手画像（reader_profile.hands_on）", type:"single", opts:[
+    {v:"concept", t:"只想懂原理"},
+    {v:"implement", t:"想动手实现"},
+    {v:"reproduce", t:"想复现实验"}]},
+  {key:"analogy", label:"类比密度", type:"single", opts:[
+    {v:"per-mechanism", t:"每机制一个类比"},
+    {v:"key-only", t:"仅关键处类比"},
+    {v:"minimal", t:"少类比重推导"}]},
+ ]},
+ {"sect":"H · 结构与交付", rows:[
+  {key:"hook", label:"0–3s 钩子", type:"single", opts:[
+    {v:"question", t:"问题直抛（第一句旁白抛问题）"},
+    {v:"contrast", t:"对比冲击"},
+    {v:"number", t:"数字悬念"},
+    {v:"conclusion", t:"结论先行"}]},
+  {key:"ctas", label:"结尾卡 CTA（可多选；停持 ≥5s）", type:"multi", opts:[
+    {v:"conclusion", t:"一句核心结论"}, {v:"next", t:"下集预告"},
+    {v:"fav", t:"收藏提示"}, {v:"signature", t:"账号签名"}, {v:"comment", t:"评论区问题"}]},
+  {key:"aspect", label:"画幅", type:"single", opts:[
+    {v:"16:9", t:"16:9 横版 1920×1080"}, {v:"9:16", t:"9:16 竖版 1080×1920"},
+    {v:"1:1", t:"1:1 方形"}, {v:"both", t:"横竖各一版"}]},
+  {key:"cover", label:"封面（publish 阶段 P0）", type:"single", opts:[
+    {v:"needed-both", t:"需要 · 横 16:10 + 竖版"},
+    {v:"needed", t:"需要 · 16:10 一张"},
+    {v:"none", t:"不需要（不发布时）"}]},
+  {key:"platform", label:"发布平台", type:"single", opts:[
+    {v:"none", t:"不发布（publish 门自动等待人工）"},
+    {v:"bilibili", t:"B 站（dry-run→人工确认→上传）"},
+    {v:"bilibili-plus", t:"B 站 + 竖版切片分发"}]},
+  {key:"strictness", label:"门禁严格度", type:"single", opts:[
+    {v:"strict", t:"严格 · 全部 receipt 齐备才 passed（交付档）"},
+    {v:"standard", t:"标准 · 按注册表默认"},
+    {v:"fast", t:"快速 · 仅机器门（草稿档，会被 review 拦）"}]},
+  {key:"agents", label:"子智能体（可多选；按 agents.yaml 触发条件自动预选）", type:"multi", opts:[
+    {v:"fact_checker", t:"fact_checker 独立事实核查"},
+    {v:"visual_planner", t:"visual_planner 镜头/登记表"},
+    {v:"narration_editor", t:"narration_editor 旁白/TTS 可读性"},
+    {v:"technical_qa", t:"technical_qa + visual_qa 并行审查"},
+    {v:"release_reviewer", t:"release_reviewer 发布前确认"}]},
+  {key:"forbidden", label:"明确不要 · 禁止清单（可多选，写进 brief.forbidden）", type:"multi", opts:[
+    {v:"f1", t:"深色底居中大字当默认页"}, {v:"f2", t:"无动机粒子爆炸"},
+    {v:"f3", t:"匀速运动"}, {v:"f4", t:"3D 上叠长文"},
+    {v:"f5", t:"AI 套话（赋能/助力/引领）"}, {v:"f6", t:"截断坐标轴不标注"},
+    {v:"f7", t:"重复强调同一句话"}, {v:"f8", t:"标题贴近左缘（x<250 裁切区）"},
+    {v:"f9", t:"按权重切字幕"}, {v:"f10", t:"只换色不换形"}]},
+ ]},
+ {"sect":"I · 参考内容（参考哪些内容，产出到 design-intake.md 带路径）", rows:[
+  {key:"ref_episodes", label:"本系列成片参考（可多选）", type:"multi", opts:[
+    {v:"ep01", t:"EP01 · 社媒切片 51.7s —— 8 镜结构合同/竖版规则"},
+    {v:"ep02", t:"EP02 · brutalist 音乐片 11min —— 纯音乐节奏/仪表板布局"},
+    {v:"ep03", t:"EP03 · 全论文 9.93min —— 21 章 7 机位/视差星场/辉光公式装配"},
+    {v:"ep04", t:"EP04 · 位置编码 8.2min —— 动效库匹配实装/wise-motion 组件"}]},
+  {key:"ref_methodology", label:"方法论技能参考（可多选，渲染前必读项自动进 receipt 计划）", type:"multi", opts:[
+    {v:"motion-doctrine", t:"motion-doctrine · 动效法则网关（先读）"},
+    {v:"design-taste-frontend", t:"design-taste-frontend · 反模板审美清单"},
+    {v:"cut-the-curve", t:"cut-the-curve · 缓动曲线目录"},
+    {v:"seam-craft", t:"seam-craft · 转场接缝"},
+    {v:"oversized-cursor", t:"oversized-cursor · 光标驱动"},
+    {v:"captions-overlay", t:"captions-overlay · 字幕方案"}]},
+  {key:"ref_shotlibs", label:"镜头语言/分镜参考（可多选）", type:"multi", opts:[
+    {v:"lieflat-lens", t:"lieflat lens-reference.html · 镜头语言参考"},
+    {v:"video-shots", t:"video-shots · 镜头语言库"},
+    {v:"video-shot-demos", t:"video-shot-demos · 分镜演示"},
+    {v:"swiss-shot-demos", t:"swiss-shot-demos · 瑞士风格分镜"}]},
+  {key:"ref_effects", label:"动效库预览入口（可多选，写进 MD 供动手时打开）", type:"multi", opts:[
+    {v:"wm-catalog", t:"wise-motion catalog/index.html · 101 组件预览"},
+    {v:"wm-match", t:"wise-motion match.mjs · 语义检索命令"},
+    {v:"ml-showcase", t:"motion-lab-showcase.html · 160 CSS 动效离线预览"},
+    {v:"ml-skill", t:"motion-lab SKILL.md · 按类索引表"}]},
+  {key:"ref_custom", label:"自定义参考（路径/链接/一句话描述）", type:"text", ph:"例：D:/refs/某参考视频.mp4 · 学它的三段式节奏"},
+ ]},
+];
+const LOCKED = [
+  "motion-doctrine 向量法则：exit 方向 = entry 方向，同轴同速，切在运动中",
+  "三区隔离：文字区 / 舞台 / 字幕带 不共享像素",
+  "字幕逐句音频驱动（captions-overlay），禁按权重切分",
+  "编码：libx264 9M/12M · GOP60 · yuv420p · bt709 · faststart",
+  "响度：两遍 loudnorm → I≈-16.5 LUFS / TP≤-1.5",
+  "punch 收敛 s≤1.08 · 章内大标题 x≥250（防左缘裁切）",
+];
+
+/* ═══════════════ 默认值（延续 EP04 系列） ═══════════════ */
 const state = {
-  style: "blueprint",
-  palette: "cool-blue",
-  motion: "precise",
-  transition: "morph",
-  density: "focus",
-  audio: "male",
-  pacing: "300-420",
-  format: "16:9",
-  audience: "technical",
+  project_type:"topic-deep", route:"remotion", target:"publish",
+  style_source:"continue", title:"", keep:"NEON ORBIT 色板 / 视差星场 / SEC 章节卡 / 语速+50%",
+  change:"", visual_language:"mech-neon", accent:"neon-cyan", palette_temp:"cool",
+  typography:"mono-eng", background:"starfield", density:"medium",
+  motion:"mechanical", transitions:["shutter","morph"], easing:"mixed", holds:"end-5s", bold_level:"bold",
+  families:["halftone-dots","gauges","curves","wireframe3d"],
+  effect_lookup:"both", wm_categories:["glyph","scan","grow"], text_fx:"block-float",
+  chapter_fx_count:"4-6", fx_density:"dense", glow:"all", particles:"stardust", noise:"none",
+  camera_moves:["punch","orbit","pan","hold"], camera_cues:"5-7", camera_rhythm:"per-semantic",
+  orbit_speed:"mid", parallax:"3-layer", chapter_switch:"shutter", inner_switch:"morph",
+  form_transition_rate:"per-45s",
+  chapter_card:"sec-chip", captions:"sentence-audio", caption_size:"42",
+  voice:"zh-CN-YunjianNeural", rate:"+50%", bgm:"mechanical-pulse", bpm:"120", sfx:"node-only",
+  duration:"480-600s", audience:"technical", math:"formula", hands_on:"concept", analogy:"per-mechanism",
+  hook:"question", ctas:["conclusion","next","fav"], aspect:"16:9", cover:"needed",
+  platform:"bilibili", strictness:"strict",
+  agents:["fact_checker","technical_qa"],
+  forbidden:["f1","f3","f5","f7","f8","f9"],
+  ref_episodes:["ep03","ep04"],
+  ref_methodology:["motion-doctrine","design-taste-frontend","cut-the-curve"],
+  ref_shotlibs:["lieflat-lens","video-shots"],
+  ref_effects:["wm-catalog","wm-match","ml-showcase"],
+  ref_custom:"",
 };
 
-const LABELS = {
-  style: {blueprint:"工程蓝图", editorial:"编辑纸本", neon:"暗场霓虹", minimal:"极简白", brutalist:"粗野主义", soft3d:"柔和立体"},
-  palette: {"cool-blue":"冷蓝 #4eA8FF","warm-orange":"暖橙 #FF8C42","mint":"薄荷绿 #5EEAD4","magenta":"品红 #F472B6",amber:"琥珀 #FBBF24",violet:"紫罗兰 #A78BFA"},
-  motion: {precise:"克制精确",lively:"轻快",cinematic:"电影感",bouncy:"弹跳"},
-  transition: {morph:"形变",cut:"硬切",camera:"运镜",type:"文字驱动"},
-  density: {focus:"每屏一个焦点",medium:"主图 + 标注",dense:"信息密集"},
-  audio: {male:"中文男声 + 铺底",female:"中文女声 + 铺底",sub:"只字幕",music:"只音乐"},
-  pacing: {"45-90":"45–90 秒", "180":"约 3 分钟", "300-420":"5–7 分钟", "600+":"10 分钟以上"},
-  format: {"16:9":"16:9 横版","9:16":"9:16 竖版","1:1":"1:1 方形","both":"横竖各一版"},
-  audience: {peer:"组会 / 同行",technical:"泛技术读者",lay:"完全外行",investor:"投资人 / 客户"},
-};
+/* ═══════════════ 渲染 ═══════════════ */
+function el(html){ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; }
 
-function bindGroup(id, key){
-  document.querySelectorAll(`#${id} .chip`).forEach(el=>{
-    el.addEventListener("click",()=>{
-      document.querySelectorAll(`#${id} .chip`).forEach(x=>x.classList.remove("sel"));
-      el.classList.add("sel");
-      state[key] = el.dataset[key];
+function renderStyles(){
+  const box=document.getElementById("styles");
+  STYLES.forEach(s=>{
+    const c=el(`<div class="card ${state.visual_language===s.v?"sel":""}" data-style="${s.v}">
+      <div class="preview ${s.cls}">${previewInner(s.cls)}</div>
+      <div class="meta"><b>${s.name}</b><p>${s.d}</p></div></div>`);
+    c.addEventListener("click",()=>{ state.visual_language=s.v;
+      document.querySelectorAll("#styles .card").forEach(x=>x.classList.remove("sel"));
+      c.classList.add("sel"); render(); });
+    box.appendChild(c);
+  });
+}
+function previewInner(cls){
+  if(cls==="p-blueprint") return '<div class="wire"></div><div class="dot"></div>';
+  if(cls==="p-editorial") return '<div class="h">Editorial</div><div class="rule a"></div><div class="body">A QUIET, PRINTED PACE</div><div class="rule b"></div>';
+  if(cls==="p-neon") return '<div class="blob b1"></div><div class="blob b2"></div><div class="bar"></div>';
+  if(cls==="p-mech") return '<div class="ring"></div><div class="plate"></div>';
+  if(cls==="p-minimal") return '<div class="t"></div><div class="t2"></div><div class="dot"></div>';
+  if(cls==="p-brutal") return '<div class="box">NO DECOR</div>';
+  if(cls==="p-soft") return '<div class="blob"></div><div class="blob2"></div>';
+  if(cls==="p-term") return '<div class="line l1">$ play lecture.mp4</div><div class="line l2">load: transformer.ok</div><div class="line l3">&gt; rendering_</div><div class="cur"></div>';
+  return "";
+}
+
+function renderRows(){
+  const box=document.getElementById("opts");
+  let no=0;
+  SECTIONS.forEach(sec=>{
+    box.appendChild(el(`<div class="sect">${sec.sect}</div>`));
+    sec.rows.forEach(row=>box.appendChild(renderRow(row, ++no)));
+  });
+  // 锁定铁律
+  box.appendChild(el(`<div class="sect">J · 锁定铁律（不提供选项，工作流硬约束）</div>`));
+  const lk=el(`<div class="row"><div class="locked">${LOCKED.map(l=>`<span class="lockchip">${l}</span>`).join("")}</div></div>`);
+  box.appendChild(lk);
+}
+
+function renderRow(row, no){
+  const wrap=el(`<div class="row"></div>`);
+  let tip="";
+  if(row.key==="agents") tip=`<span class="auto" id="agentAuto"></span>`;
+  wrap.appendChild(el(`<div class="label"><i>${String(no).padStart(2,"0")}</i> ${row.label} ${tip}</div>`));
+  if(row.type==="style"){
+    wrap.appendChild(el(`<div class="tip" style="font-size:11px;color:#4b5c76;margin-bottom:8px">当前：${STYLES.find(s=>s.v===state.visual_language).name} —— 在上方卡片选择</div>`));
+    return wrap;
+  }
+  if(row.type==="text"){
+    const inp=el(`<input class="txt" id="txt_${row.key}" placeholder="${row.ph||""}" value="${(state[row.key]||"").replace(/"/g,"&quot;")}">`);
+    inp.addEventListener("input",()=>{ state[row.key]=inp.value; render(); });
+    wrap.appendChild(inp);
+    return wrap;
+  }
+  const chips=el(`<div class="chips" id="g_${row.key}"></div>`);
+  row.opts.forEach(o=>{
+    const isSw=row.type==="swatch";
+    const sel=Array.isArray(state[row.key]) ? state[row.key].includes(o.v) : state[row.key]===o.v;
+    const c=el(isSw
+      ? `<div class="chip sw ${sel?"sel":""}" data-v="${o.v}" title="${o.name} ${o.hex}"><div class="swatch" style="background:${o.hex}"></div></div>`
+      : `<div class="chip ${row.type==="multi"?"multi":""} ${sel?"sel":""}" data-v="${o.v}">${o.t}${o.tip?` <span style="color:#4b5c76">· ${o.tip}</span>`:""}</div>`);
+    c.addEventListener("click",()=>{
+      if(row.type==="multi"){
+        const arr=state[row.key];
+        const i=arr.indexOf(o.v);
+        if(i>=0) arr.splice(i,1); else arr.push(o.v);
+        c.classList.toggle("sel");
+      }else{
+        state[row.key]=o.v;
+        chips.querySelectorAll(".chip").forEach(x=>x.classList.remove("sel"));
+        c.classList.add("sel");
+        if(row.key==="project_type") autoAgents();
+      }
       render();
     });
+    chips.appendChild(c);
   });
+  wrap.appendChild(chips);
+  return wrap;
 }
-document.querySelectorAll("#styles .card").forEach(el=>{
-  el.addEventListener("click",()=>{
-    document.querySelectorAll("#styles .card").forEach(x=>x.classList.remove("sel"));
-    el.classList.add("sel");
-    state.style = el.dataset.style;
-    render();
-  });
-});
-bindGroup("palette","palette");
-bindGroup("motion","motion");
-bindGroup("transition","transition");
-bindGroup("density","density");
-bindGroup("audio","audio");
-bindGroup("pacing","pacing");
-bindGroup("format","format");
-bindGroup("audience","audience");
+
+function autoAgents(){
+  const a=[];
+  if(state.project_type==="paper-full"||state.audience==="peer") a.push("fact_checker");
+  if(["paper-full","topic-deep"].includes(state.project_type)) a.push("visual_planner","technical_qa");
+  if(state.strictness==="strict") a.push("release_reviewer");
+  state.agents=[...new Set(a)];
+  const sel=document.getElementById("g_agents");
+  if(sel) sel.querySelectorAll(".chip").forEach(c=>c.classList.toggle("sel", state.agents.includes(c.dataset.v)));
+}
+
+/* ═══════════════ 输出三件套 ═══════════════ */
+const LABELS={
+  project_type:{["paper-full"]:"论文全篇讲解长片","topic-deep":"单主题深挖","social-cut":"社媒切片 45–90s",seminar:"组会分享",product:"产品发布短片"},
+  route:{remotion:"C · Remotion 定制",template:"A · 文稿模板",beamer:"B · Beamer 幻灯片",hyperframes:"D · HTML→hyperframes",commercial:"E · 商业片"},
+  target:{publish:"publish 全链",video:"video 到 QA",figures:"figures 到图解",md:"md 到深读"},
+  style_source:{continue:"延续上一集内核",new:"全新风格"},
+  visual_language:{}, accent:{}, palette_temp:{cool:"冷阶",warm:"暖阶",neutral:"中性"},
+  typography:{"mono-eng":"工程等宽","sans-bold":"无衬线现代",serif:"衬线书卷",heavy:"超粗标题"},
+  background:{starfield:"视差星场 3 层",grid:"工程网格",halftone:"半调点阵",scanline:"示波扫描线",flat:"纯色"},
+  density:{focus:"每屏一个焦点",medium:"主图 + 标注",dense:"信息密集"},
+  motion:{mechanical:"机械档位",precise:"克制精确",lively:"轻快",cinematic:"电影感",bouncy:"弹跳"},
+  camera_cues:{"2-4":"2–4","5-7":"5–7","7-plus":"7+"},
+  easing:{spring:"spring 标准",back:"back 轻回弹","ease-out":"ease-out 克制",mixed:"混用"},
+  holds:{"end-5s":"结尾≥5s+数字≥1s","end-2s":"结尾≥2s",none:"不停持"},
+  bold_level:{bold:"大胆",wild:"狂野",restrained:"克制"},
+  chapter_card:{"sec-chip":"SEC 芯片+kicker","big-number":"编号大字",progress:"进度条",none:"无"},
+  captions:{"sentence-audio":"逐句音频驱动",highlight:"逐句+当前高亮",karaoke:"卡拉OK逐字",none:"无字幕"},
+  voice:{"zh-CN-YunjianNeural":"男声·云健","zh-CN-YunxiNeural":"男声·云希","zh-CN-XiaoxiaoNeural":"女声·晓晓","zh-CN-XiaoyiNeural":"女声·晓伊",none:"无旁白"},
+  bgm:{"minimal-pad":"极简铺底","mechanical-pulse":"机械脉冲",synthwave:"合成器浪潮","drum-drive":"鼓点驱动",none:"无配乐"},
+  sfx:{"node-only":"仅关键节点",none:"无"},
+  duration:{"45-90s":"45–90 秒","180s":"约 3 分钟","300-420s":"5–7 分钟","480-600s":"8–10 分钟","600s-plus":"10 分钟+"},
+  audience:{technical:"泛技术读者","ai-practitioner":"AI 从业者",peer:"组会/同行",lay:"完全外行",investor:"投资人/客户"},
+  math:{intuition:"直觉级",formula:"公式级",derivation:"推导级"},
+  hands_on:{concept:"只想懂原理",implement:"想动手实现",reproduce:"想复现实验"},
+  analogy:{"per-mechanism":"每机制一个类比","key-only":"仅关键处",minimal:"少类比重推导"},
+  hook:{question:"问题直抛",contrast:"对比冲击",number:"数字悬念",conclusion:"结论先行"},
+  aspect:{"16:9":"16:9 横版","9:16":"9:16 竖版","1:1":"1:1 方形",both:"横竖各一版"},
+  cover:{"needed-both":"横+竖双版式",needed:"16:10 一张",none:"不需要"},
+  platform:{none:"不发布",bilibili:"B 站","bilibili-plus":"B 站+竖版切片"},
+  strictness:{strict:"严格",standard:"标准",fast:"快速"},
+  effect_lookup:{"wise-first":"wise-motion 优先","lab-first":"motion-lab 优先",both:"双库都查"},
+  text_fx:{"block-float":"整块浮现","char-pop":"逐字弹入",typewriter:"打字机","scan-reveal":"扫描揭示",mixed:"混用"},
+  chapter_fx_count:{"2-3":"2–3","4-6":"4–6","6-plus":"6+"},
+  fx_density:{restrained:"克制",standard:"标准",dense:"密集",maximum:"最大化"},
+  glow:{all:"全量辉光",titles:"仅标题",none:"无"},
+  particles:{stardust:"星尘","data-stream":"数据流",none:"无"},
+  noise:{"film-grain":"胶片颗粒",scanline:"扫描线",none:"无"},
+  camera_rhythm:{"per-sentence":"每句一 cue","per-semantic":"每语义段一 cue","on-beat":"按拍点切"},
+  orbit_speed:{slow:"慢",mid:"中速",fast:"快"},
+  parallax:{"3-layer":"3 层强视差","2-layer":"2 层弱视差",none:"无视差"},
+  chapter_switch:{shutter:"机械快门 9f",iris:"光圈叶片",explode:"拆解重组","scale-contrast":"尺度对比",camera:"运镜穿越",cut:"硬切"},
+  inner_switch:{morph:"同构形变",wipe:"扫描擦除",camera:"运镜滑移",cut:"硬切"},
+  form_transition_rate:{"per-45s":"每 45s ≥1","per-chapter":"每章 ≥1",loose:"不强制"},
+};
+function lab(key,v){
+  if(key==="visual_language") return (STYLES.find(s=>s.v===v)||{}).name||v;
+  if(key==="accent") return (ACCENTS.find(a=>a.v===v)||{}).name+" "+v;
+  if(key==="rate") return v+(v==="+50%"?"（实测 ≈6.8 字/秒）":v==="+80%"?"（偏赶）":"");
+  if(key==="bpm") return v+" BPM";
+  if(key==="caption_size") return v+"px";
+  const grp=LABELS[key]||{};
+  return grp[v]||v;
+}
+function listOf(key){
+  const row=SECTIONS.flatMap(s=>s.rows).find(r=>r.key===key);
+  return state[key].map(v=>{ const o=row.opts.find(x=>x.v===v); return o?(o.t||o.name):v; });
+}
+
+function designObject(){
+  return JSON.parse(JSON.stringify(state));
+}
+function yamlText(){
+  const q=s=>`"${String(s).replace(/"/g,'\\"')}"`;
+  const L=[];
+  L.push(`# paperpipe 运行级配置 —— 由 design-picker.html 生成 @ ${new Date().toISOString().slice(0,10)}`);
+  L.push(`target: ${state.target}`);
+  L.push(`mode: auto`);
+  L.push(`route: ${state.route}`);
+  L.push(`audience: ${state.audience}`);
+  L.push("defaults:");
+  L.push(`  visual_language: ${state.visual_language}`);
+  L.push(`  accent: ${state.accent}`);
+  L.push(`  motion: ${state.motion}`);
+  L.push(`  voice: ${state.voice}`);
+  L.push(`  rate: ${state.rate}`);
+  L.push(`  duration: ${state.duration}`);
+  L.push(`  aspect: ${state.aspect}`);
+  L.push("reader_profile:");
+  L.push(`  math: ${state.math}`);
+  L.push(`  hands_on: ${state.hands_on}`);
+  L.push("design:");
+  L.push(`  title: ${state.title?q(state.title):"null"}`);
+  L.push(`  style_source: ${state.style_source}`);
+  L.push(`  keep: ${state.keep?q(state.keep):"null"}`);
+  L.push(`  change: ${state.change?q(state.change):"null"}`);
+  L.push(`  palette_temp: ${state.palette_temp}`);
+  L.push(`  typography: ${state.typography}`);
+  L.push(`  background: ${state.background}`);
+  L.push(`  density: ${state.density}`);
+  L.push(`  transitions: [${state.transitions.join(", ")}]`);
+  L.push(`  camera_moves: [${state.camera_moves.join(", ")}]`);
+  L.push(`  camera_cues: ${state.camera_cues}`);
+  L.push(`  easing: ${state.easing}`);
+  L.push(`  holds: ${state.holds}`);
+  L.push(`  bold_level: ${state.bold_level}`);
+  L.push(`  families: [${state.families.join(", ")}]`);
+  L.push(`  chapter_card: ${state.chapter_card}`);
+  L.push(`  captions: ${state.captions}`);
+  L.push(`  caption_size: ${state.caption_size}`);
+  L.push(`  bgm: ${state.bgm}`);
+  L.push(`  bpm: ${state.bpm}`);
+  L.push(`  sfx: ${state.sfx}`);
+  L.push(`  hook: ${state.hook}`);
+  L.push(`  ctas: [${state.ctas.join(", ")}]`);
+  L.push(`  analogy: ${state.analogy}`);
+  L.push(`  cover: ${state.cover}`);
+  L.push(`  platform: ${state.platform}`);
+  L.push(`  strictness: ${state.strictness}`);
+  L.push(`  agents: [${state.agents.join(", ")}]`);
+  L.push("  forbidden:");
+  listOf("forbidden").forEach(f=>L.push(`    - ${f}`));
+  L.push(`  effect_lookup: ${state.effect_lookup}`);
+  L.push(`  wm_categories: [${state.wm_categories.join(", ")}]`);
+  L.push(`  text_fx: ${state.text_fx}`);
+  L.push(`  chapter_fx_count: ${state.chapter_fx_count}`);
+  L.push(`  fx_density: ${state.fx_density}`);
+  L.push(`  glow: ${state.glow}`);
+  L.push(`  particles: ${state.particles}`);
+  L.push(`  noise: ${state.noise}`);
+  L.push(`  camera_rhythm: ${state.camera_rhythm}`);
+  L.push(`  orbit_speed: ${state.orbit_speed}`);
+  L.push(`  parallax: ${state.parallax}`);
+  L.push(`  chapter_switch: ${state.chapter_switch}`);
+  L.push(`  inner_switch: ${state.inner_switch}`);
+  L.push(`  form_transition_rate: ${state.form_transition_rate}`);
+  L.push(`  ref_episodes: [${state.ref_episodes.join(", ")}]`);
+  L.push(`  ref_methodology: [${state.ref_methodology.join(", ")}]`);
+  L.push(`  ref_shotlibs: [${state.ref_shotlibs.join(", ")}]`);
+  L.push(`  ref_effects: [${state.ref_effects.join(", ")}]`);
+  L.push(`  ref_custom: ${state.ref_custom?q(state.ref_custom):"null"}`);
+  L.push("render:");
+  L.push(`  composition: ${q("")}          # Remotion 合成 ID`);
+  L.push(`  script: ${q("")}               # TTS/时间轴脚本路径`);
+  L.push("  sources: []");
+  L.push("  studio: remotion-studio");
+  L.push("publish:");
+  L.push(`  enabled: ${state.platform!=="none"}`);
+  L.push("  dry_run: true");
+  L.push("  command: []");
+  return L.join("\n");
+}
+function mdText(){
+  const row=(n,v)=>`| ${n} | ${v} |`;
+  const L=[];
+  L.push(`# 设计访谈 · ${state.title||"（标题待定）"}`);
+  L.push("");
+  L.push(`> 来源：design-picker.html v2 @ ${new Date().toISOString().slice(0,10)}。`);
+  L.push(`> 风格内核：${state.style_source==="continue"?"延续上一集内核，保留与更换见下":(state.keep||"（待 prompt-forge 补写一句话内核）")}`);
+  L.push("");
+  L.push("## 选择总表（自动生成 · 与左侧 61 个维度一一对应）");
+  L.push("| # | 维度 | 选择 |"); L.push("|---|---|---|");
+  let no=0;
+  SECTIONS.forEach(sec=>sec.rows.forEach(r=>{
+    no++;
+    let v;
+    if(r.type==="text") v = state[r.key] || "（待定）";
+    else if(r.type==="style") v = lab("visual_language", state.visual_language);
+    else if(r.type==="multi") v = listOf(r.key).join(" + ") || "（无）";
+    else v = lab(r.key, state[r.key]);
+    L.push(`| ${String(no).padStart(2,"0")} | ${r.label.replace(/\|/g,"/")} | ${v} |`);
+  }));
+  L.push("");
+  L.push("## 与上一版差异");
+  L.push(`- 保留：${state.keep||"（无）"}`);
+  L.push(`- 更换：${state.change||"（无）"}`);
+  L.push("");
+  L.push("## 大胆变换自检（WORKFLOW §10.5）");
+  L.push(`- 图形族 ${state.families.length} 套（须 ≥3）`);
+  L.push("- 每章形变 ≥2（storyboard 表逐章登记）");
+  L.push(`- 形式转场每 45s ≥1（转场池：${listOf("transitions").join("/")}）`);
+  L.push("- 主视觉每章 ≥35% 画面（抽帧检查）");
+  L.push("");
+  L.push("## 动效与运镜计划");
+  const wmNames={entrance:"入场与展开",glyph:"文字与字形",numchart:"数字与图表",scan:"扫描与信号",layout:"布局与层次",scroll:"滚动与轮播",path:"路径与描绘",follow:"跟随与回弹",grow:"变形与生长","3d":"立体与镜头",accent:"强调与配色",atmo:"光效与氛围"};
+  const epNames={ep01:"EP01 社媒切片（8 镜结构合同/竖版规则）",ep02:"EP02 brutalist 音乐片（纯音乐节奏/仪表板布局）",ep03:"EP03 全论文（21 章 7 机位/视差星场/辉光公式装配）",ep04:"EP04 位置编码（动效库匹配实装/wise-motion 组件）"};
+  const methNames={"motion-doctrine":"motion-doctrine 动效法则网关（先读）","design-taste-frontend":"design-taste-frontend 反模板审美","cut-the-curve":"cut-the-curve 缓动曲线目录","seam-craft":"seam-craft 转场接缝","oversized-cursor":"oversized-cursor 光标驱动","captions-overlay":"captions-overlay 字幕方案"};
+  const shotNames={"lieflat-lens":"lieflat lens-reference.html 镜头语言","video-shots":"video-shots 镜头库","video-shot-demos":"video-shot-demos 分镜演示","swiss-shot-demos":"swiss-shot-demos 瑞士分镜"};
+  const effNames={"wm-catalog":"engines/wise-motion/catalog/index.html（101 组件预览）","wm-match":"node engines/wise-motion/scripts/match.mjs \"<动作描述>\"（语义检索）","ml-showcase":"engines/motion-lab/motion-lab-showcase.html（160 CSS 动效离线预览）","ml-skill":".zcode/skills/motion-lab/SKILL.md（按类索引表）"};
+  L.push(`- 动效检索：${lab("effect_lookup",state.effect_lookup)}；命中→export.mjs 导出改造（import 路径改相对 src/halftone/），未命中→手写并写 route-decision`);
+  L.push(`- wise-motion 分类偏好：${state.wm_categories.map(c=>wmNames[c]||c).join("、")||"（不限）"}`);
+  L.push(`- 文字动效：${lab("text_fx",state.text_fx)} · 每章动效 ${lab("chapter_fx_count",state.chapter_fx_count)} 处（登记进 3-figures）`);
+  L.push(`- 特效密度：${lab("fx_density",state.fx_density)} · 辉光 ${lab("glow",state.glow)} · 粒子 ${lab("particles",state.particles)} · 噪声 ${lab("noise",state.noise)}`);
+  L.push(`- 运镜：${listOf("camera_moves").join("/")} · 每章 ${lab("camera_cues",state.camera_cues)} cue · ${lab("camera_rhythm",state.camera_rhythm)} · 速度 ${lab("orbit_speed",state.orbit_speed)} · ${lab("parallax",state.parallax)}`);
+  L.push(`- 场景切换：章间 ${lab("chapter_switch",state.chapter_switch)} · 章内 ${lab("inner_switch",state.inner_switch)} · 形式转场 ${lab("form_transition_rate",state.form_transition_rate)}`);
+  L.push("");
+  L.push("## 参考清单（动手前按此打开）");
+  L.push("### 本系列成片");
+  state.ref_episodes.forEach(e=>L.push(`- ${epNames[e]||e}`));
+  if(state.ref_episodes.length===0) L.push("- （无）");
+  L.push("### 方法论技能");
+  state.ref_methodology.forEach(m=>L.push(`- ${methNames[m]||m}`));
+  if(state.ref_methodology.length===0) L.push("- （无）");
+  L.push("### 镜头/分镜");
+  state.ref_shotlibs.forEach(s=>L.push(`- ${shotNames[s]||s}`));
+  if(state.ref_shotlibs.length===0) L.push("- （无）");
+  L.push("### 动效库入口");
+  state.ref_effects.forEach(e=>L.push(`- ${effNames[e]||e}`));
+  if(state.ref_effects.length===0) L.push("- （无）");
+  if(state.ref_custom) L.push(`### 自定义\n- ${state.ref_custom}`);
+  L.push("");
+  L.push("## 子智能体计划（agents.yaml 触发条件）");
+  L.push(listOf("agents").map(a=>`- ${a}`).join("\n")||"- 不拆（简单任务）");
+  L.push("");
+  L.push("## 锁定铁律（不可选项）");
+  LOCKED.forEach(l=>L.push(`- ${l}`));
+  L.push("");
+  L.push("## paperpipe.yaml");
+  L.push("```yaml"); L.push(yamlText()); L.push("```");
+  L.push("");
+  return L.join("\n");
+}
+
+/* ═══════════════ 输出面板 ═══════════════ */
+let curTab="json";
+const HINTS={
+  json:"粘贴回对话给 agent，作为 design-intake 的输入。",
+  yaml:"保存为运行目录的 paperpipe.yaml（覆盖同名键）。",
+  md:"下载后放进 output/<run-id>/0-brief/design-intake.md。",
+};
+function outputs(){ return {json:JSON.stringify(designObject(),null,2), yaml:yamlText(), md:mdText()}; }
 
 function render(){
-  const kv = document.getElementById("kvs");
-  kv.innerHTML = Object.keys(state).map(k=>{
-    const label = {style:"视觉语言",palette:"主色",motion:"运动",transition:"转场",density:"密度",audio:"声音",pacing:"时长",format:"画幅",audience:"受众"}[k];
-    return `<div class="kv"><span>${label}</span><span>${LABELS[k][state[k]]}</span></div>`;
-  }).join("");
-  document.getElementById("json").textContent = JSON.stringify(state, null, 2);
+  // KV
+  const kv=document.getElementById("kvs");
+  const rows=[];
+  const push=(n,v,warn)=>rows.push(`<div class="kv ${warn?"warn":""}"><span>${n}</span><span>${v}</span></div>`);
+  push("项目",lab("project_type",state.project_type)+" · "+lab("route",state.route)+" · "+lab("target",state.target));
+  push("视觉",lab("visual_language",state.visual_language)+" · "+lab("accent",state.accent)+" · "+lab("background",state.background));
+  push("动效",lab("motion",state.motion)+" · "+lab("fx_density",state.fx_density)+" · 每章 "+lab("chapter_fx_count",state.chapter_fx_count)+" · "+lab("effect_lookup",state.effect_lookup));
+  push("运镜",listOf("camera_moves").length+" 机位 · "+lab("camera_cues",state.camera_cues)+" cue · "+lab("camera_rhythm",state.camera_rhythm)+" · "+lab("parallax",state.parallax));
+  push("切换",lab("chapter_switch",state.chapter_switch)+" / "+lab("inner_switch",state.inner_switch)+" · "+lab("form_transition_rate",state.form_transition_rate));
+  push("大胆",lab("bold_level",state.bold_level)+" · 图形族×"+state.families.length+(state.families.length<3?" ⚠不足3":""), state.families.length<3);
+  push("标题字幕",lab("chapter_card",state.chapter_card)+" · "+lab("captions",state.captions)+" · "+lab("caption_size",state.caption_size));
+  push("声音",lab("voice",state.voice)+" · "+lab("rate",state.rate)+" · "+lab("bgm",state.bgm));
+  push("结构",lab("hook",state.hook)+" · CTA×"+state.ctas.length+" · "+lab("duration",state.duration)+" · "+lab("aspect",state.aspect));
+  push("受众",lab("audience",state.audience)+" · "+lab("math",state.math)+" · "+lab("hands_on",state.hands_on));
+  push("交付",lab("cover",state.cover)+" · "+lab("platform",state.platform)+" · "+lab("strictness",state.strictness)+" · agents×"+state.agents.length);
+  push("参考",["ref_episodes","ref_methodology","ref_shotlibs","ref_effects"].map(k=>state[k].length).join("+")+" 组"+(state.ref_custom?" +自定义":""));
+  push("禁止",state.forbidden.length+" 项");
+  kv.innerHTML=rows.join("");
+  // 输出
+  document.getElementById("out").textContent=outputs()[curTab];
+  document.getElementById("outHint").textContent=HINTS[curTab];
+  document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("sel",t.dataset.tab===curTab));
 }
+
+document.querySelectorAll("#tabs .tab").forEach(t=>{
+  t.addEventListener("click",()=>{ curTab=t.dataset.tab; render(); });
+});
+
+async function copyCur(){
+  const text=outputs()[curTab];
+  try{ await navigator.clipboard.writeText(text); toast("已复制"+(curTab==="json"?" JSON":curTab==="yaml"?" paperpipe.yaml":" design-intake.md")); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove(); toast("已复制");
+  }
+}
+function dl(name,text,mime){
+  const blob=new Blob([text],{type:mime+";charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+document.getElementById("copy").addEventListener("click",copyCur);
+document.getElementById("download").addEventListener("click",()=>{ dl("design-intake.md",mdText(),"text/markdown"); toast("已下载 design-intake.md"); });
+document.getElementById("dlYaml").addEventListener("click",()=>{ dl("paperpipe.yaml",yamlText(),"text/yaml"); toast("已下载 paperpipe.yaml"); });
 
 function toast(msg){
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("on");
-  setTimeout(()=>t.classList.remove("on"), 1600);
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("on");
+  setTimeout(()=>t.classList.remove("on"),1600);
 }
 
-document.getElementById("copy").addEventListener("click", async ()=>{
-  const text = JSON.stringify(state, null, 2);
-  try{
-    await navigator.clipboard.writeText(text);
-    toast("已复制 JSON");
-  }catch(e){
-    const ta = document.createElement("textarea");
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    document.execCommand("copy"); ta.remove();
-    toast("已复制 JSON");
-  }
-});
-
-document.getElementById("download").addEventListener("click", ()=>{
-  const lines = [
-    "# 设计访谈记录（来自 style-picker）",
-    "",
-    "| 维度 | 选择 |",
-    "|---|---|",
-    `| 视觉语言 | ${LABELS.style[state.style]} |`,
-    `| 主强调色 | ${LABELS.palette[state.palette]} |`,
-    `| 运动性格 | ${LABELS.motion[state.motion]} |`,
-    `| 转场方式 | ${LABELS.transition[state.transition]} |`,
-    `| 画面密度 | ${LABELS.density[state.density]} |`,
-    `| 声音 | ${LABELS.audio[state.audio]} |`,
-    `| 时长 | ${LABELS.pacing[state.pacing]} |`,
-    `| 画幅 | ${LABELS.format[state.format]} |`,
-    `| 受众 | ${LABELS.audience[state.audience]} |`,
-    "",
-    "```json",
-    JSON.stringify(state, null, 2),
-    "```",
-    "",
-  ].join("\n");
-  const blob = new Blob([lines], {type:"text/markdown;charset=utf-8"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "design-intake.md";
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast("已下载 design-intake.md");
-});
-
+/* ═══════════════ 启动 ═══════════════ */
+renderStyles();
+renderRows();
+autoAgents();
+// autoAgents 改了 agents → 重渲 agents 行选中态
+document.querySelectorAll("#g_agents .chip").forEach(c=>c.classList.toggle("sel", state.agents.includes(c.dataset.v)));
 render();
 </script>
 </body>

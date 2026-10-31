@@ -30,6 +30,14 @@ if ($missingLocal.Count -gt 0) { Write-Host "ABORT manifest-not-in-local: $($mis
 if ($missingManifest.Count -gt 0) { Write-Host "ABORT local-not-in-manifest: $($missingManifest -join ', ')"; exit 1 }
 if ($noSkillMd.Count -gt 0) { Write-Host "ABORT missing SKILL.md: $($noSkillMd -join ', ')"; exit 1 }
 if ($skillDirs.Count -ne $manifest.count) { Write-Host "ABORT manifest.count $($manifest.count) != skillDirs $($skillDirs.Count)"; exit 1 }
+# design-picker consistency: skill template must be identical to the authoritative root picker
+$pickerRoot = Join-Path $Root "design-picker.html"
+$pickerTpl = Join-Path $skillsSrc "design-intake\templates\style-picker.html"
+if ((Test-Path $pickerRoot) -and (Test-Path $pickerTpl)) {
+  if ((Get-FileHash $pickerRoot).Hash -ne (Get-FileHash $pickerTpl).Hash) {
+    Write-Host "ABORT design-picker drifted: design-picker.html != design-intake/templates/style-picker.html (re-copy)"; exit 1
+  }
+}
 Write-Host "Check1 OK: bidirectional diff empty, skills=$($skillDirs.Count)"
 
 function Copy-Skills($dest) {
