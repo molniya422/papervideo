@@ -8,6 +8,7 @@ import { SocialAttention, SOCIAL_FRAMES } from "./halftone/social";
 import { MechLong, MECHLONG_FRAMES } from "./halftone/long-mech";
 import { Ep02Mha, EP02_FRAMES } from "./halftone/ep02-mha";
 import { Ep03Full, EP03_FRAMES } from "./halftone/ep03-full";
+import { Ep04Pe, EP04_FRAMES } from "./halftone/ep04-pe";
 
 /**
  * 论文讲解视频起手模板：标题卡 + 要点逐条浮现。
@@ -186,6 +187,16 @@ export const RemotionRoot: React.FC = () => {
         id="Ep03Full"
         component={Ep03Full}
         durationInFrames={EP03_FRAMES}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+
+      {/* EP04：位置编码（NEON ORBIT · 12 章 · motion-doctrine 向量法则） */}
+      <Composition
+        id="Ep04Pe"
+        component={Ep04Pe}
+        durationInFrames={EP04_FRAMES}
         fps={30}
         width={1920}
         height={1080}
