@@ -84,7 +84,8 @@ PDF/arXiv ─▶ [0.5 提示词锻造] ─▶ [1 获取] ─▶ [2 深度解读]
 
 > 完整阶段、产物、门槛、排查表见 **[WORKFLOW.md](WORKFLOW.md)**；
 > 每个组件的具体路径与用法速查见 **[WORKFLOW-MAP.md](WORKFLOW-MAP.md)**（有什么 · 怎么做 · 在哪里）。
-> 可视化风格选择器：[design-picker.html](design-picker.html)（双击打开，选完复制 JSON）。
+> 可视化风格选择器：[design-picker.html](design-picker.html)（双击打开：8 风格卡 × 42 决策维度，
+> 出 JSON / paperpipe.yaml / design-intake.md 三件套）。
 
 ## 目录结构
 
