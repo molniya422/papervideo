@@ -289,6 +289,11 @@ output/<project>/
 | TTS 批量失败 | 服务端限流 | 逐句重试 + 1–5 秒退避；已成功的跳过 |
 | 成片偏亮/偏灰 | yuvj420p full range | 重封装 `-pix_fmt yuv420p -color_range tv -colorspace bt709` |
 | 响度偏低 | 未归一 | `loudnorm=I=-16:TP=-1.5:LRA=11` |
+| 音频混音崩溃（FFmpeg exited 3165764104） | Remotion 捆绑 ffmpeg 缺 f32le 混流器 | 换全量构建（npm @ffmpeg-installer）+ `HYPERFRAMES_FFMPEG_PATH` |
+| aac 编码后 TP 超标 +2~5dB | 旧版 aac 编码器对密集合成内容过冲 | 响度/TP 以 audio_master.wav（WAV 母带）验收，母带阶段留 TP 余量 |
+| 渲染卡在 installing chrome-headless-shell | 渲染器不用 HYPERFRAMES_BROWSER_PATH | 用 `PRODUCER_HEADLESS_SHELL_PATH` 指向本机 Chromium/Chrome |
+| 渲染帧序列撑爆 C 盘（ENOSPC） | 帧序列走 os.tmpdir() | `TMP/TEMP/TMPDIR` 重定向大容量盘 |
+| 挂载文档里 importmap 报 null-base | 子合成内联后 ESM 相对解析失败 | esbuild `--format=iife` 打全局包（window.THREE/window.__lib3d） |
 
 ---
 
