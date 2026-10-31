@@ -595,7 +595,8 @@ function renderRow(row, no){
     return wrap;
   }
   const chips=el(`<div class="chips" id="g_${row.key}"></div>`);
-  row.opts.forEach(o=>{
+  const opts = row.type==="swatch" ? ACCENTS : row.opts;   // swatch 行的选项来自 ACCENTS 色板
+  opts.forEach(o=>{
     const isSw=row.type==="swatch";
     const sel=Array.isArray(state[row.key]) ? state[row.key].includes(o.v) : state[row.key]===o.v;
     const c=el(isSw
