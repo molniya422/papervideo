@@ -123,21 +123,27 @@ output/<run-id>/
 
 ---
 
-## 4. 组件地图 · paperpipe 执行器（`D:\papervideo\paperpipe\`，v1.1.0，约 1300 行）
+## 4. 组件地图 · paperpipe 执行器（`D:\papervideo\paperpipe\`，v2.0.0，约 2000 行 + 注册表）
 
 | 文件 | 行数 | 职责 |
 |---|---|---|
-| `paperpipe\cli.py` | 247 | 8 个命令：init / run / resume / retry / status / validate / review / publish；`_safe_run_dir()` 路径白名单安全校验 |
-| `paperpipe\runner.py` | 155 | DAG 执行器：`fingerprint()` 指纹缓存（stage+version+config+输入哈希+上游指纹）、gate 语义（cls=gate → blocked 不重试）、stale-pass 降级、transient 指数退避 |
-| `paperpipe\adapters.py` | 562 | 9 个阶段适配器（plan/inputs/run/check/repair 协议）；`check_mandatory_skills()` P0 技能门禁（**:529**）；`validate_review()` 人审程序化核对；Publish 三态 upload_ready→uploading→uploaded |
-| `paperpipe\state.py` | 129 | `RunState` 状态机：new_stage / register_artifact（路径安全+sha256）/ invalidate_review |
-| `paperpipe\config.py` | 72 | paperpipe.yaml 配置解析 |
-| `paperpipe\util.py` | 130 | `FileLock` 心跳锁（15s touch / 90s stale）、`atomic_write_text()`、`sha256_file()`、env_summary |
-| `paperpipe\tests\test_regressions.py` | — | 回归测试（指纹失效、gate 语义、发布 dry-run 等） |
+| `paperpipe\registry.py` | 249 | **单一注册表加载器**：自研 YAML 子集解析（零依赖）；routes/skills/agents/contracts 查询；validate_registry（含与本地技能目录双向差集） |
+| `paperpipe\registry\routes.yaml` | — | 9 条用户意图路由（唯一事实源）：target/终止阶段/必选技能 |
+| `paperpipe\registry\skills.yaml` | — | 66 技能注册：适用条件/输入/输出/禁止误用/可替代 |
+| `paperpipe\registry\agents.yaml` | — | 8 个子智能体角色：触发条件/输入输出/并行规则/禁写文件 |
+| `paperpipe\registry\contracts.yaml` | — | 阶段合同：requires/条件技能（五字段）/机器门/人工门/子智能体；target 终止阶段 md→xray · figures→figures · video→qa · publish→publish |
+| `paperpipe\cli.py` | 278 | 8 命令：init/run(--stage 拓扑+前置)/resume/retry(前置门禁)/status(legacy 打标)/validate(注册表驱动)/review/publish(双门)；`_safe_run_dir()` 路径安全 |
+| `paperpipe\runner.py` | 220 | DAG 执行 v2：requires 前置检查（skipped_by_prerequisite 审计并停止）、waiting_*/failed_* 停下游、not_applicable、指纹缓存（stage+版本+config+输入哈希+上游指纹）、transient 退避 |
+| `paperpipe\adapters.py` | 600 | 9 阶段适配器（run/check 返回 passed/waiting_for_agent/waiting_for_human）；validate_review（六维 ≥8+证据+receipt）；Publish 双门（confirmed+哈希+封面+回执） |
+| `paperpipe\receipts.py` | 162 | **调用凭据**：write_skill/tool/agent_receipt + route-decisions + verify_stage（存在/注册/产物/哈希；替换字符串匹配） |
+| `paperpipe\handoff.py` | 119 | 子智能体交接信封：request/input-manifest/response/output-manifest/failure；状态流 pending→running→waiting_for_review→passed/failed；哈希防篡改 |
+| `paperpipe\state.py` | 165 | 状态机（schema paperpipe-state/3）：8 状态、warnings 独立列表、audit trail、register_artifact 路径安全、legacy 识别（/1、/2 冻结只读） |
+| `paperpipe\config.py` | 72 | paperpipe.yaml 配置解析（mini-YAML） |
+| `paperpipe\util.py` | 130 | `FileLock` 心跳锁、原子写、sha256、env_summary |
+| `paperpipe\tests\` | 6 套件 | test_gates(18) · test_receipts(13) · test_handoff(15) · test_review_publish(13) · test_regressions(17) · test_scenarios(14 场景 31 检查)，共 107 项全绿；`python -X utf8 -m paperpipe.tests.<名>` |
 
-**9 阶段 DAG**：`intake → brief → acquire → xray → figures → render → qa → retrospective → publish`
-**6 种状态**：`pending / running / passed / warn / failed / blocked`
-（warn=等 agent 产内容 · blocked=目标不含此阶段 · failed=重试耗尽）
+**8 种阶段状态**：`pending / running / waiting_for_agent / waiting_for_human / passed / not_applicable / failed_retryable / failed_permanent`
+（waiting_\* 与 failed_\* 停止下游；not_applicable=target 不含；warn/blocked 语义废除）
 
 ---
 
@@ -274,14 +280,15 @@ npx remotion render <Comp> out/v.mp4 --concurrency=4
 
 ## 9. 组件地图 · 打包与上游
 
-### 打包器（`D:\papervideo\pack\`）
+### 打包器（`D:\papervideo\pack\`）—— 两种发行物，职责分离
 
 | 文件 | 职责 |
 |---|---|
-| `pack\make-pack.ps1` | 打包脚本：复制 66 技能 + WORKFLOW.md + design-picker.html → 校验数量 → zip（排除 node_modules/mp4/pdf/wav） |
-| `pack\paper-explain-skills-pack.json` | 清单：66 技能 + 安装目标（~/.zcode/skills 等） |
-| `pack\README.md` · `pack\todo.txt` | 说明与待办 |
-| `paper-explain-skills-pack.zip`（根目录） | **成品包 19.5MB**，其他项目解包即用 |
+| `pack\make-pack.ps1` | 打包脚本 v2（ASCII 消息防 GBK 解析错乱）：**自检1** 本地↔manifest 双向差集 + 每技能 SKILL.md；**自检2** zip 回读（条目/技能数/无排除物）；**自检3** 工作区包在临时目录跑 `python -X utf8 -m paperpipe --help` + `validate --target md` |
+| `paper-explain-skills-pack.zip`（根目录） | **技能包** 19.5MB：66 技能 + WORKFLOW.md + design-picker.html；**不含 paperpipe，不承诺执行器** |
+| `papervideo-workspace-pack.zip`（根目录） | **工作区包** 19.6MB：paperpipe/（含 registry）+ 66 技能 + 全部文档 + docs/ 基线报告；解压即验证 |
+| `pack\paper-explain-skills-pack.json` | 清单（count=66；artifacts 声明两种发行物） |
+| `pack\README.md` | 只描述发行物与安装方式（技能包/工作区包分离） |
 
 ### 上游缓存与原始 zip
 
@@ -295,22 +302,24 @@ Node.js 20.10+ · Python（edge-tts、numpy）· Git Bash。MinerU/LaTeX 按需�
 
 ---
 
-## 10. 强制调用矩阵（P0 速查，全文见 WORKFLOW.md §16）
+## 10. 技能调用门禁（条件触发 + 可验证证据，全文见 WORKFLOW.md §16 与 registry/contracts.yaml）
 
-**P0 = 不调不许交付**（paperpipe 会程序化检查，定义在 `paperpipe\adapters.py:529`）：
+**v2 起不再是"P0 全量强制"**：每条规则五字段（触发条件→唯一责任技能→必需产物→验收判据→失败行为），
+执行器验证 receipt（`output/<run>/receipts/`）——"brief 里提过技能名"不算调用。
+**二选一组**（未选中写 route-decision 即可）：图解主技能 flowchart vs visual-explainer（按内容形态）；
+动效库 motion-lab vs wise-motion（按运行时 HTML/CSS vs Remotion）。
 
-| paperpipe 阶段 | 必调技能 |
+| paperpipe 阶段 | 触发 → 技能（摘录） |
 |---|---|
-| acquire | `paper-download-arxiv-paper-source` |
-| xray | `paper-xray` |
-| figures | `motion-doctrine` · `design-taste-frontend` · `motion-lab` · `wise-motion` · `flowchart` · `visual-explainer` |
-| render | `cut-the-curve` · `captions-overlay` |
-| qa | `video-qa-frameproof` · `video-technical-review` · `layout-safety-review` |
-| retrospective | `video-retrospective` |
-| publish | `paper-video-cover` |
-
-检查方式：技能文件存在 **且** brief/design-intake/retrospective 中提及该技能名；缺 → 该阶段 failed。
-另：`design-intake` + `prompt-forge` 是流程门（无 brief 不得写代码），人工保证。
+| intake | 有视频目标 → `design-intake`（默认假设路径由执行器落 receipt） |
+| brief | 任何视觉生成 → `prompt-forge` |
+| acquire | arXiv 输入 → `paper-download-arxiv-paper-source`；本地 PDF 需结构化 → `pdf-to-markdown` |
+| xray | 需要论文事实 → `paper-xray`（子智能体 researcher / fact_checker 可并行） |
+| figures | 图解主技能组**二选一**；制作动效前 → `motion-doctrine`（必读）；视觉生成 → `design-taste-frontend`；动效库**按运行时二选一** |
+| render | 旁白未 TTS → `humanize-writing`；route 决定 `remotion-video` / `knowledge-explainer-skill`；自定义缓动 → `cut-the-curve`；有字幕 → `captions-overlay` |
+| qa | 渲染完成 → `video-qa-frameproof`（机器层执行器内置）+ `video-technical-review` + `layout-safety-review` |
+| retrospective | 交付后 → `video-retrospective`（六维 ≥8+证据+receipt 才能过 review --confirm） |
+| publish | 发布 → `paper-video-cover`（封面缺失不进真实上传）；真实上传 → `paper-bilibili-uploader`（回执 exit=0 才 uploaded） |
 
 ---
 

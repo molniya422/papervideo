@@ -2,13 +2,21 @@
 
 本工作区是一套**论文讲解技能套件**：论文 PDF/arXiv → 深度解读 → 图解 → 讲解动画视频 → 发布。
 
-- 63 个技能注册在 `.zcode/skills/`，总编排技能为 **`paper-explain`**（五段流水线、路线选择、验收门）。
+**四层职责**（不可越层干活）：① `paper-explain` 路由器（解析意图/选 target/拆子智能体）→
+② 技能层 `.zcode/skills/*`（方法论与内容生产）→ ③ 子智能体层（handoff 信封交接）→
+④ `paperpipe` 执行器（只管 DAG/状态/哈希/门禁，验证 receipt 不假装调用技能）。
+路由表、阶段合同、技能注册表、子智能体角色的**唯一事实源**：`paperpipe/registry/*.yaml`。
+
+- **66 个技能**注册在 `.zcode/skills/`，总编排技能为 **`paper-explain`**（v3 路由器）。
 - 用户要求"讲论文 / 论文讲解 / paper explainer / 做成讲解视频 / 画模型图 / 学习笔记"时，
   优先走 `paper-explain` 工作流，按其路由表选择下游技能。
 - **生成视频前必须先跑 `design-intake`**：用 AskUserQuestion 两轮问清风格/主色/动效/声音/时长/画幅/受众，
   或让用户用 `design-picker.html` 自己选；产出 `0-brief/design-intake.md`。用户不在线则按默认值并标注假设。
 - **然后跑 `prompt-forge`** 产出 `0-brief/brief.md`（三套方案 + XML brief + 禁止清单 +
   8 分制验收），旁白先过 `humanize-writing`；没有 brief 不得写代码或渲帧。
+- **P0 是"条件触发 + 可验证证据"**：每个技能调用落 receipt（`output/<run>/receipts/`），
+  执行器按 `paperpipe/registry/contracts.yaml` 验证；图解主技能按内容形态二选一、
+  动效库按运行时二选一，未选中的写 route-decision（含理由），不再全部强制。
 - **验收后必须跑 `video-retrospective`** 写 `6-review/retrospective.md` 与 `lessons.md`，
   并把至少 1 条硬规则写回相关技能；没复盘不算交付。
 - 关键下游技能：解读用 `paper-xray`；图解按内容选（AI 模型 `flowchart`、工程系统 `dynamic-archify`、

@@ -1,0 +1,69 @@
+# paperpipe 注册表 · routes —— 用户意图 → 最短路径路由表（唯一事实源）
+# 路由器（paper-explain 技能）按此表选择 target 与主技能；
+# 未选择的条件技能必须写 route-decision（含理由），不得静默跳过。
+# 默认原则：没有明确要求发布 → 不进上传流程；没有要求视频 → 不执行 render/音频/视频 QA。
+
+routes:
+  - id: explain-only
+    intent: 只讲论文 / 学习笔记
+    input: PDF 或 arXiv
+    target: md
+    terminal: xray
+    skills: [paper-xray]
+    route_hints: 产物为 deep-read.md；不需要图解/渲染/QA
+  - id: mechanism-figure
+    intent: 画机制图 / 模型图
+    input: PDF 或 arXiv
+    target: figures
+    terminal: figures
+    skills: [paper-xray, visual-explainer]
+    route_hints: 主图解技能按内容形态二选一（AI 模型→flowchart，通用→visual-explainer，工程架构→dynamic-archify，协议→network-protocol-viz，物理直觉→anatomy）；未选中的写 route-decision
+  - id: quick-video
+    intent: 做快速视频（草稿/内部过稿）
+    input: 论文或文稿
+    target: video
+    terminal: qa
+    skills: [prompt-forge, paper-xray, knowledge-explainer-skill, video-qa-frameproof]
+    route_hints: 路线 A 模板成片；跳过 Remotion 定制
+  - id: custom-video
+    intent: 做定制讲解视频（正式交付）
+    input: 论文或 arXiv
+    target: publish
+    terminal: publish
+    skills: [design-intake, prompt-forge, paper-xray, remotion-video, video-qa-frameproof, video-retrospective]
+    route_hints: 本工作区主路径（EP 系列）；retrospective+publish 需要人在环
+  - id: seminar-slides
+    intent: 做组会分享
+    input: 论文
+    target: video
+    terminal: qa
+    skills: [paper-xray, paper-to-beamer, paper-slides-to-video]
+    route_hints: 路线 B；视频可选，只要 PDF 则 target=md 只需 paper-to-beamer 产物
+  - id: html-to-video
+    intent: 已有 HTML 动画转视频
+    input: HTML 页面
+    target: video
+    terminal: qa
+    skills: [hyperframes, video-qa-frameproof]
+    route_hints: 路线 D；跳过 acquire/xray（非论文输入时 intake 记录来源即可）
+  - id: cover-only
+    intent: 只要封面
+    input: 视频或元数据
+    target: publish
+    terminal: publish
+    skills: [paper-video-cover]
+    route_hints: 只执行封面相关动作，不触发整条流水线
+  - id: publish-bilibili
+    intent: 发布到 B 站
+    input: 已有成片或完整流水线
+    target: publish
+    terminal: publish
+    skills: [video-qa-frameproof, paper-video-cover, paper-bilibili-uploader]
+    route_hints: 必须 QA → 封面 → dry-run → 人工确认 → 上传；缺一不停留
+  - id: rework-previous
+    intent: 上一版返工
+    input: 既有 run
+    target: publish
+    terminal: publish
+    skills: [video-retrospective]
+    route_hints: 读取旧状态 → 复盘 → 改 brief → 指纹缓存自动只重跑受影响阶段

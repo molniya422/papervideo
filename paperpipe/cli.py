@@ -1,28 +1,28 @@
-"""paperpipe.cli — 命令行入口（8 个子命令）。
+"""paperpipe.cli — 命令行入口（8 个子命令，v2）。
 
-  paperpipe init <PDF|arXiv> [--target video]   # 建 run（--force 清空重建）
-  paperpipe run  [--auto] [--target video]      # 执行 DAG 到人审门/失败处
-  paperpipe resume                              # 按输入指纹决定重跑范围（不清零失败历史）
-  paperpipe retry <stage>                       # 显式重试单个失败阶段（清该阶段尝试计数）
+  paperpipe init <PDF|arXiv> --run-id ID [--target video]   # 建 run（--force 清空重建）
+  paperpipe run  [--auto] [--target video] [--stage a,b]    # 执行 DAG 到等待/失败处（--stage 按拓扑序）
+  paperpipe resume                                          # 按输入指纹决定重跑范围（不清零失败历史）
+  paperpipe retry <stage>                                   # 显式重试（同样过前置门禁）
   paperpipe status [--json]
-  paperpipe validate [--target video]           # 按路线检查组件/引擎/技能文件
-  paperpipe review --confirm [--by NAME]        # 可验证人审门（QA/复盘/占位符/lessons 核对）
-  paperpipe publish --dry-run | --confirm       # 真实上传需 review + publish.command
+  paperpipe validate [--target video]                       # 注册表驱动：组件/引擎/技能/差集
+  paperpipe review --confirm [--by NAME]                    # 人审门（六维评分+证据+receipt 程序化核对）
+  paperpipe publish --dry-run | --confirm <run_id>          # 双门：review --confirm 之后才可 --confirm
 """
 from __future__ import annotations
 import argparse, json, os, re, shutil, sys
 
+from . import registry
 from .adapters import ADAPTERS, RuntimeCtx, VERSION
 from .config import load_config
-from .runner import run_all, run_stage
+from .runner import run_all, retry_stage, refuse_legacy, topo_sort, check_prerequisites
 from .state import RunState
-from .util import atomic_write_text, atomic_append_jsonl, env_summary, utcnow, sha256_file
+from .util import atomic_write_text, atomic_append_jsonl, env_summary, utcnow
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUTS = os.path.join(ROOT, "output")
 
 def _safe_run_dir(run_id: str) -> str:
-    """run_id 白名单 + 运行目录必须落在 output/ 内（路径安全）。"""
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", run_id):
         raise SystemExit(f"非法 run_id: {run_id}（只允许字母数字._-，≤64 字符）")
     run_dir = os.path.realpath(os.path.join(OUTPUTS, run_id))
@@ -80,38 +80,46 @@ def cmd_init(args):
                       "  command: []              # 真实上传命令（未配置时 --confirm 只置 upload_ready）\n")
     atomic_append_jsonl(os.path.join(run_dir, "run.log.jsonl"),
                         {"ts": utcnow(), "level": "info", "stage": "init", "event": "created",
-                         "env": env_summary(ROOT), "run_id": args.run_id, "source": args.source})
+                         "env": env_summary(ROOT), "run_id": args.run_id, "source": args.source,
+                         "executor": f"paperpipe/{VERSION}"})
     print(json.dumps(rs.summary(), ensure_ascii=False, indent=2))
 
 def cmd_run(args):
     run_dir = _resolve_run_dir(args.run_dir)
     ctx = _ctx(run_dir, {"mode": "auto"} if args.auto else None)
+    refuse_legacy(ctx.rs, "run")
     if args.target:
+        if args.target not in registry.targets():
+            sys.exit(f"未知 target: {args.target}（可选: {', '.join(registry.targets())}）")
         ctx.rs.data["target"] = args.target
         ctx.rs.save()
-    only = args.stage.split(",") if args.stage else None
+    only = topo_sort(args.stage.split(",")) if args.stage else None
+    if only:
+        for s in only:  # 单跑/子集同样过前置门禁
+            check_prerequisites(ctx, s)
     results = run_all(ctx, only=only)
     print(json.dumps(results, ensure_ascii=False, indent=2))
 
 def cmd_resume(args):
     run_dir = _resolve_run_dir(args.run_dir)
     ctx = _ctx(run_dir)
-    # 按输入指纹决定重跑范围：指纹变化或 pending → 重跑（attempts 清零，新输入新预算）；
-    # 失败但指纹未变 → 保留 attempts 与历史（用 retry 显式重试）
+    refuse_legacy(ctx.rs, "resume")
     from .runner import fingerprint
     reset = []
     for name in ADAPTERS:
         st = ctx.rs.stage(name)
+        if st["status"] == "not_applicable":
+            continue
         fp = fingerprint(ctx, name)
         if st["status"] == "passed" and st["input_hash"] == fp:
-            continue  # 缓存命中，交给 run 的 check 复核
-        if st["input_hash"] is not None and st["input_hash"] != fp and st["status"] != "failed":
+            continue
+        if st["input_hash"] is not None and st["input_hash"] != fp and \
+                st["status"] not in ("failed_retryable", "failed_permanent"):
             st["status"] = "pending"; st["attempts"] = 0; st["error"] = None
             reset.append(name)
         elif st["status"] == "pending":
             st["attempts"] = 0
             reset.append(name)
-        # failed 且指纹未变：保留（retry 处理）
     ctx.rs.save()
     if reset:
         print("指纹变化，重跑范围:", ", ".join(reset))
@@ -121,53 +129,76 @@ def cmd_resume(args):
 def cmd_retry(args):
     run_dir = _resolve_run_dir(args.run_dir)
     ctx = _ctx(run_dir)
-    if args.stage not in ADAPTERS:
-        sys.exit(f"未知阶段: {args.stage}（可选: {', '.join(ADAPTERS)}）")
-    st = ctx.rs.stage(args.stage)
-    st["status"] = "pending"
-    st["attempts"] = 0
-    st["error"] = None
-    ctx.rs.save()
-    results = run_stage(ctx, args.stage)
-    print(json.dumps({args.stage: results}, ensure_ascii=False, indent=2))
+    refuse_legacy(ctx.rs, "retry")
+    results = {args.stage: retry_stage(ctx, args.stage)}
+    print(json.dumps(results, ensure_ascii=False, indent=2))
 
 def cmd_status(args):
     run_dir = _resolve_run_dir(args.run_dir)
     s = _ctx(run_dir).rs.summary()
-    print(json.dumps(s, ensure_ascii=False, indent=2) if args.json else
-          "\n".join(f"{k:<14} {v['status']:<8} attempts={v['attempts']}"
-                    f"{' [人审门]' if v['human_gate'] else ''}{' ERR:' + v['error'] if v['error'] else ''}"
+    if args.json:
+        print(json.dumps(s, ensure_ascii=False, indent=2))
+        return
+    legacy = " [LEGACY——变更命令已拒绝，见 docs/baseline §4]" if s["legacy"] else ""
+    print("\n".join(f"{k:<14} {v['status']:<20} attempts={v['attempts']}"
+                    f"{' [人审门]' if v['human_gate'] else ''}"
+                    f"{' WARN:' + str(v['warnings']) if v['warnings'] else ''}"
+                    f"{' ERR:' + v['error'] if v['error'] else ''}"
                     for k, v in s["stages"].items())
-          + f"\nrun_id={s['run_id']} target={s['target']} review_confirmed={s['review']['confirmed']} "
+          + f"\nrun_id={s['run_id']} target={s['target']} schema={s['schema']}{legacy} "
+            f"review_confirmed={s['review']['confirmed']} "
             f"publish={ {k: s['publish'][k] for k in ('upload_ready','uploading','uploaded')} }")
+
+def _skills_dir() -> str:
+    """技能目录：工作区布局 .zcode/skills 优先；工作区包安装布局 skills/ 兜底。"""
+    c1 = os.path.join(ROOT, ".zcode", "skills")
+    c2 = os.path.join(ROOT, "skills")
+    return c1 if os.path.isdir(c1) else c2
 
 def cmd_validate(args):
     target = args.target or "video"
+    if target not in registry.targets():
+        sys.exit(f"未知 target: {target}（可选: {', '.join(registry.targets())}）")
     env = env_summary(ROOT)
     ok, bad = [], []
     for k in ("python", "platform", "paperpipe_root"):
         ok.append(f"{k}={env[k]}")
-    for k in ("ffmpeg", "ffprobe", "node", "uv"):
+    # ffmpeg/ffprobe 只有音视频 target 才必需（md/figures 不需要）
+    if target in ("video", "slides", "publish"):
+        for k in ("ffmpeg", "ffprobe"):
+            (ok if env[k] != "MISSING" else bad).append(f"{k}={env[k]}")
+    for k in ("node", "uv"):
         (ok if env[k] != "MISSING" else bad).append(f"{k}={env[k]}")
-    # 技能：不只数数量，核对关键技能文件存在
-    skills_dir = os.path.join(ROOT, ".zcode", "skills")
-    required = ["paper-explain", "paper-xray", "design-intake", "prompt-forge", "humanize-writing",
-                "video-production-guide", "video-retrospective", "video-qa-frameproof"]
+    # 注册表自检（含与本地技能目录双向差集）
+    reg_problems = registry.validate_registry(ROOT)
+    ok.append(f"registry=stages:{len(registry.stage_names())} skills:{len(registry.skill_ids())} "
+              f"agents:{len(registry.agent_roles())} routes:{len(registry.routes())}")
+    bad.extend(reg_problems)
+    # 技能文件存在性（注册表声明的每个技能必须有 SKILL.md）
+    skills_dir = _skills_dir()
+    for s in sorted(registry.skill_ids()):
+        if not os.path.isfile(os.path.join(skills_dir, s, "SKILL.md")):
+            bad.append(f"skill:{s}=MISSING SKILL.md")
+    # target 终止阶段与路线组件
+    ok.append(f"target={target} terminal={registry.terminal_stage(target)} "
+              f"stages={','.join(registry.target_stages(target))}")
     route_skills = {"video": ["remotion-video", "motion-lab", "wise-motion", "paper-video-cover"],
-                    "md": ["visual-explainer", "flowchart"], "slides": ["paper-to-beamer", "paper-slides-to-video"]}
-    for s in required + route_skills.get(target, []):
+                    "md": ["visual-explainer", "flowchart"],
+                    "slides": ["paper-to-beamer", "paper-slides-to-video"]}
+    for s in route_skills.get(target, []):
         p = os.path.join(skills_dir, s, "SKILL.md")
         (ok if os.path.isfile(p) else bad).append(f"skill:{s}={'OK' if os.path.isfile(p) else 'MISSING'}")
-    ok.append(f"skills_total={len(os.listdir(skills_dir)) if os.path.isdir(skills_dir) else 0}")
-    # video 路线附加：remotion-studio、合成配置
     if target in ("video", "slides"):
         studio = os.path.join(ROOT, "remotion-studio", "package.json")
         (ok if os.path.isfile(studio) else bad).append(f"remotion-studio={'OK' if os.path.isfile(studio) else 'MISSING'}")
         if os.path.isdir(OUTPUTS):
             for d in _run_dirs():
                 rs = RunState(d)
-                if rs.data and rs.data.get("target") == "video" and                         os.path.isfile(os.path.join(d, "4-video", "narration.json")):
-                    # 只对真正进入渲染输入阶段的 run 要求配置合成
+                if rs.is_legacy:
+                    ok.append(f"run:{rs.data['run_id']}=LEGACY({rs.data.get('schema')})")
+                    continue
+                if rs.data and rs.data.get("target") == "video" and \
+                        os.path.isfile(os.path.join(d, "4-video", "narration.json")):
                     comp = (rs.data.get("config", {}).get("render") or {}).get("composition")
                     if not comp:
                         bad.append(f"run:{rs.data['run_id']} 未配置 render.composition")
@@ -179,11 +210,14 @@ def cmd_validate(args):
 def cmd_review(args):
     run_dir = _resolve_run_dir(args.run_dir)
     ctx = _ctx(run_dir)
+    refuse_legacy(ctx.rs, "review")
     if not args.confirm:
-        print("人审清单（逐项确认后加 --confirm；确认时会程序化核对）：\n"
-              "  1) QA 阶段 passed\n  2) 解释力/视觉叙事/听审\n"
-              "  3) 事实确认（数字/结论 vs 论文）\n  4) retrospective.md 已填写（评分+证据，无占位符）\n"
-              "  5) lessons.md 含具体规则")
+        print("人审清单（逐项确认后加 --confirm；确认时程序化核对）：\n"
+              "  1) QA 阶段 passed\n"
+              "  2) 复盘六维全部有分且 ≥8、每项有证据、无占位符\n"
+              "  3) lessons.md ≥1 条具体规则\n"
+              "  4) video-retrospective 技能 receipt 存在\n"
+              "  5) 事实确认（数字/结论 vs 论文）与听审（人工责任）")
         sys.exit(2)
     from .adapters import validate_review
     ok, problems, hashes = validate_review(ctx)
@@ -200,11 +234,15 @@ def cmd_review(args):
 def cmd_publish(args):
     run_dir = _resolve_run_dir(args.run_dir)
     ctx = _ctx(run_dir)
+    refuse_legacy(ctx.rs, "publish")
     if args.confirm:
         if ctx.rs.data["run_id"] != args.confirm:
             sys.exit(f"run_id 不匹配: 期望 {ctx.rs.data['run_id']}")
-        # 人审门 + 哈希有效期
-        from .adapters import validate_review
+        # 双门 1：人审必须已确认
+        if not ctx.rs.data["review"].get("confirmed"):
+            sys.exit("真实上传被门禁拦下：review 未确认（先 paperpipe review --confirm）")
+        # 双门 2：哈希有效期（确认后产物变更 → 失效）
+        from .adapters import validate_review, _find_cover
         ok, problems, _ = validate_review(ctx)
         if not ok:
             print("真实上传被门禁拦下：")
@@ -216,17 +254,20 @@ def cmd_publish(args):
         for k, h in now_hashes.items():
             if saved.get(k) and saved[k] != h:
                 sys.exit(f"确认后产物已变更（{k}），旧审核失效；重新 review --confirm")
+        if not _find_cover(ctx):
+            sys.exit("真实上传被门禁拦下：封面缺失（先跑 paper-video-cover 产出 5-video-final/cover.*）")
         ctx.rs.data["publish"].update({"enabled": True, "dry_run": False, "confirmed_run_id": args.confirm})
         ctx.rs.save()
     ctx.rs.data["publish"]["dry_run"] = not bool(args.confirm)
     ctx.rs.save()
-    results = run_stage(ctx, "publish")
+    results = retry_stage(ctx, "publish") if ctx.rs.stage("publish")["status"] in (
+        "failed_retryable", "failed_permanent") else run_all(ctx, only=["publish"])
     print(json.dumps({"stage": "publish", "status": results}, ensure_ascii=False, indent=2))
     pub = ctx.rs.data["publish"]
     print(f"状态: upload_ready={pub['upload_ready']} uploading={pub['uploading']} uploaded={pub['uploaded']}")
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="paperpipe", description=f"paperpipe {VERSION} — 论文讲解流水线执行器")
+    ap = argparse.ArgumentParser(prog="paperpipe", description=f"paperpipe {VERSION} — 论文讲解流水线执行器（v2：registry/8 态/receipt/handoff）")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("init"); p.add_argument("source"); p.add_argument("--target", default="video")
     p.add_argument("--run-id", required=True); p.add_argument("--title")

@@ -395,57 +395,69 @@ $FF -i raw.mp4 -c:v libx264 -preset slow -profile:v high \
 
 ---
 
-## 15. paperpipe 统一执行器（v8.1 起）
+## 15. paperpipe 统一执行器（v2）
 
-把整条流水线从"自然语言约定"升级为可执行的状态机。9 阶段 DAG：
+把整条流水线从"自然语言约定"升级为可执行的状态机。**四层职责**：paper-explain 路由器 →
+技能层 → 子智能体层（handoff）→ 执行器（只管 DAG/状态/哈希/机器门禁，验证 receipt，不假装调用技能）。
+**唯一事实源：`paperpipe/registry/{routes,skills,agents,contracts}.yaml`** —— 路由表、66 技能注册、
+8 个子智能体角色、阶段合同（requires/条件技能/机器门/人工门）全部从注册表读取。
 
-```
-intake → brief → acquire → xray → figures → render → qa → retrospective → publish
-```
+9 阶段 DAG：`intake → brief → acquire → xray → figures → render → qa → retrospective → publish`
+（拓扑序见 registry；阶段与工作流 §0-6 的编号是映射不是同一套）。
 
-每个阶段实现 `plan / run / check / repair` 协议，状态：`pending / running / passed / warn / failed / blocked`。
-含：输入/产物哈希、尝试计数、错误分类（transient 指数退避重试 3 次 / permanent / gate）、
-文件锁、`.partial` 原子写、`run.log.jsonl` 事件日志、按输入哈希的幂等续跑。
+**8 种状态**（schema: paperpipe-state/3）：
+`pending / running / waiting_for_agent / waiting_for_human / passed / not_applicable / failed_retryable / failed_permanent`
+- `waiting_for_agent` = 等 agent 按技能产出；`waiting_for_human` = 人审门；二者**都停止下游**；
+- `failed_retryable`（transient 耗尽，可 retry）/ `failed_permanent`（需改内容或配置）；
+- `not_applicable` = target 不含此阶段（md→xray · figures→figures · video→qa · publish→publish 终止）；
+- 普通 `warn` 语义废除，警告进独立 `warnings` 列表。
+
+**门禁语义**：
+- 阶段启动前所有 requires 必须 `passed/not_applicable`，否则 skipped_by_prerequisite 审计并停止；
+- `retry` 与 `run --stage`（自动按拓扑排序）同样过前置检查；
+- **技能凭据（receipt）**：`output/<run>/receipts/{skills,tools,agents}/` + `route-decisions.json`；
+  执行器按 contracts.yaml 验证 receipt 存在/技能已注册/产物存在/哈希一致——
+  **"brief 里提过技能名"不再算调用**；条件技能（图解主技能组、动效库组）可凭
+  route-decision（skipped+理由）豁免；
+- 人审门：`review --confirm` 程序化核对 QA passed + 复盘六维全部有分且 ≥8 且每项有证据 +
+  无占位符 + lessons ≥1 条规则 + video-retrospective receipt；确认哈希绑定产物；
+- 发布双门：`publish --confirm` 需 review 已确认 + 哈希全匹配 + 封面存在；真实上传需
+  publish.command 且回执 exit=0 才置 uploaded，失败 → failed_retryable 绝不谎报。
+
+含：输入/产物哈希、尝试计数、transient 指数退避重试、文件锁、`.partial` 原子写、
+`run.log.jsonl` 事件日志、状态文件内 audit trail、按输入哈希的幂等续跑。
+**legacy**：旧 schema（paperpipe-state/1、/2）的 run 冻结只读（status 打 LEGACY 标记），
+resume/retry/publish 拒绝，重建用 `init --force`（见 docs/baseline-2026-10-31.md §4）。
 
 ### 命令
 
 ```bash
-python -m paperpipe init 1706.03762 --target video   # 建运行目录（--force 清空重建）
-python -m paperpipe run --auto                        # 执行 DAG 到人审门（upload_ready 为止）
+python -m paperpipe init 1706.03762 --run-id <id> --target video   # 建运行目录（--force 清空重建）
+python -m paperpipe run --auto                        # 执行 DAG 到第一个等待/失败处
+python -m paperpipe run --stage render,qa             # 子集（自动拓扑排序 + 前置检查）
 python -m paperpipe resume                            # 按输入指纹决定重跑范围（不清零失败历史）
-python -m paperpipe retry <stage>                     # 显式重试单个失败阶段
-python -m paperpipe status --json                     # 状态（机器可读）
-python -m paperpipe validate --target video           # 按路线检查组件/引擎/技能文件
-python -m paperpipe review --confirm                  # 人审门（程序化核对 QA/占位符/lessons）
+python -m paperpipe retry <stage>                     # 过前置门禁后显式重试
+python -m paperpipe status --json                     # 状态（机器可读，legacy 打标）
+python -m paperpipe validate --target video           # 注册表驱动：组件/引擎/技能/差集
+python -m paperpipe review --confirm                  # 人审门（程序化核对）
 python -m paperpipe publish --dry-run                 # 发布计划（默认）
-python -m paperpipe publish --confirm <run_id>        # 确认上传；需先 review --confirm + publish.command
+python -m paperpipe publish --confirm <run_id>        # 真实上传双门
 ```
 
-### 自动/人审边界
-
-- **自动化（执行）**：design-intake 与 brief 生成（假设写状态）、arXiv 获取、TTS+时间轴、
-  Remotion 渲染、编码、QA（流/规格/faststart/响度硬校验，不达标即 failed）、发布计划、断点续跑、输入指纹缓存与下游级联失效。
-- **人审门（不可自动通过，状态机不调用模型）**：xray 深读内容、图解文案、视觉叙事与听审、
-  事实确认、retrospective 填写与技能写回、真实上传（`--confirm` + `review --confirm` 双门 + 产物哈希绑定，
-  确认后产物变更自动失效）。"自动"指自动**执行**可程序化步骤并停在门上，不是自动**生成**全部内容。
-- 发布三态：`upload_ready`（就绪）→ `uploading` → `uploaded`（仅当配置 publish.command 且上传回执成功；
-  未配置时 --confirm 只置 upload_ready，绝不谎报已发布）。
-- 阶段编号说明：本文档 §0-6 是**工作流阶段**；paperpipe 的 9 阶段 DAG
-  （intake→brief→acquire→xray→figures→render→qa→retrospective→publish）是**执行视图**，两者映射而非同一编号。
-- warn = "产出门等待 agent/人工"；blocked = "目标不含此阶段"；failed = 重试耗尽。
-
-### 状态契约
-
-`output/<run-id>/pipeline-state.json` 是唯一状态源（schema: paperpipe-state/1，
-统一产物清单含 sha256；旧的 `_status` 双写废弃）。`run.log.jsonl` 记录全部事件与环境摘要。
+测试六套件：`test_gates / test_receipts / test_handoff / test_review_publish / test_regressions / test_scenarios`
+（`python -X utf8 -m paperpipe.tests.<名>`，含 14 场景端到端验收）。
 
 ---
 
-## 16. 强制调用矩阵（65 技能 → 按 pipeline 阶段对号入座）
+## 16. 技能调用门禁（66 技能 → 条件触发 + 可验证证据）
 
-> 背景：四轮视频（v6-v8.1/EP02/EP03）实际只调用了 15/65 个技能。
-> 本节把 50 个未调用技能按"应该调用但被跳过"逐一归位，并标注强制级别。
-> **P0 = 不调不许交付 · P1 = 不调要写明理由 · P2 = 按需**
+> v2 重构：P0"全量强制"升级为**"条件触发 + 可验证证据"**——每条规则五字段
+> `触发条件 → 唯一责任技能 → 必需产物 → 验收判据 → 失败行为`，唯一事实源
+> `paperpipe/registry/contracts.yaml`。执行器用 receipt（`output/<run>/receipts/`）验证调用，
+> 不再接受"文档里提过技能名"。
+> **关键变化**：`flowchart` 与 `visual-explainer` 按内容形态**二选一**；
+> `motion-lab` 与 `wise-motion` 按运行时（HTML/CSS vs Remotion）**二选一**；
+> 未选中的写 route-decision（skipped + 理由）即可豁免。
 
 ### 调用现状审计（2026-10-31）
 

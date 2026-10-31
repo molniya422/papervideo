@@ -1,181 +1,122 @@
 ---
 name: paper-explain
 description: |
-  论文讲解工作流总编排：从 PDF/arXiv 到深度解读、图解、讲解视频与发布。
-  七个强制阶段：0 设计访谈 → 0.5 提示词锻造（brief）→ 1 获取 → 2 深度解读 →
-  3 图解 → 4 成片 → 5 发布 → 6 复盘总结。整合本地 64 个技能（paperpipe 执行器编排）：
-  paper-xray（解读）、visual-explainer / flowchart / dynamic-archify / anatomy（图解）、
-  knowledge-explainer-skill / remotion-video / hyperframes（成片）、
-  design-intake（问风格与细节，含可视化选择器）、prompt-forge（生成前写 brief）、humanize-writing（去 AI 味）、
-  design-taste-frontend（反模板化审美）、video-production-guide（路线与交付检查）、
-  video-retrospective（验收后复盘）、paper-video-cover / paper-bilibili-uploader（发布）等。
-  当用户说"讲论文 / 论文讲解 / 做成视频 / 讲解动画 / 组会分享"时使用。
-argument-hint: "<PDF | arXiv 链接/ID | 论文目录> [--target md|html|video|slides] [--audience 组会|公众|自学]"
+  论文讲解工作流总路由器（v3）：解析用户意图 → 判断交付目标 → 选择最短路径 →
+  决定澄清/技能/子智能体/CLI 工具 → 调用 paperpipe 执行 → 按门禁停下或继续 → 输出交付清单。
+  路由表、阶段合同、技能注册表、子智能体角色的唯一事实源在 paperpipe/registry/*.yaml，
+  本技能按注册表路由，不自行发明流程。
+  当用户说"讲论文 / 论文讲解 / 做成视频 / 讲解动画 / 组会分享 / 画机制图"时使用。
+argument-hint: "<PDF | arXiv 链接/ID | 论文目录> [--target md|figures|video|publish] [--audience 组会|公众|自学]"
 user-invocable: true
-version: 2.0.0
+version: 3.0.0
 ---
 
-# 论文讲解工作流（Paper Explain Pipeline v2）
+# 论文讲解路由器（Paper Explain Router v3）
 
-```
-        ┌──────────── 生成任何画面之前 ────────────┐
-PDF/arXiv ─▶ [0 对齐] ─▶ [0.5 提示词锻造] ─▶ [1 获取] ─▶ [2 深度解读]
-               需求梳理      prompt-forge        arXiv/MinerU    paper-xray
-                                                                     │
-                                                                     ▼
-            [6 复盘] ◀─ [5 发布] ◀─ [4 成片] ◀─ [3 图解]
-          retrospective   cover/B站    四条路线    图解技能套件
-             │
-             └─▶ 结论写回技能，下一次默认生效
-```
+## 四层职责（不可越层干活）
 
-两条**不可跳过**的新增阶段：
-
-- **阶段 0.5 提示词锻造**：任何生成（写代码/渲帧/出图）之前，必须先有 `0-brief/brief.md`。
-  这是用户的明确要求，也是避免"渲了 9000 帧才发现方向错了"的唯一保险。
-- **阶段 6 复盘**：验收通过后必须写 `6-review/retrospective.md` 与 `lessons.md`，
-  把经验写回技能。没复盘不算交付完成。
-
-## 阶段 0 · 设计访谈（`design-intake`）
-
-用 `AskUserQuestion` 分两轮问清设计：视觉语言 / 主色 / 排版气质 / 画面密度 →
-运动性格 / 转场 / 旁白 / 配乐；必要时第三轮问时长 / 画幅 / 受众 / 明确不要。
-每轮 4 题、选项具体到能想象画面；用户可选 "Other" 自由输入。
-
-也可以让用户直接打开 `design-picker.html` 自己点选，复制 JSON 回来。
-
-产物 `0-brief/design-intake.md`：选择表 + **一句话风格内核** +（重做时）与上一版差异。
-用户不在线则按默认值走并标注假设（论文讲解：工程蓝图 / 克制精确 / 中文男声 / 5–7 分钟 / 16:9）。
-
-**门槛**：六个维度有明确值；重做时必须写清"保留什么、更换什么"。
-
-## 阶段 0.5 · 提示词锻造（强制）
-
-调用 **`prompt-forge`**，产出 `output/<paper>/0-brief/brief.md`：
-
-1. **三套差异化方案**（视觉隐喻 / 镜头语言 / 技术路线 / 时长节奏各不相同），让用户选；
-   用户不在场则选"最能承载解释"的一套并记录理由。
-2. **XML 分区 brief**：role / subject / audience / duration / style / forbidden /
-   storyboard / tech / pitfalls / acceptance。
-3. **具体禁止清单**：不许深色底居中大字当默认页、不许无动机粒子爆炸、不许匀速运动、
-   不许 3D 上叠长文、不许 AI 套话、不许截断坐标轴不标注。
-4. **8 分制验收表**：前 2 秒 / 可读性 / 解释力 / 运动质量 / 音画同步 / 技术卫生，
-   低于 8 分不交付。
-
-同时调用 **`video-production-guide`** 确认路线（纯代码 / 图像+代码 / 视频+合成 / 产品界面），
-写进 brief 的 `<tech>`。
-
-**旁白文案**在进入 TTS 前先过 **`humanize-writing`**：一句一个意思、长短句交错、
-动词优先、删掉"首先/其次/值得注意的是"、保留全部数字与术语。
-
-**验收门**：`0-brief/brief.md` 存在且 `<acceptance>` 已填；没有 brief 不得开始写代码。
-
-## 阶段 1 · 获取论文
-
-- arXiv 链接/ID → **`paper-download-arxiv-paper-source`**
-- PDF → **`pdf-to-markdown`**（MinerU，需 GPU）
-
-**验收门**：Markdown 可读、公式为 LaTeX、图表路径有效。
-
-## 阶段 2 · 深度解读
-
-调用 **`paper-xray`**：还原作者思路、每个公式给可手算的例子、怀疑式核对数字、
-标注【文中有据/推断/猜测】。产物是后面所有脚本的事实源。
-
-**验收门**：每个关键机制都有"它会怎么坏"的讲解；推断都有证据等级。
-
-## 阶段 3 · 可视化图解
-
-**动效库匹配（每镜头强制前置）**：动手画任何动效前，先查 `motion-lab`（160 网页动效，索引即源码）与
-`wise-motion`（101 Remotion 组件，match/show/export 三命令）。命中 → 导出改造并登记；未命中 → 手写并在
-3-figures 登记表标注缺口。视频风格跨集延续上一版风格内核（变更需在设计访谈记录）。
-
-按内容形态选：
-
-- **`visual-explainer`** — 通用 HTML 图解（架构图/对比表/可步进状态机）
-- **`flowchart`** — AI/ML 模型原理动画（RNN/LSTM/GRU/MLP 范式）
-- **`dynamic-archify`** — 工程风精确架构图
-- **`network-protocol-viz`** — 网络协议
-- **`anatomy`** — 等距 SVG"物理装置"插画
-- **`scholar-notes`** — 手写笔记风 HTML
-- 叙事型：`card-theater` / `stacked-data-cards` / `ppt-animation`
-- 需要 AI 生图素材时用 **`hell-grind-aigc-skill`** 写提示词
-
-审美方向参考 **`design-taste-frontend`**：概念要从主题本身长出来，
-不要默认的"居中标题 + 三张图标卡 + 渐变"。
-
-**验收门**：HTML 无脚本错误；每张图对应阶段 2 的一个机制点。
-
-## 阶段 4 · 成片
-
-| 路线 | 技能 | 适用 |
+| 层 | 谁 | 只负责 |
 |---|---|---|
-| A 文稿→动画 | `knowledge-explainer-skill` | 快速草稿、内部过稿 |
-| B 学术幻灯片 | `paper-to-beamer` → `paper-slides-to-video` | 组会正式风 |
-| C 3D 讲解片 | **`remotion-video`** | 科普/讲解交付（默认） |
-| D HTML 动画成片 | 阶段 3 的 HTML → `hyperframes` | 已有精美 HTML 页 |
+| 1 路由器 | **本技能** | 解析意图、选 target/阶段/主技能、判断是否拆子智能体、生成执行计划 |
+| 2 技能层 | `.zcode/skills/*` | 方法论与内容生产（每技能声明：适用条件/输入/输出/禁止误用/替代） |
+| 3 子智能体层 | researcher / fact_checker / visual_planner / narration_editor / render_worker / technical_qa / visual_qa / release_reviewer | 独立生产或独立审查；经 handoff 信封交接，不直接改别人的文件 |
+| 4 执行器 | `python -m paperpipe` | 只管 DAG/状态/缓存/命令/哈希/重试/机器门禁；**不假装调用技能**，只验证 receipt 和产物 |
 
-**质量底线**（不满足不算交付）：
-- 必须有中文旁白 + 成片音轨；静默视频不算讲解片；
-- 单镜头只讲一个点；镜头时长由旁白实测决定；全片 3–8 分钟；
-- **字幕必须由逐句音频驱动**，禁止按权重切分镜头时长；
-- 至少 2 个真正的三维空间镜头；
-- 文字区 / 3D 舞台 / 字幕带三区物理隔离；
-- 渲染后抽帧（首帧、转场、最密帧、末帧）+ 量响度（目标 −16 LUFS）。
+## 路由顺序（固定 12 步）
 
-**验收门**：`video-retrospective` 的打分表每项 ≥ 8。
+1. 识别用户目标 → 2. 识别输入类型 → 3. 检查是否已有 run → 4. 判断是否需要澄清 →
+5. 选 target → 6. 选阶段 → 7. 选主技能 → 8. 判断是否拆子智能体 → 9. 生成执行计划 →
+10. 调用 paperpipe → 11. 按门禁停下或继续 → 12. 输出交付清单。
 
-## 阶段 5 · 发布（可选）
+每步显示：`调用对象、输入、输出、命令、通过条件、失败后动作`。
 
-- **`paper-video-cover`** 生成 16:10 封面
-- **`paper-bilibili-uploader`** 发布（先 `--dry-run`）
-- 一键：**`paper-to-bilibili`**
+## 意图路由表（唯一事实源：paperpipe/registry/routes.yaml）
 
-发布前可加 **`video-qa-frameproof`**（空帧/冻结/编码检查）与
-**`video-technical-review`** / **`layout-safety-review`**（内容与版式审查）。
+| 用户请求 | route id | target / 终止 | 必选技能 |
+|---|---|---|---|
+| 只讲论文 / 学习笔记 | explain-only | md / xray | `paper-xray` |
+| 画机制图 | mechanism-figure | figures / figures | `paper-xray` + **一个**主图解技能（按内容形态二选一） |
+| 做快速视频 | quick-video | video / qa | `knowledge-explainer-skill`（路线 A） |
+| 做定制视频 | custom-video | publish / publish | `remotion-video`（路线 C，默认） |
+| 做组会分享 | seminar-slides | video / qa | `paper-to-beamer` + `paper-slides-to-video`（路线 B） |
+| 已有 HTML 动画转视频 | html-to-video | video / qa | `hyperframes`（路线 D） |
+| 只要封面 | cover-only | — | `paper-video-cover`（不建整条流水线） |
+| 发布到 B 站 | publish-bilibili | publish / publish | QA → 封面 → dry-run → 人工确认 → 上传 |
+| 上一版返工 | rework-previous | publish / publish | 读旧状态 → 复盘 → 改 brief → 指纹缓存只重跑受影响阶段 |
 
-## 阶段 6 · 复盘总结（强制）
+**默认原则**：没有明确要求发布 → 不进上传流程；没有要求视频 → 不执行 render/音频/视频 QA。
 
-调用 **`video-retrospective`**，产出：
+## 条件触发规则（P0 改为"触发 + 可验证证据"，唯一事实源：registry/contracts.yaml）
 
-1. `6-review/retrospective.md`：一句话结论、6 维打分（每项带证据）、
-   有效做法、无效做法（现象→根因→修复→固化成哪条规则）、数据、下一支片子的默认值。
-2. 项目级 `lessons.md`：只写可迁移的规则，格式 `- [类别] 规则 —— 由哪次经历得来`。
-3. **写回技能**：至少把 1 条硬规则写进 `prompt-forge` 的禁止清单 /
-   `remotion-video` 的铁律 / 本技能的质量底线。
-4. `pipeline-state.json` 标记 `retrospective: done`。
+每条规则五字段：`触发条件 → 唯一责任技能 → 必需产物 → 验收判据 → 失败行为`。
+**flowchart 与 visual-explainer、motion-lab 与 wise-motion 不再同时强制**——由路由器按内容形态/运行时选择，未选中的必须写 route-decision（含理由）：
 
-**完成判据**：没有 `retrospective.md` 不算交付；用户未验收就自称完成的，该项直接记 5 分以下。
+```python
+from paperpipe import receipts
+receipts.record_route_decision(ctx, "figures", "visual-explainer", "skipped",
+                               "内容形态为 AI/ML 模型 → 选 flowchart；通用图解不需要")
+```
 
-## 路由表
+要点摘录（全表见 contracts.yaml）：
+- 有视频目标 → `design-intake`（或执行器落"明确默认假设" receipt）；
+- 任何视觉生成 → `prompt-forge` 先出 `0-brief/brief.md`；无 brief 不得写代码/渲帧；
+- 旁白已起草未 TTS → `humanize-writing`（render 阶段验证 receipt）；
+- arXiv 输入 → `paper-download-arxiv-paper-source`；本地 PDF 需结构化 → `pdf-to-markdown`；
+- AI/ML 原理图 → `flowchart`；通用图 → `visual-explainer`；工程架构 → `dynamic-archify`；
+  协议 → `network-protocol-viz`；物理直觉 → `anatomy`（组内二选一，写 route-decision）；
+- Remotion 动效 → 查 `wise-motion`；HTML/CSS 动效 → 查 `motion-lab`（按运行时选一，写 route-decision）；
+- 制作动效前 → `motion-doctrine`（非条件，必读）；自定义缓动 → `cut-the-curve`；
+- 渲染完成 → `video-qa-frameproof`（机器层由执行器内置同源硬校验）+ `video-technical-review` + `layout-safety-review`（receipt）；
+- 交付后 → `video-retrospective`（六维评分+证据+receipt，validate_review 程序化核对）；
+- 发布 → `paper-video-cover`；真实上传 → 人工确认 + 哈希匹配 + 回执存在。
 
-| 用户诉求 | 执行 |
+## 子智能体何时调用（唯一事实源：registry/agents.yaml）
+
+| 角色 | 触发 |
 |---|---|
-| "讲透这篇论文" | 0 → 1 → 2，交付 MD/HTML |
-| "画个图讲清机制" | 0.5（轻）→ 1 → 2 → 3 |
-| "做成讲解视频" | 0 → 0.5 → 1 → 2 → 4（默认 C）→ 6 |
-| "组会分享" | 0 → 0.5 → 1 → 2 → 4B → 6 |
-| "发到 B 站" | 全程 + 5 |
-| "只要封面" | 1 → 2（快读）→ paper-video-cover |
-| "上一版不行" | 先写失败复盘 → 改 brief → 再动手 |
+| fact_checker | 论文 ≥20 页 / 公式多 / 数字结论重要 / 用户要求"讲透""严谨核对" |
+| visual_planner | 视频 >5 分钟或镜头 >8 个 |
+| narration_editor | 旁白复杂或用户反馈过语速/重复 |
+| technical_qa + visual_qa | 渲染完成后**并行**（各自输出目录） |
+| release_reviewer | 真实发布前 |
+| 不拆 | 简单摘要 / 单张静态图 / 封面任务 |
 
-## 状态契约
+并行纪律：fact_checker 与 visual_planner 可并行（都只读固定版本输入快照）；
+最终整合、pipeline-state.json 写入、发布必须串行；禁止两个 agent 同时写
+brief.md / pipeline-state.json / 同一视频源文件。
 
-产物统一放 `output/<paper-id>/`：
-`0-brief/` · `1-acquire/` · `2-xray/` · `3-figures/` · `4-video/`（或 `5-video-final/`）· `6-review/`
-阶段状态写 `pipeline-state.json`，中断后可从任一阶段续跑。
+## 调用凭据（receipt）纪律
 
-## 执行器（paperpipe）
+每次技能/工具/子智能体调用后落 receipt，执行器只认 receipt 不认"文档里提过名字"：
 
-上述阶段已有统一执行器：`python -m paperpipe init|run|resume|status|validate|review|publish`。
-- 自动模式跑到各阶段门（upload_ready）；xray 深读/图解文案/视觉叙事/听审/事实确认/真实上传保留人审门。
-- 状态机/日志/缓存/续跑见 WORKFLOW.md §15。技能走完仍必须走阶段 6 复盘并写回本技能。
+```
+output/<run-id>/receipts/skills/<stage>-<skill_id>-<n>.json   # 由 paperpipe.receipts.write_skill_receipt 生成
+output/<run-id>/receipts/tools/… · receipts/agents/… · receipts/route-decisions.json
+```
 
-## 强制调用矩阵（v1.2 新增）
+技能 receipt 示例字段：`skill_id / stage / trigger / input_hashes / output_paths / agent_id / status / evidence`。
 
-详见 WORKFLOW.md §16。核心规则：
+## 阶段状态与停止位置（8 态，schema paperpipe-state/3）
 
-- **P0 不调不许交付**：`pdf-to-markdown` / `motion-doctrine` / `design-taste-frontend` / `flowchart` / `visual-explainer` / `cut-the-curve` / `video-qa-frameproof` / `video-technical-review` / `layout-safety-review` / `paper-video-cover`
-- **动效库匹配**：每镜头先查 `motion-lab` / `wise-motion`（v1.1 已固化）
-- **style 跨集延续**：沿袭上一版风格内核，变更需在设计访谈记录
-- **封面**：`paper-video-cover` 在发布前必跑
+`pending → running → passed`；`waiting_for_agent`（等技能产出）· `waiting_for_human`（人审门）·
+`failed_retryable`（可 retry）· `failed_permanent`（需改内容/配置）· `not_applicable`（target 不含）。
+**waiting_\* 与 failed_\* 一律停止下游**；前置必须全 passed/not_applicable；
+target 终止阶段：md→xray · figures→figures · video→qa · publish→publish。
+旧 schema（/1、/2）的 run 是 legacy：status 只读，resume/retry/publish 拒绝（重建用 `init --force`）。
+
+## 执行器命令
+
+```bash
+python -m paperpipe init 1706.03762 --run-id my-run --target video   # 建 run
+python -m paperpipe run --auto            # 自动跑到第一个等待/失败处
+python -m paperpipe resume                # 指纹缓存续跑
+python -m paperpipe retry <stage>         # 过前置门禁后重试
+python -m paperpipe status [--json] / validate [--target video]
+python -m paperpipe review --confirm      # 人审门（六维+证据+receipt 程序化核对）
+python -m paperpipe publish --dry-run | --confirm <run_id>   # 双门
+```
+
+## 交付清单（路由器第 12 步输出）
+
+每个阶段完成后列出：产物路径、对应 receipt、阶段状态、下一动作（继续/等待谁/失败原因）。
+没有 `6-review/retrospective.md` 不算交付；用户未验收就自称完成的，该项直接记 5 分以下。

@@ -1,22 +1,24 @@
-"""paperpipe 回归测试（可直接 python -m paperpipe.tests.test_regressions 运行）。
+"""paperpipe 回归测试 v2（python -X utf8 -m paperpipe.tests.test_regressions）。
 
-覆盖审查 13 条中的关键场景：
+覆盖原审查 13 条中的执行器机械层（人审/发布/凭据/交接/门禁已拆分到
+test_review_publish / test_receipts / test_handoff / test_gates）：
   T1 缓存失效：上游产物变化 → 下游指纹变化 → 自动降级重跑
   T2 损坏视频：QA 对无 moov 文件 → failed（不误报 passed）
   T3 路径越界：register_artifact 拒绝运行目录外文件；run-id 白名单
-  T4 审核门绕过：无 QA passed / 有占位符时 review --confirm 拒绝
-  T5 上传未执行却报成功：publish --confirm 未配置 command 时不得置 uploaded
-  T6 发布门依赖 QA：QA failed 时 publish 不得 passed
+  T4 target 终止阶段：md/figures/video/publish 终点正确
+  T5 状态契约：schema v3、8 状态、旧 schema 标记 legacy
+  T6 注册表一致：manifest 数 = 本地技能数 = registry 数 = 66
 """
 from __future__ import annotations
 import json, os, sys, tempfile, shutil
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from paperpipe.adapters import QaAdapter, PublishAdapter, RuntimeCtx, validate_review
+from paperpipe import registry
+from paperpipe.adapters import QaAdapter, RuntimeCtx
 from paperpipe.config import DEFAULTS
 from paperpipe.runner import fingerprint
-from paperpipe.state import RunState
+from paperpipe.state import RunState, SCHEMA, STATUSES
 from paperpipe.util import atomic_write_text
 
 PASS, FAIL = 0, 0
@@ -24,10 +26,10 @@ def check(name, cond, detail=""):
     global PASS, FAIL
     if cond:
         PASS += 1
-        print(f"  ✓ {name}")
+        print(f"  [OK] {name}")
     else:
         FAIL += 1
-        print(f"  ✗ {name} {detail}")
+        print(f"  [FAIL] {name} {detail}")
 
 def make_run(tmp, files=None):
     rd = os.path.join(tmp, "run")
@@ -39,7 +41,8 @@ def make_run(tmp, files=None):
             open(p, 'wb').write(content)
         else:
             atomic_write_text(p, content)
-    return RuntimeCtx(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), rd, dict(DEFAULTS), rs)
+    return RuntimeCtx(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                      rd, dict(DEFAULTS), rs)
 
 def main():
     tmp = tempfile.mkdtemp(prefix="paperpipe-regression-")
@@ -55,6 +58,14 @@ def main():
         ctx2.cfg["render"] = {"composition": "SomeComp"}
         fp_b = fingerprint(ctx2, "render")
         check("render 配置变化 → 指纹变化", fp_a != fp_b)
+        from paperpipe import runner as _runner
+        old_ver = _runner.VERSION
+        try:
+            _runner.VERSION = "9.9.9"
+            fp_c = fingerprint(ctx2, "render")
+        finally:
+            _runner.VERSION = old_ver
+        check("执行器升版 → 指纹全量失效", fp_c != fp_a and fp_c != fp_b)
 
         print("T2 损坏视频：QA 必须 failed")
         ctx3 = make_run(tmp, {"4-video/final.mp4": b"\x00" * 4096})
@@ -78,56 +89,29 @@ def main():
         except SystemExit:
             check("run_id 白名单", True)
 
-        print("T4 审核门：占位符/无 QA 时拒绝确认")
-        ctx5 = make_run(tmp, {"6-review/retrospective.md": "占位 __/10 未填",
-                              "6-review/lessons.md": "# Lessons\n- [节奏] 规则 —— 测试"})
-        ok, problems, _ = validate_review(ctx5)
-        check("无 QA passed → 拒绝", not ok and any("QA" in p for p in problems), str(problems))
-        # 补 QA passed + 去 QA 依赖后：占位符检查
-        ctx5.rs.stage("qa")["status"] = "passed"
-        ok2, problems2, _ = validate_review(ctx5)
-        check("占位符 __/10 被识别", not ok2 and any("__" in p for p in problems2), str(problems2))
+        print("T4 target 终止阶段")
+        for t, want in (("md", "xray"), ("figures", "figures"), ("video", "qa"), ("publish", "publish")):
+            check(f"{t} → terminal {want}", registry.terminal_stage(t) == want)
+        check("md 不含 render", "render" not in registry.target_stages("md"))
+        check("video 不含 publish", "publish" not in registry.target_stages("video"))
 
-        print("T5 上传未执行不得报成功")
-        ctx6 = make_run(tmp, {"4-video/final.mp4": b"\x00" * 4096,
-                              "6-review/retrospective.md": "已填", "6-review/lessons.md": "- [节奏] 规则 —— 测试"})
-        # 绕过文件级校验不行：validate_review 会查 QA passed 与哈希；先伪造状态与占位合规
-        ctx6.rs.stage("qa")["status"] = "passed"
-        res6 = PublishAdapter().run(ctx6)
-        pub6 = ctx6.rs.data["publish"]
-        check("QA failed 前提下 publish 不得 passed/uploaded",
-              res6.status in ("warn", "failed", "blocked") and not pub6["uploaded"],
-              f"got {res6.status}")
-        # 正常门禁齐备但未配置 command：--confirm 语义 → 不得 uploaded
-        import subprocess, glob
-        ff = glob.glob(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                    "remotion-studio", "node_modules", "@remotion", "*", "ffmpeg.exe"))[0]
-        real_mp4 = os.path.join(ctx6.run_dir, "4-video", "final.mp4")
-        subprocess.run([ff, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=64x64:rate=10:duration=1",
-                        "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
-                        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", real_mp4],
-                       capture_output=True)
-        qa6 = QaAdapter().run(ctx6)
-        check("1s 合法视频 QA（宽高不符预期会 failed——验证校验生效）", qa6.status in ("passed", "failed"),
-              f"got {qa6.status}: {(qa6.error.message if qa6.error else '')[:80]}")
-        ctx6.rs.stage("qa")["status"] = "passed"
-        # review 哈希绑定：确认后改 lessons → 审核失效
-        ok3, _, hashes = validate_review(ctx6)
-        ctx6.rs.data["review"].update({"confirmed": True, "hashes": hashes})
-        atomic_write_text(os.path.join(ctx6.run_dir, "6-review/lessons.md"), "- [节奏] 新规则 —— 改动内容")
-        ok4, problems4, _ = validate_review(ctx6)
-        check("确认后产物变更 → 审核失效", not ok4 and any("变更" in p or "占位" in p or "评分" in p for p in problems4),
-              str(problems4))
+        print("T5 状态契约")
+        check("schema v3", SCHEMA == "paperpipe-state/3", SCHEMA)
+        check("8 状态", len(STATUSES) == 8 and "warn" not in STATUSES and "blocked" not in STATUSES)
+        rs_old = RunState.create(os.path.join(tmp, "old"), "old", "1706.03762", "video", dict(DEFAULTS))
+        rs_old.data["schema"] = "paperpipe-state/2"
+        check("旧 schema → legacy", rs_old.is_legacy)
 
-        print("T6 打包清单匹配")
-        import json
-        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        man = json.load(open(os.path.join(root, "pack", "paper-explain-skills-pack.json"), encoding="utf-8"))
-        local = set(os.listdir(os.path.join(root, ".zcode", "skills")))
-        check("manifest 数 = 本地技能数", man["count"] == len(local) == len(man["install"]["skillDirs"]),
-              f"{man['count']} vs {len(local)}")
-        missing = [s for s in man["install"]["skillDirs"] if s not in local]
-        check("manifest 无缺失技能", not missing, str(missing))
+        print("T6 注册表一致（66）")
+        man = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))), "pack", "paper-explain-skills-pack.json"), encoding="utf-8"))
+        local = set(os.listdir(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))), ".zcode", "skills")))
+        check("manifest 数 = 本地数 = registry 数 = 66",
+              man["count"] == len(local) == len(man["install"]["skillDirs"]) == len(registry.skill_ids()) == 66,
+              f"{man['count']}/{len(local)}/{len(registry.skill_ids())}")
+        reg_problems = registry.validate_registry(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        check("registry 双向差集为空", not reg_problems, str(reg_problems))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n结果: {PASS} 通过 / {FAIL} 失败")

@@ -1,86 +1,59 @@
-# PaperVideo 论文讲解技能包（PaperVideo Skills Pack）
+# PaperVideo 打包说明（两种发行物，职责分离）
 
-把本工作区这套论文讲解技能套件打成 zip，供其他项目复用。
+本目录产出**两种发行物**，各自承诺不同，不要混用：
 
-## 安装方式
+## 1. 技能包 `paper-explain-skills-pack.zip`（装技能，不含执行器）
 
-### 方式 A：全局安装（推荐，所有项目可用）
+内容：`skills/`（66 个技能）+ `WORKFLOW.md`（流程总纲）+ `design-picker.html`（风格选择器）+ `paper-explain-skills-pack.json`（清单）+ `INSTALL.md`（本说明副本）。
 
-解压后把技能目录复制到用户全局技能目录：
+**不含 `paperpipe/`，不承诺可以直接运行执行器。** 装完即用技能方法论；
+要跑状态机请改用工作区包。
+
+安装（三选一）：
 
 ```bash
-# Windows / PowerShell
+# 全局（推荐）
 Expand-Archive paper-explain-skills-pack.zip -DestinationPath .
 xcopy /E /I skills "%USERPROFILE%\.zcode\skills"
 
-# macOS / Linux
-unzip paper-explain-skills-pack.zip
-cp -r skills/* ~/.zcode/skills/
+# 项目级：把 skills/ 放到 <project>/.zcode/skills/ 或 .agents/skills/
+
+# 按需挑选：打开 paper-explain-skills-pack.json，只复制需要的技能目录
 ```
 
-之后任意项目/目录中启动 ZCode，技能即被发现。
+依赖（技能方法论的运行前提，按需自备）：Node.js 20.10+ / Remotion 工程 /
+edge-tts / ffmpeg / MinerU（可选，需 GPU）。工作区包之外没有 Remotion 工作台和引擎检出
+（engines/ 不随包分发，按 WORKFLOW-MAP.md 的上游 zip 自行检出）。
 
-### 方式 B：项目级安装
+## 2. 工作区包 `papervideo-workspace-pack.zip`（技能 + 执行器 + 文档）
 
-把 `skills/` 放到某个项目的 `.zcode/skills/` 或 `.agents/skills/` 下，只在该项目生效。
+内容：`paperpipe/`（Python ≥3.10，零第三方依赖）+ `skills/` + `WORKFLOW.md` +
+`WORKFLOW-MAP.md`（组件地图）+ `AGENTS.md` + `README.md` + `docs/`（基线报告）+ 清单。
 
-### 方式 C：按需挑选
-
-打开 `paper-explain-skills-pack.json`（清单文件），只复制 jobs 需要的技能目录到目标技能目录。
-
-## 使用
-
-安装后在 ZCode 中说：
-
-- 「讲这篇论文 https://arxiv.org/abs/1706.03762」
-- 「把这个论文做成中文讲解视频，六分钟」
-- 「画个图讲清这个 Transformer 机制」
-
-通常会进入 `paper-explain` 总编排流程（0 设计访谈 → 0.5 提示词锻造 → 1 获取 → 2 深度解读 → 3 图解 → 4 成片 → 5 发布 → 6 复盘）。
-
-## 依赖
-
-### npm / Node 依赖
-
-- Remotion 工作流（`remotion-video` / `knowledge-explainer-skill`）需要独立的 Remotion 工程；包内不含 node_modules。
-- HyperFrames 引擎（`hyperframes` 技能）源码在单独的 `engines/hyperframes` 代码库，需在使用前克隆或 npm install。
-
-### 外部工具
-
-- `edge-tts`（旁白合成）
-- `ffprobe` / `ffmpeg`（检测与编码；Remotion 自带二进制也可）
-- PDF 转 Markdown 的 MinerU（可选）
-
-## 执行器（paperpipe）在其他机器运行
-
-包内含 `paperpipe/` Python 包（≥3.10，无第三方依赖）。在**工作区根**（即 paperpipe 的上级目录）执行：
+在工作区根（即 paperpipe 的上级目录）执行：
 
 ```bash
-python -m paperpipe validate
-python -m paperpipe init <arXiv-ID> --run-id my-run
-python -m paperpipe run --auto
+python -X utf8 -m paperpipe --help          # 自检（-X utf8 防 GBK 控制台 ✓/✗ 问题，v2 测试输出已全 ASCII）
+python -X utf8 -m paperpipe validate --target md
+python -X utf8 -m paperpipe init <arXiv-ID> --run-id my-run --target video
+python -X utf8 -m paperpipe run --auto
+python -X utf8 -m paperpipe resume / status --json / validate
+python -X utf8 -m paperpipe review --confirm       # 人审门
+python -X utf8 -m paperpipe publish --dry-run | --confirm <run_id>   # 双门
 ```
 
-若不在根目录，设 `PYTHONPATH` 指向解压目录：`set PYTHONPATH=解压目录`（Windows）或
-`export PYTHONPATH=解压目录`（macOS/Linux）。Remotion 渲染还需 `remotion-studio/`（npm install）。
+注意：validate 的 video 目标要求 `remotion-studio/`（包内不含，需按 WORKFLOW-MAP.md §7 自建）；
+技能 receipt（`output/<run>/receipts/`）由编排 agent 调用技能后生成，执行器只验证。
+
+## 打包脚本自检（make-pack.ps1 v2）
+
+1. 本地 ↔ manifest **双向差集**；每个技能有 SKILL.md；manifest.count 一致（66）；
+2. 排除 `__pycache__/ *.pyc / node_modules / *.mp4 / *.pdf / *.wav`；
+3. **zip 回读**：条目齐全、技能数一致、无排除物；
+4. 工作区包在临时目录解压后跑 `python -X utf8 -m paperpipe --help` 与 `validate --target md`。
 
 ## 清单
 
-- 64 个技能定义（SKILL.md + 可能的 scripts / references / templates / assets）
-- `WORKFLOW.md`：完整阶段/产物/门槛/故障排查文档
-- `design-picker.html`：风格可视化选择器
-
-## paperpipe 执行器（v1.0 起）
-
-包内含 `paperpipe/` Python 包——统一执行器，把 64 个技能串成可执行 DAG：
-
-```bash
-python -m paperpipe init 1706.03762 --target video
-python -m paperpipe run --auto        # 自动跑到 upload_ready（人审门除外）
-python -m paperpipe resume / status --json / validate
-python -m paperpipe review --confirm  # 人审门
-python -m paperpipe publish --dry-run | --confirm <run_id>
-```
-
-自动：design-intake/brief 生成、arXiv 获取、TTS、渲染、编码、QA、缓存、续跑。
-人审门（不可自动通过）：xray 深读、图解文案、视觉叙事/听审、事实确认、retrospective、真实上传。
+- **66 个技能**（paperpipe/registry/skills.yaml 为技能注册表的唯一事实源，本 manifest 与其双向校验）
+- 路由表/阶段合同/子智能体角色：`paperpipe/registry/{routes,contracts,agents}.yaml`（工作区包）
+- 文档职责：`WORKFLOW.md` 流程权威 · `WORKFLOW-MAP.md` 组件地图 · `AGENTS.md` 入口规则 · 本文件只描述发行物

@@ -1,0 +1,67 @@
+# paperpipe 注册表 · agents —— 子智能体角色（唯一事实源）
+# 触发原则：按风险与独立性拆分，不每个任务都拆；简单摘要/单张静态图/封面不默认拆。
+# 纪律：子智能体不直接修改其他 agent 正在写的文件；每个 handoff 有输入快照、输出目录、状态与回传格式。
+
+agents:
+  - id: researcher
+    purpose: 读取论文并生成事实源（deep-read 骨架补全）
+    trigger: 论文 ≥20 页或公式密集
+    inputs: [paper_src/]
+    outputs: [2-xray/deep-read.md]
+    parallel_with: [fact_checker]
+    forbidden: 不得同时改 brief.md；只读固定版本的 paper_src 输入快照
+  - id: fact_checker
+    purpose: 独立核验数字、公式、结论与归属
+    trigger: 论文 ≥20 页 / 数字结论重要 / 用户要求"讲透""严谨核对"
+    inputs: [2-xray/deep-read.md, paper_src/]
+    outputs: [handoffs/<id>/response.json]
+    parallel_with: [researcher, visual_planner]
+    forbidden: 不得直接改 deep-read.md——只回传问题清单与证据，由整合方落盘
+  - id: visual_planner
+    purpose: 生成镜头、图解与动效匹配登记表
+    trigger: 视频 >5 分钟或镜头 >8 个
+    inputs: [2-xray/deep-read.md, 0-brief/brief.md]
+    outputs: [3-figures/README.md, 4-video/narration.json]
+    parallel_with: [fact_checker]
+    forbidden: 不得写 pipeline-state.json；不得与 narration_editor 同时写 narration.json
+  - id: narration_editor
+    purpose: 旁白与 TTS 可读性、术语一致性
+    trigger: 旁白复杂（长句多/术语新）或用户反馈过语速/重复
+    inputs: [4-video/narration.json, 2-xray/deep-read.md]
+    outputs: [4-video/narration.json（独占写窗口）]
+    parallel_with: []
+    forbidden: 与 visual_planner 写冲突；改动前取输入快照
+  - id: render_worker
+    purpose: 只负责渲染和编码命令执行
+    trigger: render 阶段机器执行
+    inputs: [4-video/narration.json, render.composition/script 配置]
+    outputs: [4-video/render-raw.mp4, 4-video/final.mp4, receipts/tools/*.json]
+    parallel_with: []
+    forbidden: 不做内容决策；不得跳过产物存在性断言
+  - id: technical_qa
+    purpose: 音轨/编码/冻结帧/空帧机器与内容技术检查
+    trigger: 渲染完成后（与 visual_qa 并行）
+    inputs: [4-video/final.mp4]
+    outputs: [5-video-final/qa_report.json, receipts/skills/qa-*.json]
+    parallel_with: [visual_qa]
+    forbidden: 不得同时写同一 QA 报告文件（各自目录，整合方合并）
+  - id: visual_qa
+    purpose: 遮挡/安全区/构图/字幕审查
+    trigger: 渲染完成后（与 technical_qa 并行）
+    inputs: [4-video/final.mp4 抽帧, 4-video/narration.json]
+    outputs: [receipts/skills/qa-layout-safety-review*.json]
+    parallel_with: [technical_qa]
+    forbidden: 同上
+  - id: release_reviewer
+    purpose: 确认发布条件（QA/复盘/哈希/封面/回执）
+    trigger: 真实发布前
+    inputs: [pipeline-state.json, 5-video-final/]
+    outputs: [receipts/agents/<id>.json]
+    parallel_with: []
+    forbidden: 不执行上传；只验证与出具结论
+
+# 并行规则（整合方必须遵守）：
+# - acquire 完成后：fact_checker 与 visual_planner 可并行，但都只读固定版本的论文输入快照；
+# - render 完成后：technical_qa 与 visual_qa 可并行（各自输出目录）；
+# - 最终整合、pipeline-state.json 写入、发布动作必须串行；
+# - 禁止两个 agent 同时写 brief.md / pipeline-state.json / 同一视频源文件。

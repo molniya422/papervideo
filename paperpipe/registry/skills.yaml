@@ -1,0 +1,314 @@
+# paperpipe 注册表 · skills —— 技能注册表（66 个，唯一事实源）
+# 每个技能声明：use 适用条件 · in 输入 · out 输出 · misuse 禁止误用 · alt 可替代技能。
+# pipeline = 流水线相关（全字段）；catalog = 领域不符/演示库（简条目，同样受合法性检查约束）。
+# 技能本体在 .zcode/skills/<id>/SKILL.md。
+
+pipeline:
+  - id: paper-explain
+    use: 用户要求讲论文/做成讲解视频时的总路由器
+    in: 用户意图 + 论文输入
+    out: 执行计划（target/阶段/技能/子智能体）
+    misuse: 不得跳过路由直接写动画代码
+    alt: 无（总入口）
+  - id: design-intake
+    use: 有视觉交付目标时的设计访谈
+    in: 用户偏好（或默认值）
+    out: 0-brief/design-intake.md
+    misuse: 用户在线时不问直接猜；无默认假设标注
+    alt: design-picker.html 自选
+  - id: prompt-forge
+    use: 任何画面生成之前的合同锻造
+    in: design-intake.md
+    out: 0-brief/brief.md（三套方案+XML+禁止清单+8分验收）
+    misuse: 无 brief 写代码/渲帧；禁止清单写"不要 low"这类不可判项
+    alt: 无
+  - id: humanize-writing
+    use: 旁白进 TTS 之前
+    in: 旁白草稿
+    out: 去 AI 味句子集（narration.json 输入）
+    misuse: 事后补审；只删不重组
+    alt: 无
+  - id: paper-xray
+    use: 需要论文事实/机制说明
+    in: paper_src/（TeX 或 MD）
+    out: 2-xray/deep-read.md
+    misuse: 只写摘要不给"会怎么坏"；推断不标等级
+    alt: pdf-to-markdown（前置结构化）
+  - id: paper-download-arxiv-paper-source
+    use: 输入为 arXiv id
+    in: arXiv id
+    out: paper_src/（TeX+Figures）
+    misuse: 有 id 却直接抓 PDF（公式质量差）
+    alt: pdf-to-markdown（本地 PDF 时）
+  - id: pdf-to-markdown
+    use: 本地 PDF 且需结构化文本（公式/表格）
+    in: PDF
+    out: paper_src/paper.md
+    misuse: 无 GPU 环境强跑
+    alt: 直接读 PDF
+  - id: visual-explainer
+    use: 通用系统/流程/对比图解（默认主图解技能）
+    in: deep-read.md 机制点
+    out: 3-figures/*.html
+    misuse: 一图塞多个机制点
+    alt: flowchart / dynamic-archify / anatomy（按内容形态）
+  - id: flowchart
+    use: AI/ML 模型原理图
+    in: deep-read.md 机制点
+    out: 3-figures/*.html
+    misuse: 与 visual-explainer 同时全量使用（应按形态二选一）
+    alt: visual-explainer
+  - id: dynamic-archify
+    use: 工程架构/数据流
+    in: deep-read.md
+    out: 3-figures/*.html
+    misuse: 用于非工程内容
+    alt: visual-explainer
+  - id: network-protocol-viz
+    use: 网络协议类论文
+    in: deep-read.md
+    out: 3-figures/*.html
+    misuse: 非协议内容套用
+    alt: visual-explainer
+  - id: anatomy
+    use: 需要物理结构直觉（等距机械插画）
+    in: deep-read.md
+    out: 3-figures/*.html
+    misuse: 纯抽象概念硬画机械
+    alt: flowchart
+  - id: scholar-notes
+    use: 用户要学习笔记页
+    in: deep-read.md
+    out: 3-figures/notes.html
+    misuse: 当作视频图解主路线
+    alt: visual-explainer
+  - id: card-theater
+    use: 叙事型分步演示
+    in: deep-read.md
+    out: 3-figures/*.html
+    misuse: 用于数据密集内容
+    alt: stacked-data-cards
+  - id: stacked-data-cards
+    use: 论点数据卡牌堆（录屏即成片）
+    in: 结论清单
+    out: 3-figures/*.html
+    misuse: 与口播时长不对齐
+    alt: card-theater
+  - id: ppt-animation
+    use: PPT 风格翻页演示（适配录屏）
+    in: 大纲
+    out: 3-figures/*.html
+    misuse: 当作最终成片而不录屏
+    alt: paper-slides-to-video
+  - id: remotion-video
+    use: 定制讲解成片（路线 C，默认）
+    in: brief + narration.json + composition
+    out: 4-video/render-raw.mp4
+    misuse: setTimeout/随机数（违反纯函数铁律）；字幕按权重切分
+    alt: knowledge-explainer-skill（快速）/ hyperframes（HTML 成片）
+  - id: knowledge-explainer-skill
+    use: 快速视频（路线 A 模板）
+    in: markdown 文稿
+    out: mp4
+    misuse: 用于正式交付档
+    alt: remotion-video
+  - id: hyperframes
+    use: 已有 HTML 动画 → 确定性 MP4（路线 D）
+    in: HTML 页面
+    out: mp4
+    misuse: 引擎未检出时假设已安装
+    alt: remotion-video
+  - id: hyperframes-cli
+    use: hyperframes 命令行细节
+    in: 引擎参数
+    out: 渲染命令
+    misuse: 与 remotion-to-hyperframes 混用
+    alt: 无
+  - id: remotion-to-hyperframes
+    use: Remotion 工程迁移到 hyperframes
+    in: Remotion 工程
+    out: hyperframes 工程
+    misuse: 迁移代替重写当收益为负时
+    alt: 无
+  - id: motion-doctrine
+    use: 实际制作任何动效之前（网关，先读）
+    in: 动效需求
+    out: 法则约束（Vector Law 等）落到 brief/代码注释
+    misuse: 写完动效再补读
+    alt: 无（前置必读）
+  - id: cut-the-curve
+    use: 使用自定义缓动曲线
+    in: easing 需求
+    out: 曲线选型出处标注
+    misuse: 凭感觉写 cubic-bezier
+    alt: 内置 spring
+  - id: seam-craft
+    use: 有转场的镜头
+    in: 转场设计
+    out: 接缝处理规则落地
+    misuse: 硬切当转场
+    alt: 无
+  - id: oversized-cursor
+    use: 光标驱动演示
+    in: 交互脚本
+    out: 光标动效
+    misuse: 讲解片滥用光标
+    alt: 无
+  - id: captions-overlay
+    use: 有字幕的成片
+    in: narration.json
+    out: 逐句字幕与音频同源
+    misuse: 字幕按权重切分时长（铁律禁止）
+    alt: 无
+  - id: motion-lab
+    use: HTML/CSS 运行时动效（先查库再动手）
+    in: 动效描述
+    out: effects/<id>.md 源码 + 匹配登记
+    misuse: Remotion 运行时硬搬 CSS 动效；未登记缺口就手写
+    alt: wise-motion（Remotion 时）
+  - id: wise-motion
+    use: Remotion 运行时动效（先查库再动手）
+    in: 动效描述
+    out: match/show/export 源码 + 匹配登记
+    misuse: CSS 运行时硬搬 JSX；导出路径不改造
+    alt: motion-lab（HTML 时）
+  - id: video-qa-frameproof
+    use: 视频渲染完成后的机器技术 QA
+    in: final.mp4
+    out: qa_report（空帧/冻结/编码）
+    misuse: 用肉眼抽帧替代机器检查
+    alt: paperpipe qa 内置同源硬校验
+  - id: video-technical-review
+    use: QA 机器检查通过后、交付前的内容技术审查
+    in: final.mp4 + 抽帧
+    out: 审查 receipt
+    misuse: 与 frameproof 混为一步
+    alt: 无
+  - id: layout-safety-review
+    use: 安全区/遮挡/字幕审查
+    in: final.mp4 抽帧
+    out: 审查 receipt
+    misuse: 遮挡只靠静帧肉眼
+    alt: 无
+  - id: compare-video-runs
+    use: 多版本对比择优
+    in: 两个以上版本
+    out: 对比结论
+    misuse: 只有两版时硬跑
+    alt: 无
+  - id: video-retrospective
+    use: 视频交付后
+    in: 全部产物
+    out: retrospective.md + lessons.md
+    misuse: 复盘无证据/无规则写回
+    alt: 无（交付铁律）
+  - id: video-production-guide
+    use: 视频生产总方法论参考
+    in: 流程问题
+    out: 指导
+    misuse: 替代具体技能
+    alt: 无
+  - id: design-taste-frontend
+    use: 任何视觉生成之前
+    in: 主题
+    out: 审美清单（拒绝模板脸的落点）
+    misuse: 写了文档从未实际对照
+    alt: 无
+  - id: paper-video-cover
+    use: 用户要求发布或平台要求封面
+    in: 成片+元数据
+    out: 5-video-final/cover.png
+    misuse: 发布无封面
+    alt: hell-grind-aigc-skill（AI 生图封面时）
+  - id: paper-bilibili-uploader
+    use: 真实上传 B 站
+    in: final.mp4 + cover + 元数据
+    out: upload_receipt.json
+    misuse: 未 dry-run 直接传；无回执谎报已发
+    alt: paper-to-bilibili（一键编排）
+  - id: paper-to-beamer
+    use: 组会幻灯片（路线 B）
+    in: deep-read.md
+    out: beamer PDF
+    misuse: 模板宏缺失不修
+    alt: sustech-beamer-theme-fix（配套）
+  - id: paper-slides-to-video
+    use: 幻灯片 PDF → 配音 MP4
+    in: slides PDF
+    out: 横竖双 mp4
+    misuse: 配音不同步
+    alt: 无
+  - id: paper-to-bilibili
+    use: B 站全流程一键编排
+    in: 论文
+    out: 投稿
+    misuse: 跳过人工确认
+    alt: paper-bilibili-uploader（单步）
+  - id: sustech-beamer-theme-fix
+    use: 旧 Beamer 模板缺宏
+    in: 模板
+    out: 修复
+    misuse: 未遇到报错就预修
+    alt: 无
+  - id: business-motion-film
+    use: 产品/服务宣传短片 15-40s（路线 E）
+    in: 产品信息
+    out: 商业片
+    misuse: 用于论文讲解
+    alt: product-launch-motion / lieflat-code-video
+  - id: product-launch-motion
+    use: 产品发布动效（一镜到底/光标驱动）
+    in: 发布内容
+    out: 短片
+    misuse: 用于论文讲解
+    alt: lieflat-code-video
+  - id: lieflat-code-video
+    use: 产品发布片 Remotion Starter（12 kit 模块）
+    in: 发布内容
+    out: 短片工程
+    misuse: 引用 kit 模块当万能库
+    alt: product-launch-motion
+  - id: hell-grind-aigc-skill
+    use: 需要 AI 生图素材/概念封面
+    in: 素材需求
+    out: 七层提示词
+    misuse: 提示词无失败诊断直接重试
+    alt: 无
+  - id: video-artifact-intake
+    use: 复盘前产物清点
+    in: run 目录
+    out: 清点清单
+    misuse: 跳过清点直接复盘
+    alt: 无
+  - id: review-bundle
+    use: 打包评审材料
+    in: 产物
+    out: 评审包
+    misuse: 日常交付滥用
+    alt: 无
+  - id: skill-catalog
+    use: agent 发现可用技能
+    in: 需求
+    out: 技能索引
+    misuse: 替代本注册表
+    alt: paperpipe/registry/skills.yaml
+
+catalog:
+  - {id: changelog-video,    use: 版本变更视频，领域不符, misuse: 论文讲解套用, alt: 无, in: changelog, out: 短片}
+  - {id: code-mv-render,     use: 代码音乐视频/数据纪录片, misuse: 论文讲解套用, alt: remotion-video, in: 代码/数据, out: MV}
+  - {id: lemo-opuscar,       use: 59 种代码导演风格库, misuse: 无风格需求翻用, alt: 无, in: 脚本, out: 风格参考}
+  - {id: opus-video-skills,  use: 手绘水彩/水墨角色动画, misuse: 机制讲解套用, alt: 无, in: 角色脚本, out: Reel}
+  - {id: package-review-prompt, use: 打包评审提示词, misuse: 日常流程, alt: 无, in: 包, out: 评审提示}
+  - {id: phone-ui-demos,     use: 手机 UI 演示风格库, misuse: 论文讲解, alt: 无, in: UI 脚本, out: 演示}
+  - {id: segment-evidence,   use: 视频证据分段理解, misuse: 无参考视频时, alt: 无, in: 视频, out: 证据段}
+  - {id: segment-storyboard, use: 视频分段故事板, misuse: 无参考视频时, alt: 无, in: 视频, out: 故事板}
+  - {id: source-media-signals, use: 素材信号分析, misuse: 无素材时, alt: 无, in: 素材, out: 信号}
+  - {id: storyboard-extract, use: 参考视频镜头拆解, misuse: 无参考时, alt: 无, in: 视频, out: 分镜}
+  - {id: storyboard-ocr,     use: 参考视频 OCR, misuse: 无参考时, alt: 无, in: 视频, out: 文本}
+  - {id: storyboard-transitions, use: 参考视频转场分析, misuse: 无参考时, alt: 无, in: 视频, out: 转场表}
+  - {id: storyboard-understand, use: 参考视频叙事理解, misuse: 无参考时, alt: 无, in: 视频, out: 叙事}
+  - {id: swiss-shot-demos,   use: 瑞士风格分镜演示库, misuse: 当成品模板, alt: 无, in: 镜头需求, out: demo}
+  - {id: ui2v-motions,       use: GSAP 动效索引, misuse: Remotion 套用, alt: motion-lab, in: 动效需求, out: 索引}
+  - {id: video-shot-demos,   use: 分镜演示风格库, misuse: 当成品模板, alt: 无, in: 镜头需求, out: demo}
+  - {id: video-shots,        use: 镜头语言参考, misuse: 跳过 demo 直接拍, alt: 无, in: 镜头需求, out: 参考}
+  - {id: win11-ui-demos,     use: Win11 UI 演示风格库, misuse: 论文讲解, alt: 无, in: UI 脚本, out: 演示}

@@ -1,7 +1,7 @@
 {
   "name": "paper-explain-skills-pack",
   "version": "1.0.0",
-  "description": "PaperVideo paper explain skills pack: 63 skills + WORKFLOW.md + design-picker.html.",
+  "description": "PaperVideo paper explain skills pack: 66 skills + WORKFLOW.md + design-picker.html. Skills-only artifact; paperpipe ships in the workspace pack (papervideo-workspace-pack.zip).",
   "skillsRoot": ".zcode/skills",
   "count": 66,
   "install": {
@@ -96,5 +96,9 @@
     "package": "paperpipe",
     "entry": "python -m paperpipe",
     "version": "1.0.0"
+  },
+  "artifacts": {
+    "skills_pack": "paper-explain-skills-pack.zip",
+    "workspace_pack": "papervideo-workspace-pack.zip"
   }
 }

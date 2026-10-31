@@ -1,0 +1,237 @@
+# paperpipe 注册表 · contracts —— 阶段合同（唯一事实源）
+# 字段：requires(前置阶段) / primary_skill(主技能) / conditional_skills(条件技能，五字段：
+#   trigger 触发条件 · required_output 必需产物 · acceptance 验收判据 · on_fail 失败行为 · optional 可替代组)
+# / outputs / machine_gate(机器门) / human_gate(人工门) / subagents(子智能体角色，见 agents.yaml)
+# target 终止阶段：md→xray · figures→figures · video→qa · publish→publish
+
+targets:
+  md:
+    stages: [intake, brief, acquire, xray]
+    terminal: xray
+  figures:
+    stages: [intake, brief, acquire, xray, figures]
+    terminal: figures
+  video:
+    stages: [intake, brief, acquire, xray, figures, render, qa]
+    terminal: qa
+  publish:
+    stages: [intake, brief, acquire, xray, figures, render, qa, retrospective, publish]
+    terminal: publish
+
+stages:
+  intake:
+    requires: []
+    primary_skill: design-intake
+    conditional_skills:
+      - skill: design-intake
+        trigger: 有视频/图解/幻灯等视觉交付目标
+        required_output: 0-brief/design-intake.md
+        acceptance: 含选择表与一句话风格内核；用户不在线时逐项标注"默认"假设
+        on_fail: waiting_for_agent（等访谈结果或默认假设落盘）
+    outputs: [0-brief/design-intake.md]
+    machine_gate: 文件存在且含"风格内核"小节
+    human_gate: 用户在线时应回答访谈（不强制）
+    subagents: []
+
+  brief:
+    requires: [intake]
+    primary_skill: prompt-forge
+    conditional_skills: []
+    outputs: [0-brief/brief.md]
+    machine_gate: brief.md 存在且含 <acceptance>；storyboard 占位视为未定稿
+    human_gate: 三套方案取舍应由用户拍板（可默认并标注）
+    subagents: []
+
+  acquire:
+    requires: [brief]
+    primary_skill: paper-download-arxiv-paper-source
+    conditional_skills:
+      - skill: paper-download-arxiv-paper-source
+        trigger: 输入为 arXiv id
+        required_output: paper_src/（TeX 源码）
+        acceptance: paper_src 非空、公式为 LaTeX
+        on_fail: failed_retryable（网络类可重试）
+      - skill: pdf-to-markdown
+        trigger: 输入为本地 PDF 且需要结构化文本（公式/表格）
+        required_output: paper_src/paper.md
+        acceptance: Markdown 可读、图片路径有效
+        on_fail: route-decision 记录跳过理由（如无 GPU），回退直接读 PDF
+        optional: true
+    outputs: [paper_src/]
+    machine_gate: paper_src 目录非空
+    human_gate: null
+    subagents: []
+
+  xray:
+    requires: [acquire]
+    primary_skill: paper-xray
+    conditional_skills:
+      - skill: paper-xray
+        trigger: 需要论文事实/机制说明（所有 target）
+        required_output: 2-xray/deep-read.md
+        acceptance: 每个机制点有"会怎么坏"；推断标注【文中有据/推断/猜测】；数字对原文核对
+        on_fail: waiting_for_agent（骨架已生成，等 agent 按技能补全）
+    outputs: [2-xray/deep-read.md]
+    machine_gate: deep-read.md 存在、非骨架（无模板提示行）、含机制点清单
+    human_gate: 深读内容本身；事实存疑处由 fact_checker 子智能体独立复核
+    subagents: [researcher, fact_checker]
+
+  figures:
+    requires: [xray]
+    primary_skill: visual-explainer
+    conditional_skills:
+      - skill: flowchart
+        trigger: AI/ML 模型原理图
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 一图对应 deep-read 一个机制点；浏览器无脚本错误
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: visual-explainer
+        trigger: 通用系统/流程/对比图解
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: dynamic-archify
+        trigger: 工程架构/数据流图解
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: network-protocol-viz
+        trigger: 网络协议类内容
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: anatomy
+        trigger: 需要物理结构直觉（等距机械插画）
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: scholar-notes
+        trigger: 用户要学习笔记页
+        required_output: 3-figures/*.html
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: motion-doctrine
+        trigger: 实际制作任何动效之前
+        required_output: brief.md 中含动效法则读后摘要（Vector Law 等落点）
+        acceptance: 登记表每章动效有法则依据；exit 方向=entry 方向已核对
+        on_fail: waiting_for_agent（动效代码退回）
+      - skill: wise-motion
+        trigger: Remotion 运行时动效（route=remotion）
+        required_output: 3-figures/README.md 动效匹配登记（含 export 组件路径）或 route-decision 缺口理由
+        acceptance: 每章先 match.mjs 检索并登记命中/缺口
+        on_fail: waiting_for_agent（登记表补齐）
+        optional: true
+      - skill: motion-lab
+        trigger: HTML/CSS 动效（HTML 图解页、非 Remotion 运行时）
+        required_output: 3-figures/README.md 动效匹配登记或 route-decision 缺口理由
+        acceptance: 同上
+        on_fail: waiting_for_agent（登记表补齐）
+        optional: true
+      - skill: design-taste-frontend
+        trigger: 任何视觉生成
+        required_output: brief.md 含审美清单（概念从主题长出来的落点）
+        acceptance: 拒绝默认"居中标题+三卡+渐变"已有显式对应
+        on_fail: waiting_for_agent
+    outputs: [3-figures/README.md]
+    machine_gate: 登记表非空且每行含技能与产物路径
+    human_gate: 图解文案与隐喻
+    subagents: [visual_planner]
+
+  render:
+    requires: [figures]
+    primary_skill: remotion-video
+    conditional_skills:
+      - skill: humanize-writing
+        trigger: 旁白已起草、尚未进 TTS（narration.json 存在即触发）
+        required_output: receipts/skills/render-humanize-writing-*.json
+        acceptance: 一句一个语义单元、无"首先/其次/值得注意的是"、术语与 xray 一致
+        on_fail: waiting_for_agent（旁白退回改写）
+      - skill: remotion-video
+        trigger: route=remotion（定制视频，本工作台默认）
+        required_output: 4-video/render-raw.mp4
+        acceptance: 渲染命令成功且产物存在；纯函数动画（useCurrentFrame+interpolate/spring）
+        on_fail: failed_retryable（渲染失败重试）
+        optional: true
+      - skill: knowledge-explainer-skill
+        trigger: route=template（快速视频）
+        required_output: 4-video/render-raw.mp4
+        acceptance: 同上
+        on_fail: failed_retryable
+        optional: true
+      - skill: cut-the-curve
+        trigger: 使用自定义缓动曲线
+        required_output: brief.md 或代码注释标注 easing 选型出处
+        acceptance: 无"凭感觉"的缓动
+        on_fail: waiting_for_agent
+      - skill: captions-overlay
+        trigger: 有字幕（所有讲解视频）
+        required_output: 4-video/narration.json 逐句字幕与音频同源
+        acceptance: 字幕由逐句音频驱动，禁按权重切分
+        on_fail: failed_permanent（违反铁律）
+    outputs: [4-video/narration.json, 4-video/render-raw.mp4]
+    machine_gate: narration 存在→TTS→渲染→产物存在；命令与耗时写 tool receipt
+    human_gate: 视觉叙事与听审（交付前人工）
+    subagents: [visual_planner, render_worker, narration_editor]
+
+  qa:
+    requires: [render]
+    primary_skill: video-qa-frameproof
+    conditional_skills:
+      - skill: video-qa-frameproof
+        trigger: 视频渲染完成
+        required_output: 5-video-final/qa_report.json（机器检查）
+        acceptance: 流/规格/faststart/响度硬校验全过（本执行器内置同源检查）
+        on_fail: failed_permanent（QA 不达标不得交付）
+      - skill: video-technical-review
+        trigger: QA 机器检查通过后、交付前
+        required_output: receipts/skills/qa-video-technical-review*.json
+        acceptance: 内容级审查无画面缺陷结论
+        on_fail: waiting_for_agent（等审查 receipt）
+      - skill: layout-safety-review
+        trigger: 同上
+        required_output: receipts/skills/qa-layout-safety-review*.json
+        acceptance: 安全区/遮挡/字幕审查通过
+        on_fail: waiting_for_agent（等审查 receipt）
+    outputs: [5-video-final/qa_report.json]
+    machine_gate: ffprobe/流/规格/faststart/响度任一不达标 → failed_permanent
+    human_gate: 人眼抽帧（首帧/转场/最密/末帧）+ 听审
+    subagents: [technical_qa, visual_qa]
+
+  retrospective:
+    requires: [qa]
+    primary_skill: video-retrospective
+    conditional_skills:
+      - skill: video-retrospective
+        trigger: 视频交付后
+        required_output: 6-review/retrospective.md + lessons.md
+        acceptance: 六维全部有分且 ≥8、每项有证据、lessons ≥1 条具体规则
+        on_fail: waiting_for_human（复盘是人工门）
+    outputs: [6-review/retrospective.md, 6-review/lessons.md]
+    machine_gate: validate_review：评分齐+证据齐+无占位符
+    human_gate: 复盘结论与技能写回
+    subagents: []
+
+  publish:
+    requires: [qa, retrospective]
+    primary_skill: paper-video-cover
+    conditional_skills:
+      - skill: paper-video-cover
+        trigger: 用户要求发布或平台要求封面
+        required_output: 5-video-final/cover.png（或 cover.jpg）
+        acceptance: 16:10 封面存在且登记 receipt
+        on_fail: waiting_for_agent（封面缺失不进真实上传）
+      - skill: paper-bilibili-uploader
+        trigger: 真实上传（publish --confirm 且配置 publish.command）
+        required_output: 5-video-final/upload_receipt.json
+        acceptance: 上传回执 exit=0；无回执绝不置 uploaded
+        on_fail: failed_retryable（可重试）
+    outputs: [5-video-final/publish_plan.json]
+    machine_gate: review.confirmed + 哈希匹配 + 封面存在 + 回执存在才 uploaded
+    human_gate: review --confirm（人审哈希绑定）+ publish --confirm（双门）
+    subagents: [release_reviewer]
