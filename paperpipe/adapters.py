@@ -170,8 +170,8 @@ class AcquireAdapter(Adapter):
         os.makedirs(dst_dir, exist_ok=True)
         if plan["kind"] == "arxiv":
             pdf = os.path.join(dst_dir, f"{src}.pdf")
+            t0 = utcnow()
             if not os.path.exists(pdf):
-                t0 = utcnow()
                 try:
                     req = urllib.request.Request(self.ARXIV_PDF.format(id=src), headers={"User-Agent": f"paperpipe/{VERSION}"})
                     with urllib.request.urlopen(req, timeout=60) as r, open(pdf + ".partial", "wb") as f:
@@ -310,11 +310,39 @@ class RenderAdapter(Adapter):
             _write(ctx, "4-video/narration.README.md",
                    "# 渲染输入\n\n需要 agent 依据 deep-read.md 与 brief 产出：\n"
                    "1. `4-video/narration.json`（shots[].sentences[] 结构，样例见既有项目；"
-                   "旁白先过 humanize-writing，产 receipt）\n"
-                   "2. 在 paperpipe.yaml 配置 render.composition / render.script / render.sources\n\n"
-                   "就绪后重跑：`paperpipe resume` —— TTS/时间轴/渲染自动执行并按输入指纹缓存。\n")
+                   "旁白先过 humanize-writing，产 receipt；无旁白纯音乐片也用本文件承载逐句字幕时间轴）\n"
+                   "2. 在 paperpipe.yaml 配置 render.composition / render.script / render.sources"
+                   "（或路线 D：render.mode=hyperframes + render.command/cwd）\n\n"
+                   "就绪后重跑：`paperpipe resume` —— 渲染自动执行并按输入指纹缓存。\n")
             return StageResult("waiting_for_agent",
                                error=StageError("agent", "缺 4-video/narration.json（agent 产出 + humanize-writing receipt 后 resume 自动渲染）"))
+        # 路线 D：render.mode=hyperframes —— 通用命令模式（执行器只跑命令+写 tool receipt+断言产物）
+        if rcfg.get("mode") == "hyperframes" or rcfg.get("command"):
+            cmd = rcfg.get("command")
+            if not cmd:
+                raise StageError("agent", "render.mode=hyperframes 需配置 render.command（如 npx hyperframes render -o …）")
+            cwd = ctx.out(rcfg.get("cwd", ".")) if not os.path.isabs(rcfg.get("cwd", ".")) else rcfg["cwd"]
+            from shutil import which
+            npx = which("npx") or which("npx.cmd")
+            run_cmd = [npx] + cmd[1:] if cmd[0] == "npx" and npx else cmd
+            # 幂等：渲染产物 + tool receipt 已存在 → 跳过重渲（外部长任务已出片）
+            out_raw = ctx.out("4-video", "render-raw.mp4")
+            if os.path.exists(out_raw) and any(r.get("status") == "passed"
+                                               for r in receipts.list_tool_receipts(ctx, "render", "hyperframes-render")):
+                ctx.rs.register_artifact("render", out_raw, "video-raw")
+                return StageResult("passed", {"mode": "hyperframes", "cached": True})
+            import time as _t
+            t0 = _t.time()
+            r = subprocess.run(run_cmd, capture_output=True, text=True, timeout=21600, cwd=cwd)
+            receipts.write_tool_receipt(ctx, "render", "hyperframes-render", run_cmd, r.returncode,
+                                        seconds=round(_t.time() - t0, 1), note=(r.stderr or "")[-300:])
+            if r.returncode != 0:
+                raise StageError("transient", f"hyperframes 渲染失败({r.returncode}): {(r.stderr or r.stdout or '')[-600:]}")
+            out_raw = ctx.out("4-video", "render-raw.mp4")
+            if not os.path.exists(out_raw):
+                raise StageError("permanent", "渲染命令成功但 4-video/render-raw.mp4 缺失")
+            ctx.rs.register_artifact("render", out_raw, "video-raw")
+            return StageResult("passed", {"mode": "hyperframes", "cwd": rcfg.get("cwd")})
         if not script or not os.path.exists(os.path.join(ctx.root, script) if not os.path.isabs(script) else script):
             raise StageError("agent", f"render.script 未配置或不存在（拒绝拿示例工程代跑）：{script}")
         if not composition:
@@ -427,21 +455,48 @@ class QaAdapter(Adapter):
                 issues.append("响度字段不可解析")
         else:
             issues.append("未获得响度数据")
+        if issues:
+            return StageResult("failed", data={"issues": issues},
+                               error=StageError("permanent", "QA 不达标: " + "; ".join(issues)))
+        # 布局审计零遮挡硬门槛（媒体检查全过后才生效；hyperframes check 产物或 layout_audit.json）
+        layout_report = None
+        cand = ctx.out("5-video-final", "layout_audit.json")
+        if os.path.exists(cand):
+            layout_report = json.load(open(cand, encoding="utf-8"))
+        else:
+            cwd = (ctx.cfg.get("render") or {}).get("cwd")
+            base = ctx.out(cwd) if cwd and not os.path.isabs(cwd) else (cwd or "")
+            checks = os.path.join(base, ".hyperframes", "artifacts", "checks") if base else ""
+            if checks and os.path.isdir(checks):
+                newest = max((os.path.join(checks, f) for f in os.listdir(checks) if f.endswith(".json")),
+                             key=os.path.getmtime, default=None)
+                if newest:
+                    layout_report = json.load(open(newest, encoding="utf-8"))
+        layout_errors = []
+        if layout_report is None:
+            return StageResult("waiting_for_agent",
+                               error=StageError("agent", "缺布局审计报告：跑 hyperframes check --json 或 layout-safety-review，"
+                                                "并将含 layout 段的报告落至 5-video-final/layout_audit.json（零遮挡硬门槛）"))
+        lay = (layout_report.get("layout") or {})
+        layout_errors = [f for f in (lay.get("findings") or []) if f.get("severity") == "error"]
+        if layout_errors:
+            issues.append("布局审计 %d 处 error（遮挡/溢出，零遮挡硬门槛）: %s" % (
+                len(layout_errors), "; ".join((f.get("message", "")[:46]) for f in layout_errors[:3])))
         report = {"duration": fmt.get("duration"), "faststart": faststart,
                   "loudness": loud, "streams": {"video": (v or {}).get("codec_name"), "audio": (a or {}).get("codec_name")},
-                  "pix_fmt": (v or {}).get("pix_fmt"), "issues": issues}
+                  "pix_fmt": (v or {}).get("pix_fmt"),
+                  "layout_audit": {"errors": len(layout_errors),
+                                   "messages": [f.get("message", "")[:80] for f in layout_errors[:6]]},
+                  "issues": issues}
         rp = _write(ctx, "5-video-final/qa_report.json", json.dumps(report, ensure_ascii=False, indent=2))
         ctx.rs.register_artifact("qa", rp, "qa-report")
         receipts.write_tool_receipt(ctx, "qa", "ffprobe", [fp, "show_format/show_streams"], 0,
                                     output_paths=["5-video-final/qa_report.json"])
         receipts.write_skill_receipt(ctx, "qa", "video-qa-frameproof", "video_rendered",
                                      ["5-video-final/qa_report.json"], agent_id="paperpipe-auto",
-                                     note="机器层 QA（流/规格/faststart/响度硬校验）由执行器内置同源检查代跑；"
+                                     note="机器层 QA（流/规格/faststart/响度/布局审计）由执行器内置同源检查代跑；"
                                           "video-technical-review 与 layout-safety-review 由编排器补 receipt")
-        if issues:
-            return StageResult("failed", data={"issues": issues},
-                               error=StageError("permanent", "QA 不达标: " + "; ".join(issues)))
-        return StageResult("passed", {"checks": ["ffprobe", "streams", "specs", "faststart", "loudness"]})
+        return StageResult("passed", {"checks": ["ffprobe", "streams", "specs", "faststart", "loudness", "layout"]})
 
 # ════════════════ retrospective（waiting_for_human） ════════════════
 class RetroAdapter(Adapter):

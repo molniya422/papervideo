@@ -258,6 +258,23 @@ output/<project>/
 风格扩展：参考素材是**下限**不是上限。允许在参考语言上叠加相容的"卫星风格"
 （如工业半调 + 示波器 + 等距爆炸图），但必须有统一的网格、配色和字重，且转场要有逻辑。
 
+## 10.6 具象化与布局强制（3D 例子 · 零遮挡 · 2026-11-01 起 P0）
+
+> 来源：EP05 用户审查反馈——"举例没有 3D 建模，总在读数据全是表格；遮挡与布局不合理"。
+> 两条都是 **QA 机器门**（违反即 failed_permanent），不是建议。
+
+| 规则 | 触发条件 | 硬指标 | 失败行为 |
+|---|---|---|---|
+| **例子 3D 化**（技能 `threejs-visual-example`） | 视频交付目标 + 例子涉及具象对象（检测目标/物理实体/几何结构） | 具象对象例子必须有 three.js 3D 建模演示（低多边形即可），3D 主体 ≥35% 画面；**纯表格/纯数字读数例示 = 0**（表格只允许作为 3D 主体旁的伴随标注）；3D 场景 ≥1 次慢环绕/推拉 | figures 阶段 waiting_for_agent 退回重做 |
+| **3D 确定性** | 使用 three.js | 动画挂可 seek 时间轴（GSAP onUpdate/代理对象），禁自走时钟/随机/Date.now；three.module.js 本地化 assets/vendor/（禁 CDN） | render/qa 阶段 failed |
+| **零遮挡布局** | 所有成片 | hyperframes check 的 layout 段或 layout-safety-review：`content_overlap` / `container_overflow` error = 0；报告落 `5-video-final/layout_audit.json` | qa 阶段 failed_permanent |
+| **3D 豁免** | 抽象数学例子（无具象对象） | route-decision 写明 reason（stage=figures, skill=threejs-visual-example, decision=skipped） | 缺豁免记录 → figures waiting_for_agent |
+
+实现要点：three.module.js 本地 importmap；检测框用 EdgesGeometry 线框贴合物体；
+单场景 ≤3 光源 ≤5 万面；GSAP onUpdate 里同步相机与位姿（确定性 seek）。
+
+---
+
 ## 11. 故障排查
 
 | 现象 | 原因 | 处理 |

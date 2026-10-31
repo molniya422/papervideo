@@ -140,19 +140,22 @@ output/<run-id>/
 | `paperpipe\state.py` | 165 | 状态机（schema paperpipe-state/3）：8 状态、warnings 独立列表、audit trail、register_artifact 路径安全、legacy 识别（/1、/2 冻结只读） |
 | `paperpipe\config.py` | 72 | paperpipe.yaml 配置解析（mini-YAML） |
 | `paperpipe\util.py` | 130 | `FileLock` 心跳锁、原子写、sha256、env_summary |
-| `paperpipe\tests\` | 6 套件 | test_gates(18) · test_receipts(13) · test_handoff(15) · test_review_publish(13) · test_regressions(17) · test_scenarios(14 场景 31 检查)，共 107 项全绿；`python -X utf8 -m paperpipe.tests.<名>` |
+| `paperpipe\tests\` | 6 套件 | test_gates(18) · test_receipts(13) · test_handoff(15) · test_review_publish(13) · test_regressions(19 含布局门 T7) · test_scenarios(14 场景 31 检查)，共 109 项全绿；`python -X utf8 -m paperpipe.tests.<名>` |
 
 **8 种阶段状态**：`pending / running / waiting_for_agent / waiting_for_human / passed / not_applicable / failed_retryable / failed_permanent`
 （waiting_\* 与 failed_\* 停止下游；not_applicable=target 不含；warn/blocked 语义废除）
 
 ---
 
-## 5. 组件地图 · 技能库（66 个，`D:\papervideo\.zcode\skills\<name>\SKILL.md`）
+## 5. 组件地图 · 技能库（67 个，`D:\papervideo\.zcode\skills\<name>\SKILL.md`）
 
 > 每个 skill 至少含 `SKILL.md`；部分带 `references/`、`scripts/`、`templates/`。
 > 打包分发见 §9。
 
-### 编排与元技能（7）
+### 编排与元技能（8）
+| 技能 | 用途 |
+|---|---|
+| `threejs-visual-example` | ⭐ 例子 3D 化强制（three.js 建模演示；禁纯表格读数；抽象数学 route-decision 豁免） |
 | 技能 | 用途 |
 |---|---|
 | `paper-explain` | ⭐ 总编排（五段流水线、路由表、验收门） |
@@ -315,9 +318,9 @@ Node.js 20.10+ · Python（edge-tts、numpy）· Git Bash。MinerU/LaTeX 按需�
 | brief | 任何视觉生成 → `prompt-forge` |
 | acquire | arXiv 输入 → `paper-download-arxiv-paper-source`；本地 PDF 需结构化 → `pdf-to-markdown` |
 | xray | 需要论文事实 → `paper-xray`（子智能体 researcher / fact_checker 可并行） |
-| figures | 图解主技能组**二选一**；制作动效前 → `motion-doctrine`（必读）；视觉生成 → `design-taste-frontend`；动效库**按运行时二选一** |
+| figures | 图解主技能组**二选一**；制作动效前 → `motion-doctrine`（必读）；视觉生成 → `design-taste-frontend`；动效库**按运行时二选一**；**具象例子 → `threejs-visual-example`（3D 建模，禁纯表格）** |
 | render | 旁白未 TTS → `humanize-writing`；route 决定 `remotion-video` / `knowledge-explainer-skill`；自定义缓动 → `cut-the-curve`；有字幕 → `captions-overlay` |
-| qa | 渲染完成 → `video-qa-frameproof`（机器层执行器内置）+ `video-technical-review` + `layout-safety-review` |
+| qa | 渲染完成 → `video-qa-frameproof`（机器层执行器内置）+ `video-technical-review` + `layout-safety-review`；**布局审计 error=0（零遮挡硬门槛）** |
 | retrospective | 交付后 → `video-retrospective`（六维 ≥8+证据+receipt 才能过 review --confirm） |
 | publish | 发布 → `paper-video-cover`（封面缺失不进真实上传）；真实上传 → `paper-bilibili-uploader`（回执 exit=0 才 uploaded） |
 

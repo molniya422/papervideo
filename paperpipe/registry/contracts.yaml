@@ -138,6 +138,11 @@ stages:
         required_output: brief.md 含审美清单（概念从主题长出来的落点）
         acceptance: 拒绝默认"居中标题+三卡+渐变"已有显式对应
         on_fail: waiting_for_agent
+      - skill: threejs-visual-example
+        trigger: 有视频交付目标且例子涉及具象对象（检测目标/物理实体/几何结构）
+        required_output: 3-figures/README.md 登记表含「three.js · 3D」例示行（每章例示形式列）
+        acceptance: 具象对象例子有 3D 建模演示；纯表格例示 = 0（伴随标注除外）；抽象数学例已写 route-decision 豁免
+        on_fail: waiting_for_agent（例子退回重做为 3D）
     outputs: [3-figures/README.md]
     machine_gate: 登记表非空且每行含技能与产物路径
     human_gate: 图解文案与隐喻
@@ -162,6 +167,12 @@ stages:
         trigger: route=template（快速视频）
         required_output: 4-video/render-raw.mp4
         acceptance: 同上
+        on_fail: failed_retryable
+        optional: true
+      - skill: hyperframes
+        trigger: route=hyperframes（HTML→确定性 MP4）
+        required_output: 4-video/render-raw.mp4
+        acceptance: hyperframes check 通过 + snapshot 静帧审 + 渲染产物存在
         on_fail: failed_retryable
         optional: true
       - skill: cut-the-curve
@@ -199,7 +210,7 @@ stages:
         acceptance: 安全区/遮挡/字幕审查通过
         on_fail: waiting_for_agent（等审查 receipt）
     outputs: [5-video-final/qa_report.json]
-    machine_gate: ffprobe/流/规格/faststart/响度任一不达标 → failed_permanent
+    machine_gate: ffprobe/流/规格/faststart/响度任一不达标 → failed_permanent；布局审计存在 content_overlap/container_overflow error → failed_permanent（零遮挡硬门槛）
     human_gate: 人眼抽帧（首帧/转场/最密/末帧）+ 听审
     subagents: [technical_qa, visual_qa]
 

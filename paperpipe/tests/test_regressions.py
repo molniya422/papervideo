@@ -102,16 +102,38 @@ def main():
         rs_old.data["schema"] = "paperpipe-state/2"
         check("旧 schema → legacy", rs_old.is_legacy)
 
-        print("T6 注册表一致（66）")
+        print("T6 注册表一致（67）")
         man = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__)))), "pack", "paper-explain-skills-pack.json"), encoding="utf-8"))
         local = set(os.listdir(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__)))), ".zcode", "skills")))
         check("manifest 数 = 本地数 = registry 数 = 66",
-              man["count"] == len(local) == len(man["install"]["skillDirs"]) == len(registry.skill_ids()) == 66,
+              man["count"] == len(local) == len(man["install"]["skillDirs"]) == len(registry.skill_ids()) == 67,
               f"{man['count']}/{len(local)}/{len(registry.skill_ids())}")
         reg_problems = registry.validate_registry(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         check("registry 双向差集为空", not reg_problems, str(reg_problems))
+        print("T7 布局零遮挡门（media 干净前提下）")
+        import subprocess
+        ff = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                          "tools", "node_modules", "@ffmpeg-installer", "win32-x64", "ffmpeg.exe")
+        ctx7 = make_run(tmp)
+        real = os.path.join(ctx7.run_dir, "4-video", "final.mp4")
+        subprocess.run([ff, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=1920x1080:rate=30:duration=1",
+                        "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+                        "-af", "volume=6dB", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                        "-c:a", "aac", "-ar", "48000", "-shortest", "-movflags", "+faststart", real],
+                       capture_output=True)
+        ctx7.cfg["qa"] = {"expect": {"width": 1920, "height": 1080, "fps": 30}}
+        res7 = QaAdapter().run(ctx7)
+        check("media 过但无布局审计 → waiting_for_agent", res7.status == "waiting_for_agent",
+              f"got {res7.status}: {(res7.error.message if res7.error else '')[:60]}")
+        os.makedirs(os.path.join(ctx7.run_dir, "5-video-final"), exist_ok=True)
+        atomic_write_text(os.path.join(ctx7.run_dir, "5-video-final", "layout_audit.json"),
+                          json.dumps({"layout": {"ok": True, "findings": []}}))
+        # 需要 qa receipt 的条件技能在 runner 层验证；适配器层应 passed
+        res7b = QaAdapter().run(ctx7)
+        check("布局审计 0 error → 适配器层 passed", res7b.status == "passed", f"got {res7b.status}")
+
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n结果: {PASS} 通过 / {FAIL} 失败")

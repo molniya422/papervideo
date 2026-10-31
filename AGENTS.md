@@ -15,6 +15,10 @@
   产出 `0-brief/design-intake.md`。用户不在线则按默认值并标注假设。
 - **然后跑 `prompt-forge`** 产出 `0-brief/brief.md`（三套方案 + XML brief + 禁止清单 +
   8 分制验收），旁白先过 `humanize-writing`；没有 brief 不得写代码或渲帧。
+- **例子必须 3D 化 + 零遮挡布局（2026-11-01 起 P0 机器门）**：视频例子里凡有具象对象
+  （检测目标/物理实体/几何结构）必须用 `threejs-visual-example` 建 3D 演示，禁纯表格读数；
+  布局审计 `content_overlap`/`container_overflow` error=0 才能过 QA（报告落
+  `5-video-final/layout_audit.json`）。抽象数学例用 route-decision 豁免。
 - **P0 是"条件触发 + 可验证证据"**：每个技能调用落 receipt（`output/<run>/receipts/`），
   执行器按 `paperpipe/registry/contracts.yaml` 验证；图解主技能按内容形态二选一、
   动效库按运行时二选一，未选中的写 route-decision（含理由），不再全部强制。

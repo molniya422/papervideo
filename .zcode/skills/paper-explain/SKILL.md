@@ -65,6 +65,7 @@ receipts.record_route_decision(ctx, "figures", "visual-explainer", "skipped",
 - AI/ML 原理图 → `flowchart`；通用图 → `visual-explainer`；工程架构 → `dynamic-archify`；
   协议 → `network-protocol-viz`；物理直觉 → `anatomy`（组内二选一，写 route-decision）；
 - Remotion 动效 → 查 `wise-motion`；HTML/CSS 动效 → 查 `motion-lab`（按运行时选一，写 route-decision）；
+- 具象对象例子（视频目标）→ `threejs-visual-example`（3D 建模演示，禁纯表格读数；抽象数学 route-decision 豁免）；
 - 制作动效前 → `motion-doctrine`（非条件，必读）；自定义缓动 → `cut-the-curve`；
 - 渲染完成 → `video-qa-frameproof`（机器层由执行器内置同源硬校验）+ `video-technical-review` + `layout-safety-review`（receipt）；
 - 交付后 → `video-retrospective`（六维评分+证据+receipt，validate_review 程序化核对）；

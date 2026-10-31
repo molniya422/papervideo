@@ -64,6 +64,10 @@ def _mini_yaml(txt: str) -> dict:
         else:
             if val.startswith('"') and val.endswith('"'):
                 val = val[1:-1]
+            elif val.startswith("[") or val.startswith("{"):
+                # 行内数组/对象（如 render.command: ["npx", ...]）—— 复用注册表解析器
+                from .registry import _scalar as _reg_scalar
+                val = _reg_scalar(val)
             elif val.replace(".", "", 1).isdigit():
                 val = float(val) if "." in val else int(val)
             elif val.lower() in ("true", "false"):

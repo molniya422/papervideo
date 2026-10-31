@@ -160,3 +160,16 @@ def verify_stage(ctx, stage: str) -> list:
                 if not os.path.exists(ctx.out(op)):
                     problems.append(f"receipt {fn} 声称的产物缺失: {op}")
     return problems
+
+def list_tool_receipts(ctx, stage: str, tool: str) -> list:
+    """列出某阶段某工具的全部 tool receipt（供幂等缓存判断）。"""
+    d = ctx.out("receipts", "tools")
+    if not os.path.isdir(d):
+        return []
+    import re as _re
+    pat = _re.compile(rf"^{re.escape(stage)}-{re.escape(tool)}-(\d+)\.json$")
+    out = []
+    for fn in sorted(os.listdir(d)):
+        if pat.match(fn):
+            out.append(json.load(open(os.path.join(d, fn), encoding="utf-8")))
+    return out

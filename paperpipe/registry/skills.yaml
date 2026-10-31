@@ -4,6 +4,12 @@
 # 技能本体在 .zcode/skills/<id>/SKILL.md。
 
 pipeline:
+  - id: threejs-visual-example
+    use: 具象对象例子必须 3D 化（three.js 建模演示，禁纯表格读数）
+    in: deep-read.md 机制点 + 例子的对象清单
+    out: 含 three.js 3D 场景的章节合成 + 登记表「3D」标注
+    misuse: 抽象数学硬凑 3D；用自走时钟（违反确定性）；整屏表格无 3D 主体
+    alt: 无（强制，抽象数学可 route-decision 豁免）
   - id: paper-explain
     use: 用户要求讲论文/做成讲解视频时的总路由器
     in: 用户意图 + 论文输入

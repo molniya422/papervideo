@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "PaperVideo paper explain skills pack: 66 skills + WORKFLOW.md + design-picker.html. Skills-only artifact; paperpipe ships in the workspace pack (papervideo-workspace-pack.zip).",
   "skillsRoot": ".zcode/skills",
-  "count": 66,
+  "count": 67,
   "install": {
     "targets": [
       "~/.zcode/skills",
@@ -11,6 +11,7 @@
       "<project>/.zcode/skills"
     ],
     "skillDirs": [
+      "threejs-visual-example",
       "anatomy",
       "business-motion-film",
       "captions-overlay",
