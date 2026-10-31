@@ -1,0 +1,38 @@
+[
+  {
+    "source": "catalog/assets/aboutlove/fonts/16bf0d654469baa008f00b01a527b6142f841f2e0ea01b847d39a9f39db62053.woff2",
+    "target": "public/catalog/assets/aboutlove/fonts/16bf0d654469baa008f00b01a527b6142f841f2e0ea01b847d39a9f39db62053.woff2",
+    "bytes": 92296,
+    "sha256": "16bf0d654469baa008f00b01a527b6142f841f2e0ea01b847d39a9f39db62053"
+  },
+  {
+    "source": "catalog/assets/aboutlove/fonts/1c0f989ae61bc39d17a2acd5e0b05ccfe893bbf07390edef9564e7ac9d89955d.woff2",
+    "target": "public/catalog/assets/aboutlove/fonts/1c0f989ae61bc39d17a2acd5e0b05ccfe893bbf07390edef9564e7ac9d89955d.woff2",
+    "bytes": 93460,
+    "sha256": "1c0f989ae61bc39d17a2acd5e0b05ccfe893bbf07390edef9564e7ac9d89955d"
+  },
+  {
+    "source": "catalog/assets/aboutlove/fonts/c2e658b9d93b459667ca51c1f0e1e8d598c4dcb8e3cf9b0dd7ddb423f7d50a6b.woff2",
+    "target": "public/catalog/assets/aboutlove/fonts/c2e658b9d93b459667ca51c1f0e1e8d598c4dcb8e3cf9b0dd7ddb423f7d50a6b.woff2",
+    "bytes": 67432,
+    "sha256": "c2e658b9d93b459667ca51c1f0e1e8d598c4dcb8e3cf9b0dd7ddb423f7d50a6b"
+  },
+  {
+    "source": "catalog/assets/aboutlove/fonts/8a08d13f8a6c0d51be379a60af84f945f65369a67e509ee3c3bdcc421254d7c1.ttf",
+    "target": "public/catalog/assets/aboutlove/fonts/8a08d13f8a6c0d51be379a60af84f945f65369a67e509ee3c3bdcc421254d7c1.ttf",
+    "bytes": 451664,
+    "sha256": "8a08d13f8a6c0d51be379a60af84f945f65369a67e509ee3c3bdcc421254d7c1"
+  },
+  {
+    "source": "catalog/assets/aboutlove/fonts/796668611f80b64d5adf182fde3b6f29ed83b4e7cbec7b96937e84ac01364792.ttf",
+    "target": "public/catalog/assets/aboutlove/fonts/796668611f80b64d5adf182fde3b6f29ed83b4e7cbec7b96937e84ac01364792.ttf",
+    "bytes": 495684,
+    "sha256": "796668611f80b64d5adf182fde3b6f29ed83b4e7cbec7b96937e84ac01364792"
+  },
+  {
+    "source": "catalog/assets/aboutlove/fonts/e794c1589fdd38232b647a6e86dfe4e19068774ec18591e6c42bdddac140c302.woff2",
+    "target": "public/catalog/assets/aboutlove/fonts/e794c1589fdd38232b647a6e86dfe4e19068774ec18591e6c42bdddac140c302.woff2",
+    "bytes": 12112,
+    "sha256": "e794c1589fdd38232b647a6e86dfe4e19068774ec18591e6c42bdddac140c302"
+  }
+]

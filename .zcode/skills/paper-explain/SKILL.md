@@ -86,6 +86,10 @@ PDF/arXiv ─▶ [0 对齐] ─▶ [0.5 提示词锻造] ─▶ [1 获取] ─�
 
 ## 阶段 3 · 可视化图解
 
+**动效库匹配（每镜头强制前置）**：动手画任何动效前，先查 `motion-lab`（160 网页动效，索引即源码）与
+`wise-motion`（101 Remotion 组件，match/show/export 三命令）。命中 → 导出改造并登记；未命中 → 手写并在
+3-figures 登记表标注缺口。视频风格跨集延续上一版风格内核（变更需在设计访谈记录）。
+
 按内容形态选：
 
 - **`visual-explainer`** — 通用 HTML 图解（架构图/对比表/可步进状态机）
@@ -166,3 +170,12 @@ PDF/arXiv ─▶ [0 对齐] ─▶ [0.5 提示词锻造] ─▶ [1 获取] ─�
 上述阶段已有统一执行器：`python -m paperpipe init|run|resume|status|validate|review|publish`。
 - 自动模式跑到各阶段门（upload_ready）；xray 深读/图解文案/视觉叙事/听审/事实确认/真实上传保留人审门。
 - 状态机/日志/缓存/续跑见 WORKFLOW.md §15。技能走完仍必须走阶段 6 复盘并写回本技能。
+
+## 强制调用矩阵（v1.2 新增）
+
+详见 WORKFLOW.md §16。核心规则：
+
+- **P0 不调不许交付**：`pdf-to-markdown` / `motion-doctrine` / `design-taste-frontend` / `flowchart` / `visual-explainer` / `cut-the-curve` / `video-qa-frameproof` / `video-technical-review` / `layout-safety-review` / `paper-video-cover`
+- **动效库匹配**：每镜头先查 `motion-lab` / `wise-motion`（v1.1 已固化）
+- **style 跨集延续**：沿袭上一版风格内核，变更需在设计访谈记录
+- **封面**：`paper-video-cover` 在发布前必跑

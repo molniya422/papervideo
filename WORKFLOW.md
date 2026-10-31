@@ -37,6 +37,10 @@
 | 1 获取 | `paper-download-arxiv-paper-source` / `pdf-to-markdown` | `paper_src/` 或 Markdown | 公式为 LaTeX、图表路径有效 |
 | 2 深度解读 | `paper-xray` | `2-xray/deep-read.md` | 每个机制有"会怎么坏"；推断有证据等级 |
 | 3 图解 | `visual-explainer` / `flowchart` / `dynamic-archify` / `anatomy` | `3-figures/*.html` | 浏览器无脚本错误；一图对应一个机制 |
+
+**动效库匹配（强制前置，先查库再动手）**：每个镜头/章节动效实现前，先检索动效库并登记结果——
+网页动效查 `motion-lab`（160 种，索引即源码）；Remotion 组件动效用 `wise-motion`（101 种，match/show/export）。
+命中 → 导出改造；未命中 → 手写并在 3-figures 登记表标注缺口。风格跨集延续上一版内核（变更需记录）。
 | 4 成片 | `remotion-video` / `knowledge-explainer-skill` / `paper-to-beamer` | `4-video/*.mp4` | 有旁白、字幕逐句对齐、三区不重叠、抽帧通过 |
 | 5 发布 | `paper-video-cover` / `paper-bilibili-uploader` | 封面 + 投稿 | `--dry-run` 元数据通过 |
 | 6 复盘 | `video-retrospective` | `6-review/retrospective.md`、`lessons.md` | 6 维打分每项 ≥8 且有证据；至少 1 条规则写回技能 |
@@ -427,3 +431,77 @@ python -m paperpipe publish --confirm <run_id>        # 确认上传；需先 re
 
 `output/<run-id>/pipeline-state.json` 是唯一状态源（schema: paperpipe-state/1，
 统一产物清单含 sha256；旧的 `_status` 双写废弃）。`run.log.jsonl` 记录全部事件与环境摘要。
+
+---
+
+## 16. 强制调用矩阵（65 技能 → 按 pipeline 阶段对号入座）
+
+> 背景：四轮视频（v6-v8.1/EP02/EP03）实际只调用了 15/65 个技能。
+> 本节把 50 个未调用技能按"应该调用但被跳过"逐一归位，并标注强制级别。
+> **P0 = 不调不许交付 · P1 = 不调要写明理由 · P2 = 按需**
+
+### 调用现状审计（2026-10-31）
+
+| 状态 | 数量 | 说明 |
+|------|------|------|
+| 已调用 | 15 | design-intake / prompt-forge / paper-download / paper-xray / remotion-video / video-retrospective / video-qa-frameproof / motion-lab / wise-motion / humanize-writing / design-taste-frontend / video-production-guide / paper-bilibili / paper-video-cover / paper-explain |
+| **应调未调** | **17** | ↓ 见 P0/P1 矩阵 |
+| 路线未走 | 8 | beamer/slides/hyperframes/知识科普/商业片等（路线 B/D/E 未走，合理） |
+| 领域不符 | 25 | UI 演示/协议图/变更日志/代码 MV 等与论文讲解无关（合理闲置） |
+
+### 强制调用矩阵
+
+| pipeline 阶段 | 技能 | 级别 | 当前状态 | 强制规则 |
+|---|---|---|---|---|
+| **阶段 1 获取** | `pdf-to-markdown` | **P0** | ❌ 直接读 tex 跳过了 MD 转换 | 渲染前必须有 `1-acquire/paper.md`；没有→acquire 阶段 failed |
+| **阶段 1 获取** | `paper-download-arxiv-paper-source` | P0 | ✅ 已用 | 维持 |
+| **阶段 2 深读** | `paper-xray` | P0 | ✅ 已用 | 维持 |
+| **阶段 3 图解** | `motion-doctrine` | **P0** | ❌ 从未读过；动效法则全部凭感觉 | 写第一行动效代码前必须读完并写读后摘要到 brief |
+| **阶段 3 图解** | `flowchart` | **P0** | ❌ AI/ML 机制图从未查 | 每个机制点先查是否有现成范式可改造 |
+| **阶段 3 图解** | `visual-explainer` | **P0** | ❌ 通用 HTML 图解从未查 | 同上 |
+| **阶段 3 图解** | `dynamic-archify` | P1 | ❌ 工程架构图 | 涉及系统架构时查 |
+| **阶段 3 图解** | `anatomy` | P1 | ❌ 等距 SVG 物理插画 | 涉及物理直觉时查 |
+| **阶段 3 图解** | `scholar-notes` | P2 | ❌ 手写笔记风 | 按需 |
+| **阶段 3 图解** | `card-theater` / `stacked-data-cards` / `ppt-animation` | P2 | ❌ | 按需 |
+| **阶段 3 动效** | `motion-lab` | P0 | ⚠️ 注册了但只查了 1 次 | 每章动效先查（EP04 已固化此规则） |
+| **阶段 3 动效** | `wise-motion` | P0 | ⚠️ 同上 | 同上 |
+| **阶段 3 审美** | `design-taste-frontend` | **P0** | ❌ 写了在文档里但从未实际读 | 生成前必须读并写审美清单 |
+| **阶段 4 动效精调** | `cut-the-curve` | **P0** | ❌ 缓动曲线全凭感觉 | 渲染前必须读并检查 easing |
+| **阶段 4 转场** | `seam-craft` | P1 | ❌ 转场接缝凭感觉 | 有转场的镜头必须读 |
+| **阶段 4 大字** | `oversized-cursor` | P2 | ❌ | 有光标驱动时查 |
+| **阶段 4 字幕** | `captions-overlay` | P1 | ❌ 字幕全手写样式 | 每次渲染前查是否有更好的字幕方案 |
+| **阶段 4 QA** | `video-qa-frameproof` | **P0** | ❌ 用自写 QA 替代；缺帧级检测（空帧/冻结/花屏） | paperpipe qa 通过后必须跑一次 |
+| **阶段 4 QA** | `video-technical-review` | **P0** | ❌ 从未跑 | QA 后人工审查前跑一次 |
+| **阶段 4 QA** | `layout-safety-review` | **P0** | ❌ 遮挡全靠静帧肉眼 | 渲染后必须跑（本可自动检出 EP02/k07 的裁切） |
+| **阶段 5 发布** | `paper-video-cover` | **P0** | ❌ 四支视频都没有封面 | 发布前必须生成 16:10 封面 |
+| **阶段 6 复盘** | `video-retrospective` | P0 | ✅ 已用 | 维持 |
+| **阶段 6 复盘** | `video-artifact-intake` | P1 | ❌ 产物清点未用 | 复盘前清点产物 |
+| **阶段 6 复盘** | `review-bundle` | P2 | ❌ | 按需 |
+| **全片参考** | `video-shot-demos` / `video-shots` / `swiss-shot-demos` | P1 | ❌ 镜头参考从未查 | 每种新镜头类型先查 demo |
+| **全片参考** | `design-picker.html` | P0 | ⚠️ EP01 用过，后续跳了 | 每集必须在设计访谈时走一遍 |
+
+### 路线专属（按需，当前项目未走）
+
+| 技能 | 路线 |
+|---|---|
+| `knowledge-explainer-skill` | A 文稿→动画 |
+| `paper-to-beamer` + `paper-slides-to-video` | B 学术幻灯片 |
+| `hyperframes` + `hyperframes-cli` + `remotion-to-hyperframes` | D HTML 动画 |
+| `business-motion-film` / `product-launch-motion` | E 商业片 |
+| `network-protocol-viz` | 协议类论文 |
+| `hell-grind-aigc-skill` | 需 AI 生图时 |
+
+### 与领域无关的技能（合理闲置）
+
+`phone-ui-demos` / `win11-ui-demos` / `ui2v-motions` / `code-mv-render` / `opus-video-skills` / `lemo-opuscar` / `sustech-beamer-theme-fix` / `changelog-video` / `skill-catalog`（agent 发现用）/ `package-review-prompt` / `source-media-signals` / `segment-*` / `compare-video-runs` / `pdf-to-markdown`（GPU 依赖）
+
+### P0 缺失对质量的影响（实际案例）
+
+| 跳过的技能 | 实际后果 |
+|---|---|
+| `motion-doctrine` | v6-v8.1 的缓动曲线全部凭感觉，直到 EP03 才读 |
+| `video-qa-frameproof` | EP02 有一帧冻结画面上线后才被发现 |
+| `layout-safety-review` | EP02 k07 标注被标题盖住，静帧审计才查出来 |
+| `paper-video-cover` | 四支视频发布时全部没有封面 |
+| `design-taste-frontend` | v7 社媒版风格太素，用户打回两轮 |
+| `pdf-to-markdown` | paper-xray 直接读 tex，遗漏了 PDF 中才有的图表信息 |

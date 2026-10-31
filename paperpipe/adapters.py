@@ -522,3 +522,41 @@ class PublishAdapter(Adapter):
 ADAPTERS = {a.name: a for a in (IntakeAdapter(), BriefAdapter(), AcquireAdapter(), XrayAdapter(),
                                 FiguresAdapter(), RenderAdapter(), QaAdapter(), RetroAdapter(), PublishAdapter())}
 
+
+# ════════════════ 强制调用矩阵检查（P0 技能门禁） ════════════════
+# 对应 WORKFLOW.md §16。这些技能不调用 = 质量门禁不过。
+
+MANDATORY_SKILLS = {
+    "intake":  [],
+    "brief":   [],
+    "acquire": ["paper-download-arxiv-paper-source"],
+    "xray":    ["paper-xray"],
+    "figures": ["motion-doctrine", "design-taste-frontend", "motion-lab", "wise-motion",
+                "flowchart", "visual-explainer"],
+    "render":  ["cut-the-curve", "captions-overlay"],
+    "qa":      ["video-qa-frameproof", "video-technical-review", "layout-safety-review"],
+    "retrospective": ["video-retrospective"],
+    "publish": ["paper-video-cover"],
+}
+
+def check_mandatory_skills(ctx: RuntimeCtx, stage: str) -> list:
+    """检查该阶段的 P0 技能是否有调用痕迹（产物/brief 引用/日志提及）。"""
+    skills_dir = os.path.join(ctx.root, ".zcode", "skills")
+    missing = []
+    for skill in MANDATORY_SKILLS.get(stage, []):
+        skill_path = os.path.join(skills_dir, skill, "SKILL.md")
+        if not os.path.isfile(skill_path):
+            missing.append(f"技能文件缺失: {skill}")
+            continue
+        # 检查 brief 或阶段产物中是否提及该技能
+        brief = ctx.out("0-brief/brief.md")
+        mentioned = False
+        for probe in [brief, ctx.out("0-brief/design-intake.md"), ctx.out("6-review/retrospective.md")]:
+            if os.path.exists(probe):
+                txt = open(probe, encoding="utf-8").read()
+                if skill in txt:
+                    mentioned = True
+                    break
+        if not mentioned:
+            missing.append(f"P0 技能未在 brief/retrospective 中引用: {skill}（WORKFLOW §16 强制）")
+    return missing

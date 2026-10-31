@@ -97,9 +97,16 @@ def run_stage(ctx: RuntimeCtx, name: str) -> str:
             log(rs, "info", name, "check", status=chk.status, error=(chk.error.message if chk.error else None))
             final = chk if chk.status != "passed" else result
             if final.status in ("passed", "warn"):
+                # 强制调用矩阵：检查 P0 技能是否被引用
+                from .adapters import check_mandatory_skills
+                skill_issues = check_mandatory_skills(ctx, name)
+                if skill_issues:
+                    for issue in skill_issues:
+                        log(rs, "warn", name, "mandatory_skill_missing", message=issue)
                 st = rs.stage(name)
                 st["input_hash"] = fp
                 st["cached"] = False
+                st["data"]["skill_warnings"] = skill_issues
                 rs.save()
                 errd = {"cls": final.error.cls, "message": final.error.message} if final.error else None
                 rs.set_status(name, final.status, errd)
