@@ -3,8 +3,9 @@
 > 从一篇论文（或一个产品/主题）到一条能发出去的讲解片。本文是**唯一权威流程说明**：
 > 每个阶段做什么、用什么技能、产出什么文件、什么条件才算过关、出问题去哪查。
 >
-> 技能总数：**63**，注册在 `.zcode/skills/`。总编排技能：`paper-explain`。
-> 本地引擎检出：`engines/hyperframes`（HyperFrames monorepo，含 CLI/Studio/registry；`npx hyperframes --help`）。
+> 技能总数：**66**，注册在 `.zcode/skills/`。总编排技能：`paper-explain`。
+> 本地引擎检出：`engines/`（hyperframes / wise-motion / motion-lab / lieflat-code-video）。
+> 组件级路径与用法速查：**[WORKFLOW-MAP.md](WORKFLOW-MAP.md)**（有什么 · 怎么做 · 在哪里）。
 
 ---
 
@@ -274,7 +275,7 @@ output/<project>/
 
 ---
 
-## 12. 技能清单（54）
+## 12. 技能清单（66）
 
 **编排与元技能（7）**
 `paper-explain` · `design-intake` · `prompt-forge` · `video-retrospective` ·
@@ -313,6 +314,12 @@ output/<project>/
 **风格演示库（6）**
 `video-shot-demos` · `swiss-shot-demos` · `phone-ui-demos` · `win11-ui-demos` ·
 `ui2v-motions` · `hell-grind-aigc-skill`
+
+**动效库与商业片补充（3）**
+`motion-lab`（160 CSS 动效，检出 `engines/motion-lab`） · `wise-motion`（101 Remotion 动效，检出 `engines/wise-motion`） ·
+`lieflat-code-video`（产品发布片 Starter，检出 `engines/lieflat-code-video`）
+
+> 各技能具体路径与用法：[WORKFLOW-MAP.md](WORKFLOW-MAP.md) §5。
 
 ---
 

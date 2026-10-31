@@ -25,7 +25,8 @@
 - Lieflat Code Video Starter 在 `engines/lieflat-code-video`（产品发布片 Remotion Starter，12 个 kit 模块：camera/springs/transitions/surfaces/type 等，12s 示例影片，lens-reference.html 镜头语言参考）。技能 `lieflat-code-video`。
 - Motion.Lab 动效库检出在 `engines/motion-lab`（160 动效 + 48 模板，Next.js）；技能 `motion-lab` 提供按需读取的 HTML/CSS/JS 源码（references/effects/<id>.md），零依赖单文件预览 `engines/motion-lab/motion-lab-showcase.html`。
 - 动效法则先读 `motion-doctrine`，再按需 `cut-the-curve` / `seam-craft` / `oversized-cursor`。
-- 完整的阶段/产物/门槛/故障排查写在 `WORKFLOW.md`，修改流程时同步更新它。
+- 完整的阶段/产物/门槛/故障排查写在 `WORKFLOW.md`，修改流程时同步更新它；
+  每个组件的具体路径与用法速查在 `WORKFLOW-MAP.md`（有什么/怎么做/在哪里），新增组件时同步登记。
 - `.tmp-repos/` 是上游仓库缓存。AI_Animation 上游 512MB+，本地为裁剪下载（17 个子技能的文档
   与 13 个轻量技能的完整文件已就位，4 个重型演示库仅文档，见其 SKILL.md 顶部注册说明）。
   本机直连 raw.githubusercontent.com 不通，补素材用 `https://ghproxy.net/` 镜像前缀。

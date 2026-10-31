@@ -81,7 +81,8 @@ PDF/arXiv ─▶ [0.5 提示词锻造] ─▶ [1 获取] ─▶ [2 深度解读]
 | `sustech-beamer-theme-fix` | 修复旧模板缺 `\setsource` 等宏 |
 | `paper-slides-to-video` | 幻灯片 PDF→横竖双配音 MP4（edge-tts） |
 
-> 完整阶段、产物、门槛、排查表见 **[WORKFLOW.md](WORKFLOW.md)**。
+> 完整阶段、产物、门槛、排查表见 **[WORKFLOW.md](WORKFLOW.md)**；
+> 每个组件的具体路径与用法速查见 **[WORKFLOW-MAP.md](WORKFLOW-MAP.md)**（有什么 · 怎么做 · 在哪里）。
 > 可视化风格选择器：[design-picker.html](design-picker.html)（双击打开，选完复制 JSON）。
 
 ## 目录结构
@@ -91,6 +92,7 @@ papervideo/
 ├── .zcode/skills/          # ⭐ 64 个技能注册处（workspace 级）
 ├── engines/hyperframes/    # HyperFrames 引擎源码检出（npx hyperframes --help）
 ├── WORKFLOW.md             # 工作流总纲（阶段/产物/门槛/排查）
+├── WORKFLOW-MAP.md         # 组件地图（有什么/怎么做/具体路径速查）
 ├── design-picker.html      # 可视化风格选择器（单文件）
 ├── remotion-studio/        # Remotion 4 自定义动画工作台（依赖已装、headless Chrome 就位）
 ├── output/                 # 工作流产物（如 output/test-attention/ 为工作流端到端测试）
