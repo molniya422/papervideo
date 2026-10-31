@@ -1,0 +1,28 @@
+{
+  "name": "papervideo-remotion-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "论文讲解视频自定义工作台 — Remotion 驱动，配合 .zcode/skills/remotion-video 技能使用",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render PaperExplain out/video.mp4",
+    "render-still": "remotion still PaperExplain out/thumbnail.png",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "@remotion/cli": "^4.0.450",
+    "@remotion/google-fonts": "^4.0.450",
+    "@remotion/shapes": "^4.0.450",
+    "@remotion/three": "^4.0.539",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "remotion": "^4.0.450",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.5",
+    "typescript": "^5.9.3"
+  }
+}

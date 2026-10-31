@@ -1,0 +1,42 @@
+{
+  "name": "knowledge-explainer-skill",
+  "version": "0.2.0",
+  "description": "把一份 markdown 文稿,自动生成讲解动画视频 — Powered by Remotion + AI Agent",
+  "bin": {
+    "knowledge-explainer": "./cli.js"
+  },
+  "scripts": {
+    "build": "node cli.js examples/script.md out/example.mp4",
+    "studio": "npx remotion studio src/_generated_index.jsx"
+  },
+  "keywords": [
+    "remotion",
+    "video",
+    "ai",
+    "explainer",
+    "knowledge",
+    "skill",
+    "claude-code"
+  ],
+  "author": {
+    "name": "nyx研究所",
+    "url": "https://github.com/znyupup"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/znyupup/knowledge-explainer-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/znyupup/knowledge-explainer-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/znyupup/knowledge-explainer-skill/issues"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.450",
+    "@remotion/cli": "^4.0.450",
+    "@remotion/renderer": "^4.0.450",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "remotion": "^4.0.450"
+  }
+}

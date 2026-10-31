@@ -1,0 +1,13 @@
+# 大体积安装资产与产物不入库（可重建/可下载）
+node_modules/
+output/
+.tmp-repos/
+dist/
+remotion-studio/out/
+remotion-studio/public/audio*/
+engines/
+*.zip
+*.mp4
+*.wav
+__pycache__/
+*.pyc

@@ -1,0 +1,7 @@
+# EP02 任务（全部完成）
+- [x] paperpipe init + intake/brief/xray/figures（用户 JSON 设计 + MHA 数学深读）
+- [x] 结构化配乐（BPM 90 乐句对齐章节，audio8/bgm_ep02.wav）
+- [x] brutalist Kit + 13 章画面（ep02-mha.tsx）+ 13 章静帧审计 + 5 处修复
+- [x] 全片渲染（19840 帧）+ 两遍 loudnorm 编码
+- [x] paperpipe qa passed（faststart/I=-16.42）+ retro + review --confirm + publish → upload_ready
+- [x] 交付 output/test-attention/attention-ep02-mha.mp4 + 主状态同步
