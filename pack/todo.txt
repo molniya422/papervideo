@@ -1,7 +1,11 @@
-# EP02 任务（全部完成）
-- [x] paperpipe init + intake/brief/xray/figures（用户 JSON 设计 + MHA 数学深读）
-- [x] 结构化配乐（BPM 90 乐句对齐章节，audio8/bgm_ep02.wav）
-- [x] brutalist Kit + 13 章画面（ep02-mha.tsx）+ 13 章静帧审计 + 5 处修复
-- [x] 全片渲染（19840 帧）+ 两遍 loudnorm 编码
-- [x] paperpipe qa passed（faststart/I=-16.42）+ retro + review --confirm + publish → upload_ready
-- [x] 交付 output/test-attention/attention-ep02-mha.mp4 + 主状态同步
+# EP03 终极完整版任务
+- [x] paperpipe init ep03-full
+- [ ] 子智能体①：论文数字事实核查（对 paper_src tex）
+- [ ] design-intake + brief（cinematic-neon 新风格：辉光/粒子/视差/运镜最大化）
+- [ ] deep-read.md（全论文 21 章机制点）+ figures 登记
+- [ ] narration.json 全脚本（21 章 ~150 句）+ 子智能体②：去 AI 味/查重复审校
+- [ ] tts_build_ep03.py（audio9 + ep03-timeline + section map）
+- [ ] make_music_ep03.py（电影配乐，按 timeline 章节边界对齐）
+- [ ] ep03-full.tsx：视差/粒子/辉光公式组装/21 章 × 6-9 机位 cue
+- [ ] 21 章静帧审计两轮 + 修复
+- [ ] 渲染 → 编码 → paperpipe qa → retro/review/publish → 交付

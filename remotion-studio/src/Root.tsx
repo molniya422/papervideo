@@ -7,6 +7,7 @@ import { TransformerHalftone, HALFTONE_FRAMES } from "./halftone/Main";
 import { SocialAttention, SOCIAL_FRAMES } from "./halftone/social";
 import { MechLong, MECHLONG_FRAMES } from "./halftone/long-mech";
 import { Ep02Mha, EP02_FRAMES } from "./halftone/ep02-mha";
+import { Ep03Full, EP03_FRAMES } from "./halftone/ep03-full";
 
 /**
  * 论文讲解视频起手模板：标题卡 + 要点逐条浮现。
@@ -178,6 +179,16 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
+      />
+
+      {/* EP03：完整讲解（NEON ORBIT · 21 章 · 旁白驱动） */}
+      <Composition
+        id="Ep03Full"
+        component={Ep03Full}
+        durationInFrames={EP03_FRAMES}
+        fps={30}
+        width={1920}
+        height={1080}
       />
 
       {/* EP02：多头注意力的数学（brutalist · music-only · 13 章） */}

@@ -6,6 +6,7 @@
 - 历史保留：失败原因追加进 stage.history，resume 不清零（retry 命令才显式重置单阶段）。
 """
 from __future__ import annotations
+import glob as globmod
 import os, time, traceback
 from .adapters import ADAPTERS, RuntimeCtx, StageError, VERSION
 from .state import RunState, LOCK_FILE, LOG_FILE
@@ -107,6 +108,10 @@ def run_stage(ctx: RuntimeCtx, name: str) -> str:
         except StageError as e:
             last_err = e
             log(rs, "error", name, "stage_error", cls=e.cls, message=e.message)
+            if e.cls == "gate":
+                rs.set_status(name, "blocked", {"class": "gate", "message": e.message})
+                return "blocked"
+
         except Exception as e:
             last_err = StageError("transient", f"{type(e).__name__}: {e}")
             log(rs, "error", name, "unhandled", message=str(e), trace=traceback.format_exc()[-1500:])

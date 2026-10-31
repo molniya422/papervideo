@@ -287,7 +287,11 @@ class RenderAdapter(Adapter):
         script_path = script if os.path.isabs(script) else os.path.join(ctx.root, script)
         studio = ctx.tool(*(rcfg.get("studio", "remotion-studio").split("/")))
         cmds = []
+        from shutil import which
+        npx = which("npx") or which("npx.cmd")
         def run_cmd(cmd, timeout=3600, cwd=None):
+            if cmd and cmd[0] == "npx" and npx:
+                cmd = [npx] + cmd[1:]
             cmds.append(" ".join(cmd))
             ctx.rs.stage("render")["commands"] = cmds
             ctx.rs.save()
@@ -300,6 +304,8 @@ class RenderAdapter(Adapter):
         out_raw = ctx.out("4-video", "render-raw.mp4")
         run_cmd(["npx", "remotion", "render", composition, os.path.relpath(out_raw, studio), "--log=error"],
                 timeout=14400, cwd=studio)
+        if not os.path.exists(out_raw):
+            raise StageError("permanent", "渲染命令成功但产物缺失")
         ctx.rs.register_artifact("render", out_raw, "video-raw")
         return StageResult("passed", {"composition": composition})
     def check(self, ctx: RuntimeCtx) -> StageResult:
@@ -425,6 +431,8 @@ class RetroAdapter(Adapter):
         lessons = os.path.join(tpl_dir, "lessons.md")
         if not os.path.exists(lessons):
             atomic_write_text(lessons, "# Lessons（可迁移规则，格式 `- [类别] 规则 —— 来源`）\n")
+        if ctx.rs.data["review"].get("confirmed"):
+            return StageResult("passed", {"review_confirmed": True})
         return StageResult("warn", error=StageError("gate", "复盘模板已生成（人审门），填写后 `paperpipe review --confirm`"))
 
 # ════════════════ publish ════════════════
