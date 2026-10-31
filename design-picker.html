@@ -155,9 +155,10 @@
   <header>
     <div>
       <h1>设计选择器 · 全维度</h1>
-      <div class="sub">36 个决策维度 + 6 条锁定铁律。输出三件套：<b>JSON</b>（粘回对话）·
+      <div class="sub"><b>61 个决策维度</b> + 6 条锁定铁律，九区：项目交付 / 视觉 / 动效特效 / 运镜切换 /
+        标题字幕 / 声音 / 受众 / 结构交付 / 参考内容。输出三件套：<b>JSON</b>（粘回对话）·
         <b>paperpipe.yaml</b>（直接放进运行目录）· <b>design-intake.md</b>（放 <code>0-brief/</code>）。<br>
-        事实源对齐 <code>paperpipe/registry/</code>：路由 / 阶段合同 / 子智能体触发。</div>
+        事实源对齐 <code>paperpipe/registry/</code>：路由 / 阶段合同 / 子智能体触发；动效与参考条目自带可执行路径。</div>
     </div>
     <div class="badge">DESIGN INTAKE v2 · FULL</div>
   </header>
@@ -224,59 +225,59 @@ const ACCENTS = [
 ];
 const SECTIONS = [
  {"sect":"A · 项目与交付", rows:[
-  {no:"01", key:"project_type", label:"项目类型", type:"single", opts:[
+  {key:"project_type", label:"项目类型", type:"single", opts:[
     {v:"paper-full", t:"论文全篇讲解长片", tip:"21 章级，默认拆 fact_checker"},
     {v:"topic-deep", t:"单主题深挖", tip:"位置编码式 12 章"},
     {v:"social-cut", t:"社媒切片 45–90s", tip:"8 镜结构合同"},
     {v:"seminar", t:"组会分享"},
     {v:"product", t:"产品发布短片"}]},
-  {no:"02", key:"route", label:"成片路线（registry/routes.yaml）", type:"single", opts:[
+  {key:"route", label:"成片路线（registry/routes.yaml）", type:"single", opts:[
     {v:"remotion", t:"C · Remotion 定制（默认）"},
     {v:"template", t:"A · 文稿模板 knowledge-explainer"},
     {v:"beamer", t:"B · Beamer 幻灯片"},
     {v:"hyperframes", t:"D · HTML→hyperframes"},
     {v:"commercial", t:"E · 商业片 lieflat/business"}]},
-  {no:"03", key:"target", label:"交付目标 target（终止阶段）", type:"single", opts:[
+  {key:"target", label:"交付目标 target（终止阶段）", type:"single", opts:[
     {v:"publish", t:"publish · 全链+复盘+发布（终 publish）"},
     {v:"video", t:"video · 到 QA（终 qa）"},
     {v:"figures", t:"figures · 到图解（终 figures）"},
     {v:"md", t:"md · 只到深读（终 xray）"}]},
-  {no:"04", key:"style_source", label:"风格来源", type:"single", opts:[
+  {key:"style_source", label:"风格来源", type:"single", opts:[
     {v:"continue", t:"延续上一集内核（填下方保留/更换）"},
     {v:"new", t:"全新风格（写明为何适合本主题）"}]},
-  {no:"05", key:"title", label:"标题 / 主题（写进 brief.subject）", type:"text", ph:"例：位置编码：为什么是正弦波"},
-  {no:"06", key:"keep", label:"延续：保留什么", type:"text", ph:"例：NEON ORBIT 色板 / 视差星场 / SEC 章节卡 / 语速+50%"},
-  {no:"07", key:"change", label:"延续：更换什么", type:"text", ph:"例：K05 波形改用 wise-motion sine-grid；结尾卡加评论区问题"},
+  {key:"title", label:"标题 / 主题（写进 brief.subject）", type:"text", ph:"例：位置编码：为什么是正弦波"},
+  {key:"keep", label:"延续：保留什么", type:"text", ph:"例：NEON ORBIT 色板 / 视差星场 / SEC 章节卡 / 语速+50%"},
+  {key:"change", label:"延续：更换什么", type:"text", ph:"例：K05 波形改用 wise-motion sine-grid；结尾卡加评论区问题"},
  ]},
  {"sect":"B · 视觉系统", rows:[
-  {no:"08", key:"visual_language", label:"视觉语言（8 选 1）", type:"style"},
-  {no:"09", key:"accent", label:"主强调色（含 EP 系列实际用色）", type:"swatch"},
-  {no:"10", key:"palette_temp", label:"辅色阶倾向（halftone 12 阶映射方向）", type:"single", opts:[
+  {key:"visual_language", label:"视觉语言（8 选 1）", type:"style"},
+  {key:"accent", label:"主强调色（含 EP 系列实际用色）", type:"swatch"},
+  {key:"palette_temp", label:"辅色阶倾向（halftone 12 阶映射方向）", type:"single", opts:[
     {v:"cool", t:"冷阶 · 蓝→青"}, {v:"warm", t:"暖阶 · 橙→红"}, {v:"neutral", t:"中性 · 灰阶+强调色"}]},
-  {no:"11", key:"typography", label:"排版气质", type:"single", opts:[
+  {key:"typography", label:"排版气质", type:"single", opts:[
     {v:"mono-eng", t:"工程等宽 · JetBrains Mono"},
     {v:"sans-bold", t:"无衬线现代 · 粗标题细正文"},
     {v:"serif", t:"衬线书卷 · Georgia/Noto Serif"},
     {v:"heavy", t:"超粗标题 · 900 字重冲击"}]},
-  {no:"12", key:"background", label:"背景系统", type:"single", opts:[
+  {key:"background", label:"背景系统", type:"single", opts:[
     {v:"starfield", t:"视差星场 · 3 层（EP03/04）"},
     {v:"grid", t:"工程网格"},
     {v:"halftone", t:"半调点阵"},
     {v:"scanline", t:"示波扫描线"},
     {v:"flat", t:"纯色/渐变"}]},
-  {no:"13", key:"density", label:"画面密度", type:"single", opts:[
+  {key:"density", label:"画面密度", type:"single", opts:[
     {v:"focus", t:"每屏一个焦点"},
     {v:"medium", t:"主图 + 2–3 标注"},
     {v:"dense", t:"信息密集 · 仪表盘式"}]},
  ]},
- {"sect":"C · 动效系统", rows:[
-  {no:"14", key:"motion", label:"运动性格", type:"single", opts:[
+ {"sect":"C · 动效与特效（用什么动效）", rows:[
+  {key:"motion", label:"运动性格", type:"single", opts:[
     {v:"mechanical", t:"机械档位 · 齿轮咬合感（EP 系列）"},
     {v:"precise", t:"克制精确 · 短缓动无回弹"},
     {v:"lively", t:"轻快 · 小回弹快切"},
     {v:"cinematic", t:"电影感 · 慢推拉景深"},
     {v:"bouncy", t:"弹跳 · 明显 overshoot"}]},
-  {no:"15", key:"transitions", label:"转场方式（可多选，按拍点轮换）", type:"multi", opts:[
+  {key:"transitions", label:"转场方式（可多选，按拍点轮换）", type:"multi", opts:[
     {v:"shutter", t:"机械快门 · 9f 上下闸门+危险条"},
     {v:"morph", t:"同构形变"},
     {v:"explode", t:"拆解重组"},
@@ -284,7 +285,62 @@ const SECTIONS = [
     {v:"wipe", t:"扫描擦除"},
     {v:"camera", t:"运镜转场"},
     {v:"cut", t:"硬切"}]},
-  {no:"16", key:"camera_moves", label:"机位库（可多选，cue 前 反算 screen 保证不出画）", type:"multi", opts:[
+  {key:"easing", label:"缓动偏好（选型须标注 cut-the-curve 出处）", type:"single", opts:[
+    {v:"spring", t:"spring 标准"},
+    {v:"back", t:"back 轻回弹"},
+    {v:"ease-out", t:"ease-out 克制"},
+    {v:"mixed", t:"混用 · 按元素角色"}]},
+  {key:"holds", label:"停持策略", type:"single", opts:[
+    {v:"end-5s", t:"结尾卡 ≥5s + 关键数字 ≥1s"},
+    {v:"end-2s", t:"结尾 ≥2s"},
+    {v:"none", t:"不停持（社媒快节奏）"}]},
+  {key:"bold_level", label:"大胆变换档位（WORKFLOW §10.5）", type:"single", opts:[
+    {v:"bold", t:"大胆（默认）：图形族≥3 · 每章形变≥2 · 形式转场 45s≥1 · 主视觉≥35%"},
+    {v:"wild", t:"狂野：再加尺度对比+等距爆炸图"},
+    {v:"restrained", t:"克制：仅位移/淡入（内部过稿）"}]},
+  {key:"families", label:"图形族（可多选，≥3 套可互相变形）", type:"multi", opts:[
+    {v:"halftone-dots", t:"半调点阵"}, {v:"gears", t:"齿轮"}, {v:"gauges", t:"仪表盘"},
+    {v:"iso-explode", t:"等距爆炸图"}, {v:"oscilloscope", t:"示波器"}, {v:"rivet-plate", t:"铆接板"},
+    {v:"radar", t:"雷达"}, {v:"curves", t:"真曲线"}, {v:"heatmap", t:"热力图"}, {v:"wireframe3d", t:"线框 3D"}]},
+  {key:"effect_lookup", label:"动效库检索策略（每章动手前先查库，结果登记进 3-figures）", type:"single", opts:[
+    {v:"wise-first", t:"wise-motion 优先 · Remotion 运行时（match.mjs 语义检索）"},
+    {v:"lab-first", t:"motion-lab 优先 · HTML/CSS（索引即源码）"},
+    {v:"both", t:"双库都查 · 对比后选型（EP04 做法）"}]},
+  {key:"wm_categories", label:"wise-motion 分类偏好（可多选，registry 12 类）", type:"multi", opts:[
+    {v:"entrance", t:"入场与展开"}, {v:"glyph", t:"文字与字形"}, {v:"numchart", t:"数字与图表"},
+    {v:"scan", t:"扫描与信号"}, {v:"layout", t:"布局与层次"}, {v:"scroll", t:"滚动与轮播"},
+    {v:"path", t:"路径与描绘"}, {v:"follow", t:"跟随与回弹"}, {v:"grow", t:"变形与生长"},
+    {v:"3d", t:"立体与镜头"}, {v:"accent", t:"强调与配色"}, {v:"atmo", t:"光效与氛围"}]},
+  {key:"text_fx", label:"文字动效风格", type:"single", opts:[
+    {v:"block-float", t:"整块浮现 · type-reveal 式（EP04 标题）"},
+    {v:"char-pop", t:"逐字弹入"},
+    {v:"typewriter", t:"打字机"},
+    {v:"scan-reveal", t:"扫描揭示"},
+    {v:"mixed", t:"混用 · 标题整块/数据逐字"}]},
+  {key:"chapter_fx_count", label:"每章动效数量", type:"single", opts:[
+    {v:"2-3", t:"2–3 · 克制"},
+    {v:"4-6", t:"4–6 · 长片标准（EP04=5）"},
+    {v:"6-plus", t:"6+ · 详细最大化"}]},
+  {key:"fx_density", label:"特效密集程度（叠加层）", type:"single", opts:[
+    {v:"restrained", t:"克制 · 仅关键节点单层"},
+    {v:"standard", t:"标准 · 每镜 1–2 处"},
+    {v:"dense", t:"密集 · 每镜 2–4 处 + 粒子/辉光叠加（EP 系列）"},
+    {v:"maximum", t:"最大化 · 粒子+辉光+视差+噪声全叠"}]},
+  {key:"glow", label:"辉光 glow", type:"single", opts:[
+    {v:"all", t:"全量 · 标题/线条/图形（EP03 公式装配）"},
+    {v:"titles", t:"仅标题与强调元素"},
+    {v:"none", t:"无辉光"}]},
+  {key:"particles", label:"粒子系统", type:"single", opts:[
+    {v:"stardust", t:"星尘 · 配视差星场"},
+    {v:"data-stream", t:"数据流 · 沿路径流动"},
+    {v:"none", t:"无粒子"}]},
+  {key:"noise", label:"纹理噪声", type:"single", opts:[
+    {v:"film-grain", t:"胶片颗粒"},
+    {v:"scanline", t:"扫描线噪声"},
+    {v:"none", t:"无（默认，保清晰度）"}]},
+ ]},
+ {"sect":"D · 运镜与场景切换（怎么运镜 / 场景怎么切换）", rows:[
+  {key:"camera_moves", label:"机位库（可多选，cue 前 反算 screen 保证不出画）", type:"multi", opts:[
     {v:"punch", t:"punch 推近（收敛 s≤1.08）"},
     {v:"pull", t:"pull 拉远"},
     {v:"orbit", t:"orbit 环绕"},
@@ -292,123 +348,159 @@ const SECTIONS = [
     {v:"dolly", t:"dolly 纵移"},
     {v:"tilt", t:"tilt 俯仰"},
     {v:"hold", t:"hold 停持"}]},
-  {no:"17", key:"camera_cues", label:"每章机位 cue 数", type:"single", opts:[
+  {key:"camera_cues", label:"每章机位 cue 数", type:"single", opts:[
     {v:"2-4", t:"2–4 · 社媒切片标准"},
     {v:"5-7", t:"5–7 · 长片标准（EP03=7）"},
     {v:"7-plus", t:"7+ · 详细最大化"}]},
-  {no:"18", key:"easing", label:"缓动偏好（选型须标注 cut-the-curve 出处）", type:"single", opts:[
-    {v:"spring", t:"spring 标准"},
-    {v:"back", t:"back 轻回弹"},
-    {v:"ease-out", t:"ease-out 克制"},
-    {v:"mixed", t:"混用 · 按元素角色"}]},
-  {no:"19", key:"holds", label:"停持策略", type:"single", opts:[
-    {v:"end-5s", t:"结尾卡 ≥5s + 关键数字 ≥1s"},
-    {v:"end-2s", t:"结尾 ≥2s"},
-    {v:"none", t:"不停持（社媒快节奏）"}]},
-  {no:"20", key:"bold_level", label:"大胆变换档位（WORKFLOW §10.5）", type:"single", opts:[
-    {v:"bold", t:"大胆（默认）：图形族≥3 · 每章形变≥2 · 形式转场 45s≥1 · 主视觉≥35%"},
-    {v:"wild", t:"狂野：再加尺度对比+等距爆炸图"},
-    {v:"restrained", t:"克制：仅位移/淡入（内部过稿）"}]},
-  {no:"21", key:"families", label:"图形族（可多选，≥3 套可互相变形）", type:"multi", opts:[
-    {v:"halftone-dots", t:"半调点阵"}, {v:"gears", t:"齿轮"}, {v:"gauges", t:"仪表盘"},
-    {v:"iso-explode", t:"等距爆炸图"}, {v:"oscilloscope", t:"示波器"}, {v:"rivet-plate", t:"铆接板"},
-    {v:"radar", t:"雷达"}, {v:"curves", t:"真曲线"}, {v:"heatmap", t:"热力图"}, {v:"wireframe3d", t:"线框 3D"}]},
+  {key:"camera_rhythm", label:"运镜节奏（cue 何时切）", type:"single", opts:[
+    {v:"per-sentence", t:"每句一 cue（旁白驱动）"},
+    {v:"per-semantic", t:"每语义段一 cue（默认）"},
+    {v:"on-beat", t:"按拍点切（BPM 对齐）"}]},
+  {key:"orbit_speed", label:"环绕/推拉速度", type:"single", opts:[
+    {v:"slow", t:"慢 · 电影感"},
+    {v:"mid", t:"中速 · 默认"},
+    {v:"fast", t:"快 · 社媒节奏"}]},
+  {key:"parallax", label:"视差背景强度", type:"single", opts:[
+    {v:"3-layer", t:"3 层强视差（EP03/04 星场）"},
+    {v:"2-layer", t:"2 层弱视差"},
+    {v:"none", t:"无视差"}]},
+  {key:"chapter_switch", label:"章间场景切换", type:"single", opts:[
+    {v:"shutter", t:"机械快门 · 9f 上下闸门+危险条+SEC 标签（EP 系列）"},
+    {v:"iris", t:"光圈叶片闭合→新构图打开"},
+    {v:"explode", t:"拆解重组 · 旧图形炸开新图形收拢"},
+    {v:"scale-contrast", t:"尺度对比 · 巨大局部→拉远揭示整体"},
+    {v:"camera", t:"运镜穿越 · exit=entry 无缝"},
+    {v:"cut", t:"硬切"}]},
+  {key:"inner_switch", label:"章内场景切换", type:"single", opts:[
+    {v:"morph", t:"同构形变 · 参数化点线插值"},
+    {v:"wipe", t:"扫描擦除"},
+    {v:"camera", t:"运镜滑移"},
+    {v:"cut", t:"硬切"}]},
+  {key:"form_transition_rate", label:"形式转场频率（WORKFLOW §10.5）", type:"single", opts:[
+    {v:"per-45s", t:"每 45s ≥1 次（大胆档硬指标）"},
+    {v:"per-chapter", t:"每章 ≥1 次"},
+    {v:"loose", t:"不强制"}]},
  ]},
- {"sect":"D · 标题与字幕", rows:[
-  {no:"22", key:"chapter_card", label:"章节卡样式", type:"single", opts:[
+ {"sect":"E · 标题与字幕", rows:[
+  {key:"chapter_card", label:"章节卡样式", type:"single", opts:[
     {v:"sec-chip", t:"SEC 0X 芯片 + kicker + 大标题（EP 系列）"},
     {v:"big-number", t:"编号大字"},
     {v:"progress", t:"进度条章节"},
     {v:"none", t:"无章节卡"}]},
-  {no:"23", key:"captions", label:"字幕样式", type:"single", opts:[
+  {key:"captions", label:"字幕样式", type:"single", opts:[
     {v:"sentence-audio", t:"逐句音频驱动 · 左缘强调色边框（铁律）"},
     {v:"highlight", t:"逐句 + 当前字高亮"},
     {v:"karaoke", t:"卡拉OK 逐字"},
     {v:"none", t:"无字幕（纯音乐片）"}]},
-  {no:"24", key:"caption_size", label:"字幕字号（安全区内）", type:"single", opts:[
+  {key:"caption_size", label:"字幕字号（安全区内）", type:"single", opts:[
     {v:"36", t:"36px"}, {v:"42", t:"42px（默认）"}, {v:"48", t:"48px"}, {v:"56", t:"56px 大字幕"}]},
  ]},
- {"sect":"E · 声音系统", rows:[
-  {no:"25", key:"voice", label:"旁白声音（edge-tts）", type:"single", opts:[
+ {"sect":"F · 声音系统", rows:[
+  {key:"voice", label:"旁白声音（edge-tts）", type:"single", opts:[
     {v:"zh-CN-YunjianNeural", t:"男声 · 云健（EP 系列默认）"},
     {v:"zh-CN-YunxiNeural", t:"男声 · 云希（年轻）"},
     {v:"zh-CN-XiaoxiaoNeural", t:"女声 · 晓晓"},
     {v:"zh-CN-XiaoyiNeural", t:"女声 · 晓伊"},
     {v:"none", t:"无旁白"}]},
-  {no:"26", key:"rate", label:"语速（改动必须先测样句，实测标在选项上）", type:"single", opts:[
+  {key:"rate", label:"语速（改动必须先测样句，实测标在选项上）", type:"single", opts:[
     {v:"+0%", t:"+0% 慢速精讲"},
     {v:"+25%", t:"+25% 从容"},
     {v:"+50%", t:"+50% ≈6.8 字/秒 舒适（推荐）"},
     {v:"+65%", t:"+65% ≈7.6 字/秒"},
     {v:"+80%", t:"+80% ≈8.2 字/秒 偏赶"}]},
-  {no:"27", key:"bgm", label:"配乐气质", type:"single", opts:[
+  {key:"bgm", label:"配乐气质", type:"single", opts:[
     {v:"minimal-pad", t:"极简铺底"},
     {v:"mechanical-pulse", t:"机械脉冲"},
     {v:"synthwave", t:"合成器浪潮"},
     {v:"drum-drive", t:"鼓点驱动"},
     {v:"none", t:"无配乐"}]},
-  {no:"28", key:"bpm", label:"配乐 BPM（转场按拍点对齐）", type:"single", opts:[
+  {key:"bpm", label:"配乐 BPM（转场按拍点对齐）", type:"single", opts:[
     {v:"90", t:"90"}, {v:"100", t:"100"}, {v:"120", t:"120（默认）"}, {v:"140", t:"140"}]},
-  {no:"29", key:"sfx", label:"音效 SFX", type:"single", opts:[
+  {key:"sfx", label:"音效 SFX", type:"single", opts:[
     {v:"node-only", t:"仅关键节点（whoosh/click/thud）"},
     {v:"none", t:"无音效"}]},
-  {no:"30", key:"duration", label:"时长", type:"single", opts:[
+  {key:"duration", label:"时长", type:"single", opts:[
     {v:"45-90s", t:"45–90 秒"}, {v:"180s", t:"约 3 分钟"}, {v:"300-420s", t:"5–7 分钟"},
     {v:"480-600s", t:"8–10 分钟"}, {v:"600s-plus", t:"10 分钟以上"}]},
  ]},
- {"sect":"F · 受众与理解", rows:[
-  {no:"31", key:"audience", label:"受众", type:"single", opts:[
+ {"sect":"G · 受众与理解", rows:[
+  {key:"audience", label:"受众", type:"single", opts:[
     {v:"technical", t:"泛技术读者"}, {v:"ai-practitioner", t:"AI 从业者"},
     {v:"peer", t:"组会 / 同行"}, {v:"lay", t:"完全外行"}, {v:"investor", t:"投资人 / 客户"}]},
-  {no:"32", key:"math", label:"数学画像（reader_profile.math）", type:"single", opts:[
+  {key:"math", label:"数学画像（reader_profile.math）", type:"single", opts:[
     {v:"intuition", t:"直觉级 · 会看曲线不碰公式"},
     {v:"formula", t:"公式级 · 能跟读公式（默认）"},
     {v:"derivation", t:"推导级 · 要手算例子"}]},
-  {no:"33", key:"hands_on", label:"动手画像（reader_profile.hands_on）", type:"single", opts:[
+  {key:"hands_on", label:"动手画像（reader_profile.hands_on）", type:"single", opts:[
     {v:"concept", t:"只想懂原理"},
     {v:"implement", t:"想动手实现"},
     {v:"reproduce", t:"想复现实验"}]},
-  {no:"34", key:"analogy", label:"类比密度", type:"single", opts:[
+  {key:"analogy", label:"类比密度", type:"single", opts:[
     {v:"per-mechanism", t:"每机制一个类比"},
     {v:"key-only", t:"仅关键处类比"},
     {v:"minimal", t:"少类比重推导"}]},
  ]},
- {"sect":"G · 结构与交付", rows:[
-  {no:"35", key:"hook", label:"0–3s 钩子", type:"single", opts:[
+ {"sect":"H · 结构与交付", rows:[
+  {key:"hook", label:"0–3s 钩子", type:"single", opts:[
     {v:"question", t:"问题直抛（第一句旁白抛问题）"},
     {v:"contrast", t:"对比冲击"},
     {v:"number", t:"数字悬念"},
     {v:"conclusion", t:"结论先行"}]},
-  {no:"36", key:"ctas", label:"结尾卡 CTA（可多选；停持 ≥5s）", type:"multi", opts:[
+  {key:"ctas", label:"结尾卡 CTA（可多选；停持 ≥5s）", type:"multi", opts:[
     {v:"conclusion", t:"一句核心结论"}, {v:"next", t:"下集预告"},
     {v:"fav", t:"收藏提示"}, {v:"signature", t:"账号签名"}, {v:"comment", t:"评论区问题"}]},
-  {no:"37", key:"aspect", label:"画幅", type:"single", opts:[
+  {key:"aspect", label:"画幅", type:"single", opts:[
     {v:"16:9", t:"16:9 横版 1920×1080"}, {v:"9:16", t:"9:16 竖版 1080×1920"},
     {v:"1:1", t:"1:1 方形"}, {v:"both", t:"横竖各一版"}]},
-  {no:"38", key:"cover", label:"封面（publish 阶段 P0）", type:"single", opts:[
+  {key:"cover", label:"封面（publish 阶段 P0）", type:"single", opts:[
     {v:"needed-both", t:"需要 · 横 16:10 + 竖版"},
     {v:"needed", t:"需要 · 16:10 一张"},
     {v:"none", t:"不需要（不发布时）"}]},
-  {no:"39", key:"platform", label:"发布平台", type:"single", opts:[
+  {key:"platform", label:"发布平台", type:"single", opts:[
     {v:"none", t:"不发布（publish 门自动等待人工）"},
     {v:"bilibili", t:"B 站（dry-run→人工确认→上传）"},
     {v:"bilibili-plus", t:"B 站 + 竖版切片分发"}]},
-  {no:"40", key:"strictness", label:"门禁严格度", type:"single", opts:[
+  {key:"strictness", label:"门禁严格度", type:"single", opts:[
     {v:"strict", t:"严格 · 全部 receipt 齐备才 passed（交付档）"},
     {v:"standard", t:"标准 · 按注册表默认"},
     {v:"fast", t:"快速 · 仅机器门（草稿档，会被 review 拦）"}]},
-  {no:"41", key:"agents", label:"子智能体（可多选；按 agents.yaml 触发条件自动预选）", type:"multi", opts:[
+  {key:"agents", label:"子智能体（可多选；按 agents.yaml 触发条件自动预选）", type:"multi", opts:[
     {v:"fact_checker", t:"fact_checker 独立事实核查"},
     {v:"visual_planner", t:"visual_planner 镜头/登记表"},
     {v:"narration_editor", t:"narration_editor 旁白/TTS 可读性"},
     {v:"technical_qa", t:"technical_qa + visual_qa 并行审查"},
     {v:"release_reviewer", t:"release_reviewer 发布前确认"}]},
-  {no:"42", key:"forbidden", label:"明确不要 · 禁止清单（可多选，写进 brief.forbidden）", type:"multi", opts:[
+  {key:"forbidden", label:"明确不要 · 禁止清单（可多选，写进 brief.forbidden）", type:"multi", opts:[
     {v:"f1", t:"深色底居中大字当默认页"}, {v:"f2", t:"无动机粒子爆炸"},
     {v:"f3", t:"匀速运动"}, {v:"f4", t:"3D 上叠长文"},
     {v:"f5", t:"AI 套话（赋能/助力/引领）"}, {v:"f6", t:"截断坐标轴不标注"},
     {v:"f7", t:"重复强调同一句话"}, {v:"f8", t:"标题贴近左缘（x<250 裁切区）"},
     {v:"f9", t:"按权重切字幕"}, {v:"f10", t:"只换色不换形"}]},
+ ]},
+ {"sect":"I · 参考内容（参考哪些内容，产出到 design-intake.md 带路径）", rows:[
+  {key:"ref_episodes", label:"本系列成片参考（可多选）", type:"multi", opts:[
+    {v:"ep01", t:"EP01 · 社媒切片 51.7s —— 8 镜结构合同/竖版规则"},
+    {v:"ep02", t:"EP02 · brutalist 音乐片 11min —— 纯音乐节奏/仪表板布局"},
+    {v:"ep03", t:"EP03 · 全论文 9.93min —— 21 章 7 机位/视差星场/辉光公式装配"},
+    {v:"ep04", t:"EP04 · 位置编码 8.2min —— 动效库匹配实装/wise-motion 组件"}]},
+  {key:"ref_methodology", label:"方法论技能参考（可多选，渲染前必读项自动进 receipt 计划）", type:"multi", opts:[
+    {v:"motion-doctrine", t:"motion-doctrine · 动效法则网关（先读）"},
+    {v:"design-taste-frontend", t:"design-taste-frontend · 反模板审美清单"},
+    {v:"cut-the-curve", t:"cut-the-curve · 缓动曲线目录"},
+    {v:"seam-craft", t:"seam-craft · 转场接缝"},
+    {v:"oversized-cursor", t:"oversized-cursor · 光标驱动"},
+    {v:"captions-overlay", t:"captions-overlay · 字幕方案"}]},
+  {key:"ref_shotlibs", label:"镜头语言/分镜参考（可多选）", type:"multi", opts:[
+    {v:"lieflat-lens", t:"lieflat lens-reference.html · 镜头语言参考"},
+    {v:"video-shots", t:"video-shots · 镜头语言库"},
+    {v:"video-shot-demos", t:"video-shot-demos · 分镜演示"},
+    {v:"swiss-shot-demos", t:"swiss-shot-demos · 瑞士风格分镜"}]},
+  {key:"ref_effects", label:"动效库预览入口（可多选，写进 MD 供动手时打开）", type:"multi", opts:[
+    {v:"wm-catalog", t:"wise-motion catalog/index.html · 101 组件预览"},
+    {v:"wm-match", t:"wise-motion match.mjs · 语义检索命令"},
+    {v:"ml-showcase", t:"motion-lab-showcase.html · 160 CSS 动效离线预览"},
+    {v:"ml-skill", t:"motion-lab SKILL.md · 按类索引表"}]},
+  {key:"ref_custom", label:"自定义参考（路径/链接/一句话描述）", type:"text", ph:"例：D:/refs/某参考视频.mp4 · 学它的三段式节奏"},
  ]},
 ];
 const LOCKED = [
@@ -426,9 +518,13 @@ const state = {
   style_source:"continue", title:"", keep:"NEON ORBIT 色板 / 视差星场 / SEC 章节卡 / 语速+50%",
   change:"", visual_language:"mech-neon", accent:"neon-cyan", palette_temp:"cool",
   typography:"mono-eng", background:"starfield", density:"medium",
-  motion:"mechanical", transitions:["shutter","morph"], camera_moves:["punch","orbit","pan","hold"],
-  camera_cues:"5-7", easing:"mixed", holds:"end-5s", bold_level:"bold",
+  motion:"mechanical", transitions:["shutter","morph"], easing:"mixed", holds:"end-5s", bold_level:"bold",
   families:["halftone-dots","gauges","curves","wireframe3d"],
+  effect_lookup:"both", wm_categories:["glyph","scan","grow"], text_fx:"block-float",
+  chapter_fx_count:"4-6", fx_density:"dense", glow:"all", particles:"stardust", noise:"none",
+  camera_moves:["punch","orbit","pan","hold"], camera_cues:"5-7", camera_rhythm:"per-semantic",
+  orbit_speed:"mid", parallax:"3-layer", chapter_switch:"shutter", inner_switch:"morph",
+  form_transition_rate:"per-45s",
   chapter_card:"sec-chip", captions:"sentence-audio", caption_size:"42",
   voice:"zh-CN-YunjianNeural", rate:"+50%", bgm:"mechanical-pulse", bpm:"120", sfx:"node-only",
   duration:"480-600s", audience:"technical", math:"formula", hands_on:"concept", analogy:"per-mechanism",
@@ -436,6 +532,11 @@ const state = {
   platform:"bilibili", strictness:"strict",
   agents:["fact_checker","technical_qa"],
   forbidden:["f1","f3","f5","f7","f8","f9"],
+  ref_episodes:["ep03","ep04"],
+  ref_methodology:["motion-doctrine","design-taste-frontend","cut-the-curve"],
+  ref_shotlibs:["lieflat-lens","video-shots"],
+  ref_effects:["wm-catalog","wm-match","ml-showcase"],
+  ref_custom:"",
 };
 
 /* ═══════════════ 渲染 ═══════════════ */
@@ -467,21 +568,22 @@ function previewInner(cls){
 
 function renderRows(){
   const box=document.getElementById("opts");
+  let no=0;
   SECTIONS.forEach(sec=>{
     box.appendChild(el(`<div class="sect">${sec.sect}</div>`));
-    sec.rows.forEach(row=>box.appendChild(renderRow(row)));
+    sec.rows.forEach(row=>box.appendChild(renderRow(row, ++no)));
   });
   // 锁定铁律
-  box.appendChild(el(`<div class="sect">H · 锁定铁律（不提供选项，工作流硬约束）</div>`));
+  box.appendChild(el(`<div class="sect">J · 锁定铁律（不提供选项，工作流硬约束）</div>`));
   const lk=el(`<div class="row"><div class="locked">${LOCKED.map(l=>`<span class="lockchip">${l}</span>`).join("")}</div></div>`);
   box.appendChild(lk);
 }
 
-function renderRow(row){
+function renderRow(row, no){
   const wrap=el(`<div class="row"></div>`);
   let tip="";
   if(row.key==="agents") tip=`<span class="auto" id="agentAuto"></span>`;
-  wrap.appendChild(el(`<div class="label"><i>${row.no}</i> ${row.label} ${tip}</div>`));
+  wrap.appendChild(el(`<div class="label"><i>${String(no).padStart(2,"0")}</i> ${row.label} ${tip}</div>`));
   if(row.type==="style"){
     wrap.appendChild(el(`<div class="tip" style="font-size:11px;color:#4b5c76;margin-bottom:8px">当前：${STYLES.find(s=>s.v===state.visual_language).name} —— 在上方卡片选择</div>`));
     return wrap;
@@ -559,6 +661,19 @@ const LABELS={
   cover:{"needed-both":"横+竖双版式",needed:"16:10 一张",none:"不需要"},
   platform:{none:"不发布",bilibili:"B 站","bilibili-plus":"B 站+竖版切片"},
   strictness:{strict:"严格",standard:"标准",fast:"快速"},
+  effect_lookup:{"wise-first":"wise-motion 优先","lab-first":"motion-lab 优先",both:"双库都查"},
+  text_fx:{"block-float":"整块浮现","char-pop":"逐字弹入",typewriter:"打字机","scan-reveal":"扫描揭示",mixed:"混用"},
+  chapter_fx_count:{"2-3":"2–3","4-6":"4–6","6-plus":"6+"},
+  fx_density:{restrained:"克制",standard:"标准",dense:"密集",maximum:"最大化"},
+  glow:{all:"全量辉光",titles:"仅标题",none:"无"},
+  particles:{stardust:"星尘","data-stream":"数据流",none:"无"},
+  noise:{"film-grain":"胶片颗粒",scanline:"扫描线",none:"无"},
+  camera_rhythm:{"per-sentence":"每句一 cue","per-semantic":"每语义段一 cue","on-beat":"按拍点切"},
+  orbit_speed:{slow:"慢",mid:"中速",fast:"快"},
+  parallax:{"3-layer":"3 层强视差","2-layer":"2 层弱视差",none:"无视差"},
+  chapter_switch:{shutter:"机械快门 9f",iris:"光圈叶片",explode:"拆解重组","scale-contrast":"尺度对比",camera:"运镜穿越",cut:"硬切"},
+  inner_switch:{morph:"同构形变",wipe:"扫描擦除",camera:"运镜滑移",cut:"硬切"},
+  form_transition_rate:{"per-45s":"每 45s ≥1","per-chapter":"每章 ≥1",loose:"不强制"},
 };
 function lab(key,v){
   if(key==="visual_language") return (STYLES.find(s=>s.v===v)||{}).name||v;
@@ -627,6 +742,25 @@ function yamlText(){
   L.push(`  agents: [${state.agents.join(", ")}]`);
   L.push("  forbidden:");
   listOf("forbidden").forEach(f=>L.push(`    - ${f}`));
+  L.push(`  effect_lookup: ${state.effect_lookup}`);
+  L.push(`  wm_categories: [${state.wm_categories.join(", ")}]`);
+  L.push(`  text_fx: ${state.text_fx}`);
+  L.push(`  chapter_fx_count: ${state.chapter_fx_count}`);
+  L.push(`  fx_density: ${state.fx_density}`);
+  L.push(`  glow: ${state.glow}`);
+  L.push(`  particles: ${state.particles}`);
+  L.push(`  noise: ${state.noise}`);
+  L.push(`  camera_rhythm: ${state.camera_rhythm}`);
+  L.push(`  orbit_speed: ${state.orbit_speed}`);
+  L.push(`  parallax: ${state.parallax}`);
+  L.push(`  chapter_switch: ${state.chapter_switch}`);
+  L.push(`  inner_switch: ${state.inner_switch}`);
+  L.push(`  form_transition_rate: ${state.form_transition_rate}`);
+  L.push(`  ref_episodes: [${state.ref_episodes.join(", ")}]`);
+  L.push(`  ref_methodology: [${state.ref_methodology.join(", ")}]`);
+  L.push(`  ref_shotlibs: [${state.ref_shotlibs.join(", ")}]`);
+  L.push(`  ref_effects: [${state.ref_effects.join(", ")}]`);
+  L.push(`  ref_custom: ${state.ref_custom?q(state.ref_custom):"null"}`);
   L.push("render:");
   L.push(`  composition: ${q("")}          # Remotion 合成 ID`);
   L.push(`  script: ${q("")}               # TTS/时间轴脚本路径`);
@@ -646,41 +780,18 @@ function mdText(){
   L.push(`> 来源：design-picker.html v2 @ ${new Date().toISOString().slice(0,10)}。`);
   L.push(`> 风格内核：${state.style_source==="continue"?"延续上一集内核，保留与更换见下":(state.keep||"（待 prompt-forge 补写一句话内核）")}`);
   L.push("");
-  L.push("## 选择总表");
-  L.push("| 维度 | 选择 |"); L.push("|---|---|");
-  L.push(row("项目类型",lab("project_type",state.project_type)));
-  L.push(row("成片路线",lab("route",state.route)));
-  L.push(row("交付目标",lab("target",state.target)));
-  L.push(row("视觉语言",lab("visual_language",state.visual_language)));
-  L.push(row("主强调色",lab("accent",state.accent)));
-  L.push(row("辅色阶",lab("palette_temp",state.palette_temp)));
-  L.push(row("排版",lab("typography",state.typography)));
-  L.push(row("背景",lab("background",state.background)));
-  L.push(row("密度",lab("density",state.density)));
-  L.push(row("运动性格",lab("motion",state.motion)));
-  L.push(row("转场",listOf("transitions").join(" + ")));
-  L.push(row("机位库",listOf("camera_moves").join(" + ")+" · 每章 "+lab("camera_cues",state.camera_cues)+" cue"));
-  L.push(row("缓动",lab("easing",state.easing)));
-  L.push(row("停持",lab("holds",state.holds)));
-  L.push(row("大胆档位",lab("bold_level",state.bold_level)));
-  L.push(row("图形族",listOf("families").join(" · ")+(state.families.length>=3?"（≥3 ✓）":"（**不足 3，需补**）")));
-  L.push(row("章节卡",lab("chapter_card",state.chapter_card)));
-  L.push(row("字幕",lab("captions",state.captions)+" · "+lab("caption_size",state.caption_size)));
-  L.push(row("旁白",lab("voice",state.voice)+" · "+lab("rate",state.rate)));
-  L.push(row("配乐",lab("bgm",state.bgm)+" · "+lab("bpm",state.bpm)+" · SFX "+lab("sfx",state.sfx)));
-  L.push(row("时长",lab("duration",state.duration)));
-  L.push(row("画幅",lab("aspect",state.aspect)));
-  L.push(row("受众",lab("audience",state.audience)));
-  L.push(row("数学画像",lab("math",state.math)));
-  L.push(row("动手画像",lab("hands_on",state.hands_on)));
-  L.push(row("类比密度",lab("analogy",state.analogy)));
-  L.push(row("钩子",lab("hook",state.hook)));
-  L.push(row("结尾 CTA",listOf("ctas").join(" + ")));
-  L.push(row("封面",lab("cover",state.cover)));
-  L.push(row("发布平台",lab("platform",state.platform)));
-  L.push(row("门禁严格度",lab("strictness",state.strictness)));
-  L.push(row("子智能体",listOf("agents").join(" · ")));
-  L.push(row("禁止清单",listOf("forbidden").join("；")));
+  L.push("## 选择总表（自动生成 · 与左侧 61 个维度一一对应）");
+  L.push("| # | 维度 | 选择 |"); L.push("|---|---|---|");
+  let no=0;
+  SECTIONS.forEach(sec=>sec.rows.forEach(r=>{
+    no++;
+    let v;
+    if(r.type==="text") v = state[r.key] || "（待定）";
+    else if(r.type==="style") v = lab("visual_language", state.visual_language);
+    else if(r.type==="multi") v = listOf(r.key).join(" + ") || "（无）";
+    else v = lab(r.key, state[r.key]);
+    L.push(`| ${String(no).padStart(2,"0")} | ${r.label.replace(/\|/g,"/")} | ${v} |`);
+  }));
   L.push("");
   L.push("## 与上一版差异");
   L.push(`- 保留：${state.keep||"（无）"}`);
@@ -689,8 +800,36 @@ function mdText(){
   L.push("## 大胆变换自检（WORKFLOW §10.5）");
   L.push(`- 图形族 ${state.families.length} 套（须 ≥3）`);
   L.push("- 每章形变 ≥2（storyboard 表逐章登记）");
-  L.push("- 形式转场每 45s ≥1（转场池："+listOf("transitions").join("/")+"）");
+  L.push(`- 形式转场每 45s ≥1（转场池：${listOf("transitions").join("/")}）`);
   L.push("- 主视觉每章 ≥35% 画面（抽帧检查）");
+  L.push("");
+  L.push("## 动效与运镜计划");
+  const wmNames={entrance:"入场与展开",glyph:"文字与字形",numchart:"数字与图表",scan:"扫描与信号",layout:"布局与层次",scroll:"滚动与轮播",path:"路径与描绘",follow:"跟随与回弹",grow:"变形与生长","3d":"立体与镜头",accent:"强调与配色",atmo:"光效与氛围"};
+  const epNames={ep01:"EP01 社媒切片（8 镜结构合同/竖版规则）",ep02:"EP02 brutalist 音乐片（纯音乐节奏/仪表板布局）",ep03:"EP03 全论文（21 章 7 机位/视差星场/辉光公式装配）",ep04:"EP04 位置编码（动效库匹配实装/wise-motion 组件）"};
+  const methNames={"motion-doctrine":"motion-doctrine 动效法则网关（先读）","design-taste-frontend":"design-taste-frontend 反模板审美","cut-the-curve":"cut-the-curve 缓动曲线目录","seam-craft":"seam-craft 转场接缝","oversized-cursor":"oversized-cursor 光标驱动","captions-overlay":"captions-overlay 字幕方案"};
+  const shotNames={"lieflat-lens":"lieflat lens-reference.html 镜头语言","video-shots":"video-shots 镜头库","video-shot-demos":"video-shot-demos 分镜演示","swiss-shot-demos":"swiss-shot-demos 瑞士分镜"};
+  const effNames={"wm-catalog":"engines/wise-motion/catalog/index.html（101 组件预览）","wm-match":"node engines/wise-motion/scripts/match.mjs \"<动作描述>\"（语义检索）","ml-showcase":"engines/motion-lab/motion-lab-showcase.html（160 CSS 动效离线预览）","ml-skill":".zcode/skills/motion-lab/SKILL.md（按类索引表）"};
+  L.push(`- 动效检索：${lab("effect_lookup",state.effect_lookup)}；命中→export.mjs 导出改造（import 路径改相对 src/halftone/），未命中→手写并写 route-decision`);
+  L.push(`- wise-motion 分类偏好：${state.wm_categories.map(c=>wmNames[c]||c).join("、")||"（不限）"}`);
+  L.push(`- 文字动效：${lab("text_fx",state.text_fx)} · 每章动效 ${lab("chapter_fx_count",state.chapter_fx_count)} 处（登记进 3-figures）`);
+  L.push(`- 特效密度：${lab("fx_density",state.fx_density)} · 辉光 ${lab("glow",state.glow)} · 粒子 ${lab("particles",state.particles)} · 噪声 ${lab("noise",state.noise)}`);
+  L.push(`- 运镜：${listOf("camera_moves").join("/")} · 每章 ${lab("camera_cues",state.camera_cues)} cue · ${lab("camera_rhythm",state.camera_rhythm)} · 速度 ${lab("orbit_speed",state.orbit_speed)} · ${lab("parallax",state.parallax)}`);
+  L.push(`- 场景切换：章间 ${lab("chapter_switch",state.chapter_switch)} · 章内 ${lab("inner_switch",state.inner_switch)} · 形式转场 ${lab("form_transition_rate",state.form_transition_rate)}`);
+  L.push("");
+  L.push("## 参考清单（动手前按此打开）");
+  L.push("### 本系列成片");
+  state.ref_episodes.forEach(e=>L.push(`- ${epNames[e]||e}`));
+  if(state.ref_episodes.length===0) L.push("- （无）");
+  L.push("### 方法论技能");
+  state.ref_methodology.forEach(m=>L.push(`- ${methNames[m]||m}`));
+  if(state.ref_methodology.length===0) L.push("- （无）");
+  L.push("### 镜头/分镜");
+  state.ref_shotlibs.forEach(s=>L.push(`- ${shotNames[s]||s}`));
+  if(state.ref_shotlibs.length===0) L.push("- （无）");
+  L.push("### 动效库入口");
+  state.ref_effects.forEach(e=>L.push(`- ${effNames[e]||e}`));
+  if(state.ref_effects.length===0) L.push("- （无）");
+  if(state.ref_custom) L.push(`### 自定义\n- ${state.ref_custom}`);
   L.push("");
   L.push("## 子智能体计划（agents.yaml 触发条件）");
   L.push(listOf("agents").map(a=>`- ${a}`).join("\n")||"- 不拆（简单任务）");
@@ -720,13 +859,16 @@ function render(){
   const push=(n,v,warn)=>rows.push(`<div class="kv ${warn?"warn":""}"><span>${n}</span><span>${v}</span></div>`);
   push("项目",lab("project_type",state.project_type)+" · "+lab("route",state.route)+" · "+lab("target",state.target));
   push("视觉",lab("visual_language",state.visual_language)+" · "+lab("accent",state.accent)+" · "+lab("background",state.background));
-  push("动效",lab("motion",state.motion)+" · 转场×"+state.transitions.length+" · 机位"+lab("camera_cues",state.camera_cues)+" · "+lab("easing",state.easing));
+  push("动效",lab("motion",state.motion)+" · "+lab("fx_density",state.fx_density)+" · 每章 "+lab("chapter_fx_count",state.chapter_fx_count)+" · "+lab("effect_lookup",state.effect_lookup));
+  push("运镜",listOf("camera_moves").length+" 机位 · "+lab("camera_cues",state.camera_cues)+" cue · "+lab("camera_rhythm",state.camera_rhythm)+" · "+lab("parallax",state.parallax));
+  push("切换",lab("chapter_switch",state.chapter_switch)+" / "+lab("inner_switch",state.inner_switch)+" · "+lab("form_transition_rate",state.form_transition_rate));
   push("大胆",lab("bold_level",state.bold_level)+" · 图形族×"+state.families.length+(state.families.length<3?" ⚠不足3":""), state.families.length<3);
   push("标题字幕",lab("chapter_card",state.chapter_card)+" · "+lab("captions",state.captions)+" · "+lab("caption_size",state.caption_size));
   push("声音",lab("voice",state.voice)+" · "+lab("rate",state.rate)+" · "+lab("bgm",state.bgm));
   push("结构",lab("hook",state.hook)+" · CTA×"+state.ctas.length+" · "+lab("duration",state.duration)+" · "+lab("aspect",state.aspect));
   push("受众",lab("audience",state.audience)+" · "+lab("math",state.math)+" · "+lab("hands_on",state.hands_on));
   push("交付",lab("cover",state.cover)+" · "+lab("platform",state.platform)+" · "+lab("strictness",state.strictness)+" · agents×"+state.agents.length);
+  push("参考",["ref_episodes","ref_methodology","ref_shotlibs","ref_effects"].map(k=>state[k].length).join("+")+" 组"+(state.ref_custom?" +自定义":""));
   push("禁止",state.forbidden.length+" 项");
   kv.innerHTML=rows.join("");
   // 输出

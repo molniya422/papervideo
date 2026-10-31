@@ -11,7 +11,7 @@
 - 用户要求"讲论文 / 论文讲解 / paper explainer / 做成讲解视频 / 画模型图 / 学习笔记"时，
   优先走 `paper-explain` 工作流，按其路由表选择下游技能。
 - **生成视频前必须先跑 `design-intake`**：用 AskUserQuestion 两轮问清风格/主色/动效/声音/时长/画幅/受众，
-  或让用户用 `design-picker.html`（全维度 v2：42 决策维度 + 6 锁定铁律，输出 JSON/paperpipe.yaml/design-intake.md 三件套）自己选；
+  或让用户用 `design-picker.html`（全维度 v2：61 决策维度·九区 + 6 锁定铁律，输出 JSON/paperpipe.yaml/design-intake.md 三件套）自己选；
   产出 `0-brief/design-intake.md`。用户不在线则按默认值并标注假设。
 - **然后跑 `prompt-forge`** 产出 `0-brief/brief.md`（三套方案 + XML brief + 禁止清单 +
   8 分制验收），旁白先过 `humanize-writing`；没有 brief 不得写代码或渲帧。

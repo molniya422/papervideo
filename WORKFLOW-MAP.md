@@ -118,7 +118,7 @@ output/<run-id>/
 | `D:\papervideo\README.md` | 技能套件说明（来源、目录结构、快速上手） |
 | `D:\papervideo\AGENTS.md` | agent 工作区规则（技能路由、强制阶段、产物约定） |
 | `D:\papervideo\WORKFLOW-MAP.md` | 本文（组件地图） |
-| `D:\papervideo\design-picker.html` | **全维度设计选择器 v2**：8 视觉语言卡（含 NEON ORBIT 机甲霓虹/示波终端）× 42 决策维度（项目/路线/target/延续策略/色阶/排版/背景/机位库/缓动/停持/大胆档位/图形族/章节卡/字幕/voice/语速实测/BPM/SFX/钩子/CTA/画像/封面/平台/门禁严格度/子智能体/禁止清单）+ 6 条锁定铁律；输出三件套 **JSON（对话）+ paperpipe.yaml（直接落盘）+ design-intake.md** |
+| `D:\papervideo\design-picker.html` | **全维度设计选择器 v2**：8 视觉语言卡（含 NEON ORBIT 机甲霓虹/示波终端）× **61 决策维度**，九区：项目交付/视觉/**动效与特效（检索策略/wise-motion 12 分类/文字动效/每章动效数/特效密度/辉光/粒子/噪声）**/**运镜与场景切换（机位库/每章 cue/运镜节奏/环绕速度/视差强度/章间切换/章内切换/形式转场频率）**/标题字幕/声音/受众/**结构与交付**/**参考内容（EP 系列成片/方法论技能/镜头分镜库/动效库入口带路径/自定义）** + 6 条锁定铁律；输出三件套 **JSON（对话）+ paperpipe.yaml（直接落盘）+ design-intake.md（61 行总表自动生成 + 动效运镜计划 + 参考清单）** |
 | `D:\papervideo\docs\design-picker-preview.png` | 选择器截图 |
 
 ---
