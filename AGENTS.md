@@ -22,6 +22,7 @@
 - 工作流产物统一放 `output/`（按阶段编号子目录），阶段状态写 `pipeline-state.json` 以便续跑。
 - HyperFrames 引擎源码检出在 `engines/hyperframes`（不要删）；渲染路线 D 用它，命令 `npx hyperframes --help`。
 - Wise Motion 引擎检出在 `engines/wise-motion`（101 个 Remotion 动效 + 素材库，match/show/export 三命令，技能 `wise-motion`；仅在用户明确调用时使用）。
+- Lieflat Code Video Starter 在 `engines/lieflat-code-video`（产品发布片 Remotion Starter，12 个 kit 模块：camera/springs/transitions/surfaces/type 等，12s 示例影片，lens-reference.html 镜头语言参考）。技能 `lieflat-code-video`。
 - Motion.Lab 动效库检出在 `engines/motion-lab`（160 动效 + 48 模板，Next.js）；技能 `motion-lab` 提供按需读取的 HTML/CSS/JS 源码（references/effects/<id>.md），零依赖单文件预览 `engines/motion-lab/motion-lab-showcase.html`。
 - 动效法则先读 `motion-doctrine`，再按需 `cut-the-curve` / `seam-craft` / `oversized-cursor`。
 - 完整的阶段/产物/门槛/故障排查写在 `WORKFLOW.md`，修改流程时同步更新它。

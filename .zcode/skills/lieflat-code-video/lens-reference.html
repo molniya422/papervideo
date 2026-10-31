@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>代码视频的镜头语言 1/8 — 镜头运动</title>
+<style>
+:root{--paper:#F2F0EA;--ink:#1C1C1A;--muted:#8A877F;--acc:#F5572F}
+*{box-sizing:border-box;margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.5 -apple-system,"PingFang SC","Helvetica Neue",Inter,system-ui,sans-serif;display:flex;justify-content:center}
+main{width:100%;max-width:980px;padding:34px 22px 60px}
+header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px}
+h1{font-size:24px;font-weight:600;letter-spacing:-.3px}
+header span{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px 22px}
+.tile canvas{width:100%;aspect-ratio:16/9;display:block;border-radius:6px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04),0 6px 22px rgba(40,30,10,.07),inset 0 0 0 1px rgba(0,0,0,.05)}
+.name{display:flex;align-items:baseline;gap:12px;margin-top:10px}
+.name b{font-size:26px;font-weight:300;color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.name strong{font-size:22px;font-weight:600}
+.en{font-size:13.5px;color:var(--muted);margin-top:1px}
+.dots{display:flex;gap:8px;justify-content:center;margin-top:30px;align-items:center}.dots a{width:9px;height:9px;border-radius:5px;background:#D6D2C8;display:block}.dots a.on{width:28px;background:var(--acc)}.dots a.off{opacity:.45;pointer-events:none}
+.nav{display:flex;justify-content:space-between;margin-top:16px;font-size:14px}.nav a{color:var(--ink);text-decoration:none;opacity:.7}.nav a:hover{opacity:1}
+.bad b{color:#9A968C}.bad strong::after{content:"反例";font-size:12px;font-weight:600;color:#fff;background:#B9B3A7;border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:3px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+</style></head><body><main>
+<header><h1 id="title"></h1><span id="sub"></span></header>
+<div class="grid" id="grid"></div>
+<div class="dots" id="dots"></div>
+</main>
+<script>
+const PAGES = [
+  {title: '代码视频的镜头语言 1/8 — 镜头运动', sub: '镜头怎样移动', tiles: [
+    ['01','推近','Dolly in'],['02','拉远','Pull back'],['03','横摇','Pan'],['04','跟拍','Tracking shot'],
+    ['05','环绕','Orbit'],['06','摇臂上升','Crane up'],['07','推轨变焦','Dolly zoom (Vertigo)'],['08','甩镜','Whip pan']]},
+  {title: '代码视频的镜头语言 2/8 — 转场与递接', sub: '一个镜头怎样交给下一个', tiles: [
+    ['09','变形带过去','Carry / morph'],['10','缩进元素','Shrink into'],['11','钻进按钮','Push through'],['12','跟着光标走','Follow the cursor'],
+    ['13','卡拍硬切','Cut on the beat'],['14','匹配剪辑','Match cut'],['15','遮挡转场','Occlusion wipe'],['16','淡入淡出','PPT fade — 像翻页', 'bad']]},
+  {title: '代码视频的镜头语言 7/8 — 镜头与转场（续）', sub: '更多镜头和衔接', tiles: [
+    ['49','穿越','Fly-through'],['50','手持漂移','Handheld drift'],['51','荷兰角','Dutch angle'],['52','视差分层','Parallax layers'],
+    ['53','拉焦','Rack focus'],['54','爆开飞散','Burst & scatter'],['55','模糊换内容','Blur swap'],['56','整屏换色节拍','Re-tint metronome']]},
+  {title: '代码视频的镜头语言 3/8 — 物理与节奏', sub: '东西怎样动才不像网页', tiles: [
+    ['17','弹簧落定','Spring settle'],['18','过冲','Overshoot'],['19','两边弹簧','Two-edge stretch'],['20','错开出现','Stagger'],
+    ['21','速度渐变','Speed ramp'],['22','运动拖影','Motion blur'],['23','定格','Freeze frame'],['24','爆发与喘气','Burst & breath']]},
+  {title: '代码视频的镜头语言 4/8 — 界面展示', sub: '界面怎样上镜', tiles: [
+    ['25','一个控件占满画面','Hero control punch-in'],['26','句中嵌界面','Objects in a sentence'],['27','锐利界面浮在柔光上','Sharp UI on a soft field'],['28','倾斜页面加景深','Tilted page + depth of field'],
+    ['29','爆炸分层','Exploded layers'],['30','清单打勾','Checklist narration'],['31','通知叠加','Stacking notifications'],['32','双光标协作','Two actors, one world']]},
+  {title: '代码视频的镜头语言 5/8 — 文字与主张', sub: '字怎样成为主角', tiles: [
+    ['33','打字','Typing'],['34','单词汇聚','Scatter to sentence'],['35','老虎机换词','Slot-wheel swap'],['36','关键词填色','Keyword fill'],
+    ['37','图标替换字母','Icon in the word'],['38','叠排大字','Stacked slam'],['39','标题卡','Title-card punctuation'],['40','左右分屏主张','Split claim']]},
+  {title: '代码视频的镜头语言 6/8 — 证明与数据', sub: '怎样让人相信', tiles: [
+    ['41','计数冲高','Count up'],['42','左右计数赛跑','Live race'],['43','仪表盘','Instrument dials'],['44','价格阶梯','Metric ladder'],
+    ['45','文件墙','Count-up wall'],['46','结果从来源长出','Result from its source'],['47','素材落成网格','Assets settle to a grid'],['48','一句话出结果','Prompt → result']]},
+  {title: '代码视频的镜头语言 8/8 — 节奏、界面与收尾', sub: '一部片子怎样收住', tiles: [
+    ['57','慢动作','Slow motion'],['58','固定标题轮换证据','Fixed header, rotating proof'],['59','从噪点浮现','Condense from noise'],['60','前后对比','Before / after'],
+    ['61','首尾循环','Seamless loop'],['62','光扫过','Light sweep'],['63','一镜到底','One take'],['64','结尾落版','End lockup']]},
+];
+const PAGE = Math.max(1, Math.min(PAGES.length, +(new URLSearchParams(location.search).get('p') || 1))) - 1;
+PAGES.forEach((pg, i) => { pg.title = `代码视频的镜头语言 ${i + 1}/${PAGES.length} — ${pg.title.split(' — ')[1]}`; });
+let _n = 0; PAGES.forEach(pg => pg.tiles.forEach(tl => { tl[0] = String(++_n).padStart(2, '0'); }));
+document.getElementById('title').textContent = PAGES[PAGE].title;
+document.getElementById('sub').textContent = PAGES[PAGE].sub + ' · lieflat code video';
+document.title = PAGES[PAGE].title;
+document.getElementById('dots').innerHTML = [0,1,2,3,4,5,6,7].map(i => `<a href="?p=${i+1}" class="${i === PAGE ? 'on' : i >= PAGES.length ? 'off' : ''}"></a>`).join('');
+const grid = document.getElementById('grid');
+const canvases = PAGES[PAGE].tiles.map(([n, zh, en, bad]) => {
+  const d = document.createElement('div'); d.className = 'tile' + (bad ? ' bad' : '');
+  d.innerHTML = `<canvas></canvas><div class="name"><b>${n}</b><strong>${zh}</strong></div><div class="en">${en}</div>`;
+  grid.appendChild(d); return d.querySelector('canvas');
+});
+document.querySelector('main').insertAdjacentHTML('beforeend', `<div class="nav"><a href="?p=${PAGE}" style="visibility:${PAGE ? 'visible' : 'hidden'}">← 上一页</a><a href="?p=${PAGE + 2}" style="visibility:${PAGE < PAGES.length - 1 ? 'visible' : 'hidden'}">下一页 →</a></div>`);
+
+// ---------- tiny 3-D: pinhole camera, ground grid, far blocks, one UI card + cursor + orange dot ----------
+const C = {ink:'#1C1C1A', grid:'rgba(28,28,26,', block:'#ECE9E2', blockLine:'rgba(28,28,26,.10)', acc:'#F5572F', hill:'#E9E5DC'};
+const ease = x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+const ping = t => ease(t < .5 ? t * 2 : 2 - t * 2);           // 0→1→0, eased
+const hold = (t, a = .12, b = .78) => ease(Math.min(1, Math.max(0, (t - a) / (b - a)))); // 0 … ramp … 1
+function lookAt(cam, tx, ty, tz){ const dx = tx - cam.x, dy = ty - cam.y, dz = tz - cam.z; cam.yaw = Math.atan2(dx, dz); cam.pitch = Math.atan2(dy, Math.hypot(dx, dz)); return cam; }
+function proj(cam, W, H, x, y, z){
+  let dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
+  const cy = Math.cos(-cam.yaw), sy = Math.sin(-cam.yaw);
+  let x1 = dx * cy + dz * sy, z1 = -dx * sy + dz * cy;
+  const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  let y2 = dy * cp - z1 * sp, z2 = dy * sp + z1 * cp;
+  if (z2 < .12) return null;
+  const f = (W / 2) / Math.tan(cam.fov * Math.PI / 360);
+  let sx = f * x1 / z2, syy = -f * y2 / z2;
+  const cr = Math.cos(cam.roll || 0), sr = Math.sin(cam.roll || 0);
+  return [W / 2 + sx * cr - syy * sr, H / 2 + sx * sr + syy * cr, z2];
+}
+function line(ctx, cam, W, H, a, b, steps = 12){
+  let prev = null;
+  for (let i = 0; i <= steps; i++){
+    const k = i / steps, p = proj(cam, W, H, a[0] + (b[0]-a[0])*k, a[1] + (b[1]-a[1])*k, a[2] + (b[2]-a[2])*k);
+    if (p && prev){ ctx.moveTo(prev[0], prev[1]); ctx.lineTo(p[0], p[1]); }
+    prev = p;
+  }
+}
+function poly(ctx, cam, W, H, pts){ const P = pts.map(q => proj(cam, W, H, ...q)); if (P.some(p => !p)) return null; ctx.beginPath(); P.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); return P; }
+// [x, z, w, h, lift] — sorted far → near
+const WINDOWS = [[-3, 40, 9, 5.5, 1.2],[12, 38, 7, 4.2, .6],[-17, 37, 8, 4.8, 0],[22, 34, 6, 6.5, 1.8],[-9, 31, 5, 3.4, 2.4],[5.5, 30, 4.6, 3.2, 3.1],[-24, 29, 5, 3.6, 1.2]].sort((a, b) => b[1] - a[1]);
+// floating pills [x, y, z, w]
+const PILLS = [[-5.5, 2.1, 20, 2.2],[7, 3.0, 22, 2.6],[-12.5, 1.4, 18, 1.9],[14, 1.7, 17, 2.0]];
+function scene(ctx, W, H, cam, card = {x:0, z:6}, extra = {}){
+  // sky + floor
+  const hz = proj(cam, W, H, cam.x + Math.sin(cam.yaw) * 400, 0, cam.z + Math.cos(cam.yaw) * 400);
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#FFFFFF'); g.addColorStop(1, '#F6F4EF');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // soft horizon glow
+  if (hz){ const gg = ctx.createLinearGradient(0, hz[1] - H * .35, 0, hz[1] + 4); gg.addColorStop(0, 'rgba(245,87,47,0)'); gg.addColorStop(1, 'rgba(245,87,47,.045)'); ctx.fillStyle = gg; ctx.fillRect(0, hz[1] - H * .35, W, H * .35 + 4); }
+  // ground grid
+  ctx.lineWidth = 1;
+  for (let z = 1; z <= 46; z += 1.5){ ctx.strokeStyle = C.grid + (0.10 * Math.max(0, 1 - z / 46)).toFixed(3) + ')'; ctx.beginPath(); line(ctx, cam, W, H, [-30, 0, z], [30, 0, z], 24); ctx.stroke(); }
+  for (let x = -30; x <= 30; x += 1.5){ ctx.strokeStyle = C.grid + '0.06)'; ctx.beginPath(); line(ctx, cam, W, H, [x, 0, -10], [x, 0, 46], 40); ctx.stroke(); }
+  // distant ghost windows (the UI world), far to near so nearer ones overlap
+  for (const [x, z, w, h, y0] of WINDOWS){
+    const P = poly(ctx, cam, W, H, [[x - w/2, y0, z], [x + w/2, y0, z], [x + w/2, y0 + h, z], [x - w/2, y0 + h, z]]);
+    if (!P) continue;
+    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fill(); ctx.strokeStyle = 'rgba(28,28,26,.10)'; ctx.lineWidth = 1; ctx.stroke();
+    const bar = poly(ctx, cam, W, H, [[x - w/2, y0 + h - .32, z - .01], [x + w/2, y0 + h - .32, z - .01], [x + w/2, y0 + h, z - .01], [x - w/2, y0 + h, z - .01]]);
+    if (bar){ ctx.fillStyle = '#F1EEE7'; ctx.fill(); }
+    ctx.fillStyle = 'rgba(28,28,26,.09)';
+    for (let r = 0; r < Math.min(5, Math.floor((h - .7) / .42)); r++){
+      const L = (r === 0 ? .45 : .7 - (r % 3) * .12) * w, yy = y0 + h - .7 - r * .42;
+      const q = poly(ctx, cam, W, H, [[x - w/2 + .3, yy, z - .01], [x - w/2 + .3 + L, yy, z - .01], [x - w/2 + .3 + L, yy + .16, z - .01], [x - w/2 + .3, yy + .16, z - .01]]);
+      if (q) ctx.fill();
+    }
+    if (y0 > .05){ ctx.strokeStyle = 'rgba(28,28,26,.08)'; ctx.beginPath(); line(ctx, cam, W, H, [x, 0, z], [x, y0, z], 2); ctx.stroke(); }
+  }
+  for (const [x, y, z, w] of PILLS){
+    const P = poly(ctx, cam, W, H, [[x - w/2, y, z], [x + w/2, y, z], [x + w/2, y + .34, z], [x - w/2, y + .34, z]]);
+    if (!P) continue; ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.fill(); ctx.strokeStyle = 'rgba(28,28,26,.10)'; ctx.stroke();
+    const d = proj(cam, W, H, x - w/2 + .2, y + .17, z - .01); if (d){ ctx.fillStyle = x > 0 ? 'rgba(245,87,47,.75)' : 'rgba(28,28,26,.25)'; ctx.beginPath(); ctx.arc(d[0], d[1], Math.max(1, 30 / d[2]), 0, 7); ctx.fill(); }
+  }
+  (extra.cards || [card]).forEach(cd => drawCard(ctx, W, H, cam, cd));
+}
+function drawCard(ctx, W, H, cam, cd){
+  const x = cd.x, z = cd.z, w = 1.7, h = 1.08, y0 = .32;
+  // shadow
+  ctx.fillStyle = 'rgba(40,30,10,.10)';
+  const sh = []; for (let i = 0; i < 24; i++){ const a = i / 24 * Math.PI * 2; sh.push([x + Math.cos(a) * w * .62, 0.001, z + Math.sin(a) * .35]); }
+  if (poly(ctx, cam, W, H, sh)) ctx.fill();
+  // stand
+  ctx.strokeStyle = 'rgba(28,28,26,.25)'; ctx.lineWidth = 1.2; ctx.beginPath(); line(ctx, cam, W, H, [x, 0, z], [x, y0, z], 2); ctx.stroke();
+  // card body via affine from 3 projected corners (card faces -z)
+  const A = proj(cam, W, H, x - w/2, y0 + h, z), B = proj(cam, W, H, x + w/2, y0 + h, z), D = proj(cam, W, H, x - w/2, y0, z);
+  if (!A || !B || !D) return;
+  ctx.save();
+  ctx.transform((B[0]-A[0]) / 170, (B[1]-A[1]) / 170, (D[0]-A[0]) / 108, (D[1]-A[1]) / 108, A[0], A[1]);
+  ctx.shadowColor = 'rgba(40,30,10,.18)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+  const dark = cd.kind === 'dark';
+  rr(ctx, 0, 0, 170, 108, 9); ctx.fillStyle = dark ? '#1C1C1A' : '#fff'; ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(28,28,26,.10)'; ctx.lineWidth = 1; ctx.stroke();
+  if (!dark){ ctx.fillStyle = '#F2F0EA'; rr(ctx, 0, 0, 170, 18, 9); ctx.fill(); ctx.fillRect(0, 9, 170, 9); }
+  ctx.fillStyle = dark ? 'rgba(255,255,255,.25)' : 'rgba(28,28,26,.18)'; [8, 15, 22].forEach(cx => { ctx.beginPath(); ctx.arc(cx, 9, 2.2, 0, 7); ctx.fill(); });
+  if (cd.kind === 'chart' || dark){
+    const hs = [26, 40, 33, 58, 47, 72];
+    hs.forEach((h, i) => { ctx.fillStyle = i === 5 ? C.acc : dark ? 'rgba(255,255,255,.55)' : 'rgba(28,28,26,.22)'; rr(ctx, 16 + i * 23, 96 - h, 14, h, 3); ctx.fill(); });
+    ctx.fillStyle = dark ? '#fff' : C.ink; rr(ctx, 14, 26, 60, 7, 3); ctx.fill();
+  } else {
+    ctx.fillStyle = C.ink; rr(ctx, 14, 30, 78, 8, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(28,28,26,.16)'; rr(ctx, 14, 46, 120, 6, 3); ctx.fill(); rr(ctx, 14, 58, 96, 6, 3); ctx.fill(); rr(ctx, 14, 70, 108, 6, 3); ctx.fill();
+    ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(146, 88, 9, 0, 7); ctx.fill();
+    if (!cd.noCursor){
+      ctx.translate(150, 92); ctx.fillStyle = C.ink; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 15); ctx.lineTo(4, 11); ctx.lineTo(7, 17); ctx.lineTo(9.5, 16); ctx.lineTo(6.5, 10); ctx.lineTo(11.5, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+const BTN = cd => [cd.x - 1.7/2 + 1.7 * 146/170, .32 + 1.08 * (1 - 88/108), cd.z];
+function rr(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function hud(ctx, W, H, read, t){
+  const m = 12, L = 14; ctx.strokeStyle = 'rgba(28,28,26,.55)'; ctx.lineWidth = 1.3;
+  [[m, m, 1, 1], [W - m, m, -1, 1], [m, H - m, 1, -1], [W - m, H - m, -1, -1]].forEach(([x, y, sx, sy]) => { ctx.beginPath(); ctx.moveTo(x, y + sy * L); ctx.lineTo(x, y); ctx.lineTo(x + sx * L, y); ctx.stroke(); });
+  ctx.fillStyle = Math.floor(t * 2) % 2 ? 'rgba(245,87,47,.35)' : C.acc; ctx.beginPath(); ctx.arc(m + 14, m + 13, 3.2, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(28,28,26,.6)'; ctx.font = '600 9.5px ui-monospace,Menlo,monospace'; ctx.fillText('REC', m + 21, m + 16.5);
+  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(28,28,26,.75)'; ctx.font = '600 10.5px ui-monospace,Menlo,monospace'; ctx.fillText(read, W - m - 6, m + 16.5); ctx.textAlign = 'left';
+  ctx.strokeStyle = 'rgba(28,28,26,.18)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W/2 - 5, H/2); ctx.lineTo(W/2 + 5, H/2); ctx.moveTo(W/2, H/2 - 5); ctx.lineTo(W/2, H/2 + 5); ctx.stroke();
+}
+
+// ---------- the eight moves (t = loop phase 0..1) ----------
+const P = 4.2; // seconds per loop
+const MOVES = [
+  t => { const k = hold(t); const cam = lookAt({x: 0, y: .9, z: lerp(-7, 2.4, k), fov: 46}, 0, .8, 6); return [cam, `${(6 - cam.z).toFixed(1)} m`]; },
+  t => { const k = hold(t); const cam = lookAt({x: 0, y: lerp(.85, 2.6, k), z: lerp(3, -10, k), fov: 46}, 0, .8, 6); return [cam, `${(6 - cam.z).toFixed(1)} m`]; },
+  t => { const k = ping(t); const cam = {x: 0, y: .9, z: -1, fov: 46, yaw: lerp(-.42, .42, k), pitch: -.03}; return [cam, `${Math.round(cam.yaw * 57.3)}°`]; },
+  t => { const k = ping(t); const cx = lerp(-7, 7, k); const camx = lerp(-7, 7, ping((t + 1 - .02) % 1)); const cam = lookAt({x: camx, y: .95, z: 1.2, fov: 46}, camx, .8, 6); return [cam, `→ ${(Math.abs(Math.sin(t * Math.PI * 2)) * 2.4).toFixed(1)} m/s`, {cards: [{x: cx, z: 6}]}]; },
+  t => { const a = lerp(-1.05, 1.05, ping(t)); const cam = lookAt({x: Math.sin(a) * 6, y: 1.2, z: 6 - Math.cos(a) * 6, fov: 46}, 0, .85, 6); return [cam, `${Math.round(a * 57.3)}°`, {cards: [{x: 0, z: 6}]}]; },
+  t => { const k = hold(t); const cam = lookAt({x: 0, y: lerp(.7, 7, k), z: lerp(1, -1.5, k), fov: 46}, 0, .6, 6); return [cam, `↑ ${cam.y.toFixed(1)} m`]; },
+  t => { const k = hold(t); const d = lerp(3.2, 14, k); const fov = 2 * Math.atan(1.25 / d) * 57.3; const cam = lookAt({x: 0, y: .85, z: 6 - d, fov}, 0, .85, 6); return [cam, `${Math.round(24 * 46 / fov)}mm`]; },
+  t => { const k = t < .35 ? 0 : t < .5 ? ease((t - .35) / .15) : t < .85 ? 1 : 1 - ease((t - .85) / .15); const cam = {x: 0, y: .9, z: 0, fov: 44, yaw: lerp(0, 1.15, k) - .02, pitch: -.03};
+         return [cam, (t > .33 && t < .52) || t > .83 ? 'WHIP' : 'yaw ' + Math.round(cam.yaw * 57.3) + '°', {cards: [{x: 0, z: 6}, {x: 12.7, z: 5.6}], blur: true}]; },
+];
+function lerp(a, b, k){ return a + (b - a) * k; }
+
+
+// ---------- shared helpers for pages 2–3 ----------
+const camAt = (z = -1.2, x = 0, fov = 46, ty = .85) => lookAt({x, y: .9, z, fov}, x, ty, 6);
+const shotA = (ctx, W, H, cam = camAt()) => scene(ctx, W, H, cam, undefined, {cards: [{x: 0, z: 6}]});
+const shotB = (ctx, W, H, cam = camAt()) => scene(ctx, W, H, cam, undefined, {cards: [{x: 0, z: 6, kind: 'chart'}]});
+const shotD = (ctx, W, H, cam = camAt()) => scene(ctx, W, H, cam, undefined, {cards: [{x: 0, z: 6, kind: 'dark'}]});
+const sp = (t, w = 18, z = .45) => { if (t <= 0) return 0; const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t)); };
+const clamp01 = x => Math.max(0, Math.min(1, x));
+const seg = (t, a, b) => clamp01((t - a) / (b - a));
+function disc(ctx, x, y, r, col = C.acc, glow = .25){ ctx.save(); ctx.shadowColor = `rgba(245,87,47,${glow})`; ctx.shadowBlur = r * .8; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.restore(); }
+function panel(ctx, W, H, k){ // a flat card in screen space (for 2D tiles), centred, scale k
+  const w = W * .42 * k, h = w * .63, x = W / 2 - w / 2, y = H * .52 - h / 2;
+  ctx.save(); ctx.shadowColor = 'rgba(40,30,10,.16)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 6; ctx.fillStyle = '#fff'; rr(ctx, x, y, w, h, 10 * k); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = 'rgba(28,28,26,.08)'; ctx.stroke();
+  return {x, y, w, h};
+}
+function bg2(ctx, W, H){ scene(ctx, W, H, lookAt({x: 0, y: 1.6, z: -6, fov: 40}, 0, 1.2, 20), undefined, {cards: []}); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(0, 0, W, H); }
+
+const PAGE2 = [
+  // 09 carry: the card's orange button lifts off and lands as the next shot's highlighted bar
+  (ctx, W, H, t) => {
+    const cam = camAt(-.6); const k = ease(seg(t, .38, .62));
+    if (t < .5) shotA(ctx, W, H, cam); else shotB(ctx, W, H, cam);
+    const a = proj(cam, W, H, ...BTN({x: 0, z: 6})), b = proj(cam, W, H, -1.7/2 + 1.7 * (16 + 5 * 23 + 7) / 170, .32 + 1.08 * (1 - 70/108), 6);
+    if (t > .36 && t < .66 && a && b){ const x = lerp(a[0], b[0], k), y = lerp(a[1], b[1], k) - 40 * Math.sin(Math.PI * k); disc(ctx, x, y, lerp(5, 9, Math.sin(Math.PI * k)) * (W / 420)); }
+    return t > .36 && t < .66 ? 'carry' : t < .5 ? 'A' : 'B';
+  },
+  // 10 shrink into: shot A shrinks into the face of the card in shot B
+  (ctx, W, H, t) => {
+    const cam = camAt(-.6); shotB(ctx, W, H, cam);
+    const k = ease(seg(t, .3, .62));
+    const A = proj(cam, W, H, -.85, 1.4, 6), D = proj(cam, W, H, .85, .32, 6);
+    const tx = lerp(0, A[0], k), ty = lerp(0, A[1], k), sw = lerp(W, D[0] - A[0], k) / W, sh = lerp(H, D[1] - A[1], k) / H;
+    if (k < 1){ ctx.save(); ctx.translate(tx, ty); ctx.scale(sw, sh); rr(ctx, 0, 0, W, H, 18 * k / sw); ctx.clip(); shotA(ctx, W, H, camAt(-.6 + 2 * (1 - k))); ctx.restore();
+      ctx.save(); ctx.globalAlpha = .35 * Math.sin(Math.PI * k); ctx.strokeStyle = C.ink; ctx.strokeRect(tx, ty, W * sw, H * sh); ctx.restore(); }
+    return `×${(1 / Math.max(.18, sw)).toFixed(1)}`;
+  },
+  // 11 push through: the camera dives into the orange button; its colour becomes the next frame, which opens out of it
+  (ctx, W, H, t) => {
+    const k = ease(seg(t, .1, .5)); const b = BTN({x: 0, z: 6});
+    if (t < .5){ const cam = lookAt({x: lerp(0, b[0], k), y: lerp(.9, b[1], k), z: lerp(-1, b[2] - .14, Math.pow(k, 1.4)), fov: 46}, b[0], b[1], 6); shotA(ctx, W, H, cam);
+      const q = proj(cam, W, H, ...b); if (q && k > .6){ ctx.fillStyle = C.acc; ctx.globalAlpha = seg(k, .75, 1); ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; } return `${Math.round(10 + 90 * k)}%`; }
+    shotD(ctx, W, H, camAt(lerp(1.5, -.8, ease(seg(t, .5, .8)))));
+    const r = lerp(0, Math.hypot(W, H), ease(seg(t, .5, .7)));
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.moveTo(W / 2 + r, H / 2); ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2); ctx.fillStyle = C.acc; ctx.fill('evenodd'); ctx.restore();
+    return 'through';
+  },
+  // 12 follow the cursor: the cursor walks from card A to card B; the camera follows it — no cut
+  (ctx, W, H, t) => {
+    const k = ease(seg(t, .15, .75)); const wx = lerp(-3.4, 3.4, k);
+    const cam = lookAt({x: lerp(-2.2, 2.2, ease(seg(t, .18, .8))), y: 1, z: 1.5, fov: 48}, lerp(-2.2, 2.2, ease(seg(t, .18, .8))), .85, 6);
+    scene(ctx, W, H, cam, undefined, {cards: [{x: -3.4, z: 6, noCursor: true}, {x: 3.4, z: 6, kind: 'chart'}]});
+    const q = proj(cam, W, H, wx + .55, .55 + .25 * Math.sin(Math.PI * k), 5.95);
+    if (q){ ctx.save(); ctx.translate(q[0], q[1]); const sc = W / 420; ctx.scale(sc * 1.3, sc * 1.3); ctx.fillStyle = C.ink; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 15); ctx.lineTo(4, 11); ctx.lineTo(7, 17); ctx.lineTo(9.5, 16); ctx.lineTo(6.5, 10); ctx.lineTo(11.5, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.ink; rr(ctx, 14, 16, 34, 13, 6); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '600 8px ui-monospace,Menlo'; ctx.fillText('You', 21, 25.5); ctx.restore(); }
+    return `x ${wx.toFixed(1)} m`;
+  },
+  // 13 cut on the beat: hard cuts land on beats (the dots), nothing in between
+  (ctx, W, H, t) => {
+    const beat = Math.floor(t * 8), shots = [shotA, shotB, shotD, shotB]; const sh = shots[Math.floor(beat / 2) % 4];
+    sh(ctx, W, H, camAt(-.8 + (t * 8 % 2) * .25));
+    const f = 1 - seg(t * 8 % 1, 0, .35);
+    for (let i = 0; i < 4; i++){ ctx.fillStyle = i === beat % 4 ? `rgba(245,87,47,${.45 + .55 * f})` : 'rgba(28,28,26,.15)'; ctx.beginPath(); ctx.arc(W - 70 + i * 13, H - 22, i === beat % 4 ? 3.6 + 1.6 * f : 3, 0, 7); ctx.fill(); }
+    return `123 BPM · ${beat % 4 + 1}`;
+  },
+  // 14 match cut: the orange button and the orange record share one place and one size across the cut
+  (ctx, W, H, t) => {
+    const b = BTN({x: 0, z: 6}); const cam = lookAt({x: b[0], y: b[1], z: lerp(2.6, 4.2, ease(seg(t, 0, .48))), fov: 46}, b[0], b[1], 6);
+    if (t < .5){ shotA(ctx, W, H, cam); return 'A'; }
+    bg2(ctx, W, H); const r = (proj(cam, W, H, b[0] + .09, b[1], b[2])[0] - W / 2);
+    const k = ease(seg(t, .5, .9));
+    ctx.strokeStyle = 'rgba(28,28,26,.25)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(W * .12, H * .78); for (let i = 0; i <= 40; i++){ const x = W * (.12 + .76 * i / 40); ctx.lineTo(x, H * (.78 - .32 * (i / 40) ** 1.4 - .05 * Math.sin(i * .9))); } ctx.stroke(); ctx.setLineDash([]);
+    disc(ctx, W / 2 + lerp(0, W * .2, k), H / 2 + lerp(0, -H * .06, k), lerp(r, r * .45, k));
+    return 'match';
+  },
+  // 15 occlusion: a big near card sweeps past the lens; the cut hides behind it
+  (ctx, W, H, t) => {
+    const x = lerp(W * 1.1, -W * 1.6, seg(t, .3, .7));
+    (x + W * .9 > W / 2 ? shotA : shotB)(ctx, W, H, camAt(-.6 - t * .5));
+    if (t > .3 && t < .7){ ctx.save(); ctx.filter = 'blur(6px)'; ctx.shadowColor = 'rgba(40,30,10,.25)'; ctx.shadowBlur = 30; ctx.fillStyle = '#FBFAF7'; rr(ctx, x, -H * .2, W * 1.4, H * 1.4, 60); ctx.fill();
+      ctx.fillStyle = 'rgba(28,28,26,.12)'; rr(ctx, x + 60, H * .3, W * .6, 18, 8); ctx.fill(); ctx.restore(); }
+    return t > .3 && t < .7 ? 'wipe' : '';
+  },
+  // 16 anti-example: fade to nothing, fade the next page in — reads as a slide deck
+  (ctx, W, H, t) => {
+    const a = 1 - seg(t, .3, .45), b = seg(t, .55, .7);
+    ctx.fillStyle = '#FBFAF7'; ctx.fillRect(0, 0, W, H);
+    if (a > 0){ ctx.globalAlpha = a; shotA(ctx, W, H, camAt(-1)); }
+    if (b > 0){ ctx.globalAlpha = b; shotB(ctx, W, H, camAt(-1)); }
+    ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(28,28,26,.45)'; ctx.font = '600 11px ui-monospace,Menlo'; ctx.fillText('✕  fade 0.5s', 26, H - 22);
+    return 'slide 1 → 2';
+  },
+];
+
+const PAGE3 = [
+  // 17 spring settle
+  (ctx, W, H, t) => { bg2(ctx, W, H); const k = sp(seg(t, .1, 1) * 3, 9, .38); const p = panel(ctx, W, H, 1); ctx.save(); ctx.restore();
+    ctx.clearRect(0, 0, 0, 0); bg2(ctx, W, H); ctx.save(); ctx.translate(0, lerp(-H * .7, 0, k)); panel(ctx, W, H, 1); ctx.fillStyle = C.ink; rr(ctx, p.x + 18, p.y + 20, p.w * .45, 9, 4); ctx.fill(); disc(ctx, p.x + p.w - 22, p.y + p.h - 20, 8); ctx.restore(); return 'ζ 0.38'; },
+  // 18 overshoot
+  (ctx, W, H, t) => { bg2(ctx, W, H); const k = sp(seg(t, .12, 1) * 3.2, 12, .5); const s = lerp(.55, 1, k); ctx.save(); ctx.translate(W / 2, H * .52); ctx.scale(s, s); ctx.translate(-W / 2, -H * .52);
+    const p = panel(ctx, W, H, 1); ctx.fillStyle = C.ink; rr(ctx, p.x + 18, p.y + 20, p.w * .45, 9, 4); ctx.fill(); disc(ctx, p.x + p.w - 22, p.y + p.h - 20, 8); ctx.restore(); return `${s > 1 ? '+' : ''}${Math.round((s - 1) * 100)}%`; },
+  // 19 two-edge stretch: a tab indicator whose leading edge is snappy and trailing edge lags
+  (ctx, W, H, t) => { bg2(ctx, W, H); const p = panel(ctx, W, H, 1.25); const tabs = 3, tw = (p.w - 40) / tabs, y = p.y + p.h * .42;
+    ctx.fillStyle = 'rgba(28,28,26,.06)'; rr(ctx, p.x + 20, y - 18, p.w - 40, 36, 18); ctx.fill();
+    const stops = [0, 1, 2, 0], seg4 = Math.floor(t * 3) % 3, lt = (t * 3) % 1, from = stops[seg4], to = stops[seg4 + 1];
+    const fast = sp(lt * 1.2, 22, .7), slow = sp(lt * 1.2, 11, .8), dir = to > from;
+    const L = p.x + 20 + tw * lerp(from, to, dir ? slow : fast), R = p.x + 20 + tw * lerp(from, to, dir ? fast : slow) + tw;
+    ctx.fillStyle = C.acc; rr(ctx, L + 3, y - 15, R - L - 6, 30, 15); ctx.fill();
+    ctx.fillStyle = 'rgba(28,28,26,.5)'; ctx.font = `600 ${11 * W / 420}px Inter,system-ui`; ['Mono', 'Palm', 'Wire'].forEach((s, i) => ctx.fillText(s, p.x + 20 + tw * i + tw / 2 - 13 * W / 420, y + 4 * W / 420));
+    return `${Math.round((R - L) / tw * 100)}%`; },
+  // 20 stagger
+  (ctx, W, H, t) => { bg2(ctx, W, H); for (let i = 0; i < 3; i++){ const k = sp(seg(t, .1 + i * .07, 1) * 3, 14, .7); const o = Math.min(1, k * 1.3) * (1 - seg(t, .88, 1));
+    ctx.save(); ctx.globalAlpha = o; const x = W * (.2 + i * .3), w = W * .24, h = w * .62, y = H * .5 - h / 2 + lerp(40, 0, k);
+    ctx.shadowColor = 'rgba(40,30,10,.14)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 5; ctx.fillStyle = '#fff'; rr(ctx, x - w / 2, y, w, h, 8); ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.fillStyle = i === 1 ? C.acc : C.ink; rr(ctx, x - w / 2 + 12, y + 14, w * .4, 7, 3); ctx.fill(); ctx.fillStyle = 'rgba(28,28,26,.14)'; rr(ctx, x - w / 2 + 12, y + 30, w * .7, 5, 2); ctx.fill(); rr(ctx, x - w / 2 + 12, y + 41, w * .55, 5, 2); ctx.fill(); ctx.restore(); }
+    return 'Δ 2 f'; },
+  // 21 speed ramp: dolly whose speed rushes, slows to a crawl, rushes again — curve at the bottom left
+  (ctx, W, H, t) => { const v = u => .25 + .75 * Math.pow(Math.cos(Math.PI * u), 2); let z = 0; for (let i = 0; i < 60; i++) z += v(i / 60 * t) / 60 * t; shotA(ctx, W, H, camAt(lerp(-9, 3.4, z / .62)));
+    const gx = 26, gy = H - 26, gw = W * .26, gh = 34; ctx.strokeStyle = 'rgba(28,28,26,.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + gw, gy); ctx.stroke();
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i <= 40; i++){ const u = i / 40; ctx[i ? 'lineTo' : 'moveTo'](gx + gw * u, gy - gh * v(u)); } ctx.stroke();
+    disc(ctx, gx + gw * t, gy - gh * v(t), 3.5, C.acc, .2); return `×${(v(t) * 2.4).toFixed(1)}`; },
+  // 22 motion blur: shutter-averaged ghosts behind a fast move, crisp when it stops
+  (ctx, W, H, t) => { bg2(ctx, W, H); const pos = u => W * lerp(.2, .8, ease(seg(u, .15, .55))) * (u < .7 ? 1 : 1) - (u > .7 ? W * .6 * ease(seg(u, .7, .95)) : 0); const n = 9;
+    for (let s = 0; s < n; s++){ const u = t - (s / n) * .03; ctx.globalAlpha = s === 0 ? 1 : .16; const x = pos(u); ctx.save(); ctx.shadowColor = 'rgba(40,30,10,.12)'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#fff'; rr(ctx, x - W * .12, H * .36, W * .24, W * .15, 8); ctx.fill(); ctx.restore(); ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(x + W * .08, H * .36 + W * .11, 6, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1; return 'shutter 180°'; },
+  // 23 freeze frame: motion stops dead on a hit (tiny flash), holds, then releases
+  (ctx, W, H, t) => { const fz = t > .42 && t < .7; const u = fz ? .42 : t < .42 ? t : t - .28; shotA(ctx, W, H, lookAt({x: lerp(-2, 2, u / .72), y: .95, z: lerp(-2, 1, u / .72), fov: 46}, 0, .85, 6));
+    if (fz){ ctx.fillStyle = `rgba(255,255,255,${.6 * (1 - seg(t, .42, .47))})`; ctx.fillRect(0, 0, W, H); ctx.strokeStyle = C.acc; ctx.lineWidth = 3; ctx.strokeRect(6, 6, W - 12, H - 12); }
+    return fz ? '■ HOLD' : '▶ 1.0×'; },
+  // 24 burst & breath: a burst of beats fills the frame, then one calm subject holds; the energy bar shows the contrast
+  (ctx, W, H, t) => { bg2(ctx, W, H); const burst = t < .45;
+    if (burst){ const n = Math.floor(seg(t, .02, .45) * 14); for (let i = 0; i < n; i++){ const x = W * (.12 + rand(i * 3.1) * .76), y = H * (.18 + rand(i * 7.7) * .6), w = W * (.08 + rand(i) * .1);
+      ctx.fillStyle = i % 4 ? '#fff' : C.acc; ctx.save(); ctx.shadowColor = 'rgba(40,30,10,.1)'; ctx.shadowBlur = 6; rr(ctx, x - w / 2, y - 8, w, 16, 8); ctx.fill(); ctx.restore(); } }
+    else { const k = sp(seg(t, .47, 1) * 2.5, 7, .9); ctx.globalAlpha = k; const p = panel(ctx, W, H, .9); ctx.fillStyle = C.ink; rr(ctx, p.x + 18, p.y + 20, p.w * .45, 9, 4); ctx.fill(); ctx.globalAlpha = 1; }
+    for (let i = 0; i < 20; i++){ const u = i / 20, e = u < .45 ? .4 + .6 * rand(i * 9) : .12; ctx.fillStyle = u <= t ? (u < .45 ? C.acc : 'rgba(28,28,26,.35)') : 'rgba(28,28,26,.1)'; ctx.fillRect(22 + i * 6, H - 20 - 26 * e, 4, 26 * e); }
+    return burst ? 'BURST' : 'BREATH'; },
+];
+function rand(x){ const s = Math.sin(x * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+
+// ---------- pages 4–6: flat compositions over the soft UI world ----------
+const FONT = 'Inter, -apple-system, "Helvetica Neue", Arial, sans-serif';
+function txt(ctx, str, x, y, size, {w = 600, col = C.ink, al = 'left', ls = 0, mono = false} = {}){ ctx.font = `${w} ${size}px ${mono ? 'ui-monospace,Menlo,monospace' : FONT}`; ctx.fillStyle = col; ctx.textAlign = al; ctx.textBaseline = 'middle'; if (ls) ctx.letterSpacing = ls + 'px'; ctx.fillText(str, x, y); ctx.letterSpacing = '0px'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; }
+function card(ctx, x, y, w, h, {fill = '#fff', r = 10, sh = .14} = {}){ ctx.save(); ctx.shadowColor = `rgba(40,30,10,${sh})`; ctx.shadowBlur = 16; ctx.shadowOffsetY = 6; ctx.fillStyle = fill; rr(ctx, x, y, w, h, r); ctx.fill(); ctx.restore(); ctx.strokeStyle = 'rgba(28,28,26,.07)'; ctx.lineWidth = 1; rr(ctx, x, y, w, h, r); ctx.stroke(); }
+function bars(ctx, x, y, w, rows, gap = 11, col = 'rgba(28,28,26,.13)'){ ctx.fillStyle = col; for (let i = 0; i < rows; i++){ rr(ctx, x, y + i * gap, w * (i % 3 === 2 ? .6 : i % 2 ? .78 : .92), 5, 2.5); ctx.fill(); } }
+function cursor(ctx, x, y, sc = 1, label = null, dark = true){ ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); ctx.fillStyle = dark ? C.ink : '#fff'; ctx.strokeStyle = dark ? '#fff' : C.ink; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 15); ctx.lineTo(4, 11); ctx.lineTo(7, 17); ctx.lineTo(9.5, 16); ctx.lineTo(6.5, 10); ctx.lineTo(11.5, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (label){ ctx.fillStyle = label[1]; rr(ctx, 13, 15, label[0].length * 5.6 + 12, 13, 6.5); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = `600 8px ${FONT}`; ctx.fillText(label[0], 19, 24.5); } ctx.restore(); }
+const S = W => W / 420; // scale for a 420-px-wide tile
+const sec = (t, n) => Math.floor(t * n);
+
+const PAGE4 = [
+  // 25 one hero control fills the frame: an input pill, punch-in on its leading edge, type, press
+  (ctx, W, H, t) => { bg2(ctx, W, H); const k = ease(seg(t, .08, .3)); const z = lerp(1, 1.9, k); const s = S(W);
+    ctx.save(); ctx.translate(W * .2, H * .5); ctx.scale(z, z); ctx.translate(-W * .2, -H * .5);
+    card(ctx, W * .12, H * .5 - 18 * s, W * .76, 36 * s, {r: 18 * s}); const str = 'lieflat.dev/charts', n = Math.floor(seg(t, .3, .62) * str.length);
+    txt(ctx, n ? str.slice(0, n) : 'Paste your link…', W * .12 + 16 * s, H * .5, 11 * s, {w: 500, col: n ? C.ink : '#A7A39A'});
+    const pr = seg(t, .7, .74) * (1 - seg(t, .74, .8)); ctx.save(); ctx.translate(W * .88 - 22 * s, H * .5); ctx.scale(1 - .12 * pr, 1 - .12 * pr); ctx.fillStyle = t > .74 ? C.acc : C.ink; rr(ctx, -16 * s, -12 * s, 32 * s, 24 * s, 12 * s); ctx.fill(); ctx.restore(); ctx.restore();
+    return `×${z.toFixed(1)}`; },
+  // 26 live UI objects sit inside the sentence and swap
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), y = H * .5; let x = W * .11;
+    const word = (w) => { txt(ctx, w, x, y, 22 * s, {w: 700, ls: -.6}); ctx.font = `700 ${22 * s}px ${FONT}`; x += ctx.measureText(w).width + 9 * s; };
+    word('Your'); const i = sec(t, 6) % 3; card(ctx, x, y - 13 * s, 62 * s, 26 * s, {r: 7 * s}); [() => bars(ctx, x + 8 * s, y - 6 * s, 40 * s, 2, 7 * s), () => { ctx.fillStyle = C.acc; rr(ctx, x + 8 * s, y - 5 * s, 46 * s, 10 * s, 5 * s); ctx.fill(); }, () => { for (let k = 0; k < 4; k++){ ctx.fillStyle = k === 3 ? C.acc : 'rgba(28,28,26,.25)'; rr(ctx, x + 9 * s + k * 12 * s, y + 7 * s - (6 + k * 3) * s, 7 * s, (6 + k * 3) * s, 2); ctx.fill(); } }][i]();
+    x += 70 * s; word('chart,'); ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(x + 9 * s, y, 9 * s, 0, 7); ctx.fill(); x += 26 * s; word('anywhere.'); return ['card', 'pill', 'bars'][i]; },
+  // 27 sharp small UI over a big soft drifting colour field
+  (ctx, W, H, t) => { ctx.fillStyle = '#F7F3EC'; ctx.fillRect(0, 0, W, H); ctx.save(); ctx.filter = `blur(${28 * S(W)}px)`;
+    [[.3, .4, '#F6B39C'], [.7, .55, '#F3D6A8'], [.5 + .1 * Math.sin(t * 6.28), .75, '#E9C4E0'], [.15, .8, '#F5572F55']].forEach(([x, y, c]) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(W * (x + .04 * Math.sin(t * 6.28 + x * 9)), H * y, W * .22, 0, 7); ctx.fill(); }); ctx.restore();
+    const s = S(W); card(ctx, W * .22, H * .44, W * .56, 40 * s, {r: 12 * s, sh: .1}); const str = 'Make a chart of our survey', n = Math.floor(seg(t, .15, .6) * str.length); txt(ctx, str.slice(0, n), W * .22 + 14 * s, H * .44 + 20 * s, 10.5 * s, {w: 500});
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(W * .78 - 20 * s, H * .44 + 20 * s, 10 * s, 0, 7); ctx.fill(); return 'blur 28'; },
+  // 28 tilted page with a focus band that racks from top to bottom
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), f = lerp(.2, .8, ping(t));
+    const draw = (blur) => { ctx.save(); if (blur) ctx.filter = `blur(${blur}px)`; ctx.translate(W * .5, H * .55); ctx.transform(1, -.12, .35, .8, 0, 0); ctx.translate(-W * .3, -H * .42);
+      card(ctx, 0, 0, W * .6, H * .84, {r: 8 * s}); txt(ctx, 'Q3 Review', 18 * s, 22 * s, 14 * s, {w: 700}); bars(ctx, 18 * s, 44 * s, W * .5, 12, 13 * s); ctx.fillStyle = C.acc; rr(ctx, 18 * s, 44 * s + 13 * s * 4, W * .3, 5, 2.5); ctx.fill(); ctx.restore(); };
+    draw(5 * s); ctx.save(); ctx.beginPath(); ctx.rect(0, H * (f - .12), W, H * .24); ctx.clip(); ctx.fillStyle = '#fff'; draw(0); ctx.restore(); return `f/1.4 · ${Math.round(f * 100)}%`; },
+  // 29 exploded layers: the window's layers separate in depth and come back
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), e = ping(t);
+    const L = [['#fff', .0], ['#F2F0EA', .9], ['#fff', 1.8], [C.ink, 2.7]];
+    L.forEach(([c, d], i) => { const off = d * e * 16 * s; ctx.save(); ctx.translate(W * .5 + off * 1.3, H * .55 - off); ctx.transform(1, -.22, .9, .5, 0, 0);
+      const w = W * (i === 3 ? .16 : i === 1 ? .12 : .44), h = H * (i === 3 ? .12 : .5), x = i === 1 ? -W * .22 : i === 3 ? W * .05 : -W * .22, y = i === 3 ? H * .08 : -H * .25;
+      card(ctx, x, y, w, h, {fill: c, r: 7 * s, sh: .1}); if (i === 2) bars(ctx, x + 12 * s, y + 14 * s, w * .7, 6, 12 * s); if (i === 3){ ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(x + w - 12 * s, y + h / 2, 5 * s, 0, 7); ctx.fill(); } ctx.restore(); });
+    return `z +${Math.round(e * 48)}`; },
+  // 30 checklist narration: one line at a time, sweep, tick, the stack scrolls
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), items = ['Reading your data', 'Choosing chart types', 'Applying Palm', 'Building 19 slides'];
+    const cur = Math.min(3, sec(t, 4.6)), lt = (t * 4.6) % 1; items.forEach((it, i) => { const y = H * .42 + (i - cur) * 26 * s + (i === cur ? (1 - ease(seg(lt, 0, .25))) * 10 * s : 0); if (i > cur || y < H * .15) return;
+      const done = i < cur || lt > .7; ctx.globalAlpha = i === cur ? 1 : .45; txt(ctx, it, W * .26, y, 14 * s, {w: 500});
+      if (done){ ctx.strokeStyle = '#3E8E5E'; ctx.lineWidth = 2.2 * s; ctx.beginPath(); ctx.moveTo(W * .2, y); ctx.lineTo(W * .21, y + 4 * s); ctx.lineTo(W * .225, y - 5 * s); ctx.stroke(); }
+      else { ctx.fillStyle = 'rgba(28,28,26,.35)'; ctx.beginPath(); ctx.arc(W * .212, y, 3 * s, 0, 7); ctx.fill(); }
+      if (i === cur && !done){ const g = ctx.createLinearGradient(W * (.2 + lt * .6), 0, W * (.3 + lt * .6), 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(W * .25, y - 10 * s, W * .5, 20 * s); }
+      ctx.globalAlpha = 1; }); return `${Math.min(4, cur + (lt > .7 ? 1 : 0))} / 4`; },
+  // 31 stacking notifications: they land faster and faster, older ones shrink and dim
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), arr = [.1, .3, .45, .56, .64, .7, .75, .79], n = arr.filter(a => t > a).length;
+    for (let i = n - 1; i >= 0; i--){ const d = n - 1 - i, k = sp((t - arr[i]) * 3, 16, .65), sc = 1 - .07 * d, y = H * .3 + d * 13 * s - (1 - k) * 30 * s;
+      ctx.save(); ctx.globalAlpha = Math.max(0, 1 - d * .18) * Math.min(1, k * 1.5); ctx.translate(W / 2, y); ctx.scale(sc, sc); card(ctx, -W * .3, 0, W * .6, 34 * s, {r: 12 * s});
+      ctx.fillStyle = C.acc; rr(ctx, -W * .3 + 9 * s, 7 * s, 20 * s, 20 * s, 6 * s); ctx.fill(); txt(ctx, 'New signup', -W * .3 + 36 * s, 12 * s, 9.5 * s, {w: 700}); txt(ctx, `team #${120 + i * 7} just joined`, -W * .3 + 36 * s, 24 * s, 8.5 * s, {w: 400, col: '#77736A'}); ctx.restore(); }
+    return `${n} new`; },
+  // 32 two actors, one world: You (ink) and Agent (orange) act on one board
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W); [.14, .4, .66].forEach((x, i) => { card(ctx, W * x, H * .26, W * .22, H * .58, {r: 8 * s, sh: .08}); txt(ctx, ['Later', 'Now', 'Done'][i], W * x + 10 * s, H * .26 + 13 * s, 9 * s, {w: 700}); });
+    const k = ease(seg(t, .2, .55)), k2 = ease(seg(t, .55, .85));
+    card(ctx, lerp(W * .15, W * .41, k), H * .42, W * .2, 22 * s, {r: 5 * s}); bars(ctx, lerp(W * .15, W * .41, k) + 8 * s, H * .42 + 9 * s, W * .1, 1);
+    card(ctx, lerp(W * .41, W * .67, k2), H * .55, W * .2, 22 * s, {r: 5 * s}); bars(ctx, lerp(W * .41, W * .67, k2) + 8 * s, H * .55 + 9 * s, W * .1, 1);
+    cursor(ctx, lerp(W * .3, W * .55, k), H * .45, s * 1.1, ['You', C.ink]); cursor(ctx, lerp(W * .56, W * .82, k2), H * .58, s * 1.1, ['Agent', C.acc]);
+    return k2 > .99 ? 'done' : k > .99 ? 'agent →' : 'you →'; },
+];
+
+const PAGE5 = [
+  // 33 typing: one big line, caret, a word lands per beat
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), str = 'Charts with taste.', n = Math.floor(seg(t, .1, .6) * str.length);
+    txt(ctx, str.slice(0, n), W * .12, H * .5, 30 * s, {w: 700, ls: -1}); ctx.font = `700 ${30 * s}px ${FONT}`; ctx.letterSpacing = '-1px'; const cw = ctx.measureText(str.slice(0, n)).width; ctx.letterSpacing = '0px';
+    if (Math.floor(t * 8) % 2 || n < str.length){ ctx.fillStyle = C.acc; rr(ctx, W * .12 + cw + 3 * s, H * .5 - 17 * s, 3 * s, 34 * s, 1.5); ctx.fill(); } return `${n} chars`; },
+  // 34 scatter → sentence: words drift in from everywhere and lock into one line
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), ws = ['Every', 'mark', 'is', 'a', 'real', 'record.'], k = ease(seg(t, .15, .55)); ctx.font = `700 ${21 * s}px ${FONT}`;
+    const tot = ws.reduce((a, w) => a + ctx.measureText(w + ' ').width, 0); let x = W / 2 - tot / 2;
+    ws.forEach((w, i) => { const ww = ctx.measureText(w + ' ').width, sx = W * (.1 + rand(i * 5) * .8), sy = H * (.2 + rand(i * 9) * .6); txt(ctx, w, lerp(sx, x, k), lerp(sy, H * .5, k), 21 * s, {w: 700, col: i === 5 ? C.acc : C.ink});
+      if (k < .2){ ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(sx - 6 * s, sy, 3 * s, 0, 7); ctx.fill(); } x += ww; }); return k > .99 ? 'locked' : 'scatter'; },
+  // 35 slot wheel: the last word rolls through options and lands
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), opts = ['decks', 'reports', 'charts', 'posters', 'charts'], idx = Math.min(4, Math.floor(seg(t, .15, .7) * 4.999)), fr = (seg(t, .15, .7) * 4.999) % 1;
+    txt(ctx, 'Make', W * .16, H * .5, 26 * s, {w: 700}); ctx.save(); ctx.beginPath(); ctx.rect(W * .38, H * .5 - 22 * s, W * .5, 44 * s); ctx.clip();
+    for (let d = -1; d <= 1; d++){ const j = idx + d; if (j < 0 || j > 4) continue; txt(ctx, opts[j], W * .4, H * .5 + (d - (idx < 4 ? fr : 0)) * 40 * s, 26 * s, {w: 700, col: j === 4 && idx === 4 ? C.acc : C.ink}); } ctx.restore();
+    ctx.strokeStyle = 'rgba(28,28,26,.12)'; ctx.strokeRect(W * .38, H * .5 - 22 * s, W * .46, 44 * s); return opts[idx]; },
+  // 36 key word fills with colour, left to right
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W); txt(ctx, 'Top-tier', W * .14, H * .42, 30 * s, {w: 800, ls: -1}); const y = H * .62, x = W * .14; txt(ctx, 'charts.', x, y, 30 * s, {w: 800, ls: -1});
+    ctx.font = `800 ${30 * s}px ${FONT}`; const w = ctx.measureText('charts.').width, k = ease(seg(t, .3, .7)); ctx.save(); ctx.beginPath(); ctx.rect(x, y - 30 * s, w * k, 60 * s); ctx.clip(); txt(ctx, 'charts.', x, y, 30 * s, {w: 800, ls: -1, col: C.acc}); ctx.restore(); return `${Math.round(k * 100)}%`; },
+  // 37 an icon takes a letter's place and keeps moving
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), y = H * .5; txt(ctx, 'In sec', W * .17, y, 30 * s, {w: 700}); ctx.font = `700 ${30 * s}px ${FONT}`; const x = W * .17 + ctx.measureText('In sec').width + 15 * s;
+    const k = sp(seg(t, .1, 1) * 3, 14, .55); ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(0, 0, 12 * s, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.2 * s; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(t * 12.6 - 1.57) * 8 * s, Math.sin(t * 12.6 - 1.57) * 8 * s); ctx.stroke(); ctx.restore();
+    txt(ctx, 'nds', x + 15 * s, y, 30 * s, {w: 700}); return 'o → ◷'; },
+  // 38 stacked type slams one line per beat
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), lines = ['ONE IDEA.', 'REAL ASSETS.', 'NO SLIDESHOW.']; lines.forEach((l, i) => { const k = sp(seg(t, .1 + i * .14, 1) * 3, 18, .6); if (k <= 0) return;
+    ctx.save(); ctx.translate(W * .5, H * (.32 + i * .2)); ctx.scale(lerp(1.4, 1, k), lerp(1.4, 1, k)); ctx.globalAlpha = Math.min(1, k * 2); txt(ctx, l, 0, 0, 24 * s, {w: 800, al: 'center', ls: -.5, col: i === 2 ? C.acc : C.ink}); ctx.restore(); }); return `${Math.min(3, Math.floor(seg(t, .1, .52) * 3) + 1)}/3`; },
+  // 39 title card cuts in mid-action, then back
+  (ctx, W, H, t) => { const on = t > .38 && t < .66; if (!on){ shotA(ctx, W, H, camAt(-1.6 + t * 1.2)); return 'action'; }
+    ctx.fillStyle = '#1C1C1A'; ctx.fillRect(0, 0, W, H); const s = S(W), k = ease(seg(t, .38, .44)), k2 = ease(seg(t, .47, .53));
+    txt(ctx, 'IT KEEPS', W / 2, H * .45 + (1 - k) * 12 * s, 22 * s, {w: 700, al: 'center', col: `rgba(255,255,255,${k})`}); txt(ctx, 'DRAWING.', W / 2, H * .6 + (1 - k2) * 12 * s, 22 * s, {w: 700, al: 'center', col: k2 ? C.acc : 'transparent'}); return 'card'; },
+  // 40 split claim: big words on the left, live UI on the right
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W); ctx.fillStyle = C.ink; ctx.fillRect(0, 0, W * .46, H); const two = t > .5;
+    txt(ctx, two ? 'Powerful' : 'Simple', W * .06, H * .42, 20 * s, {w: 800, col: '#fff'}); txt(ctx, two ? 'to scale.' : 'to start.', W * .06, H * .58, 20 * s, {w: 800, col: C.acc});
+    card(ctx, W * .54, H * .26, W * .38, H * .48, {r: 8 * s}); if (!two){ const n = Math.floor(seg(t, .08, .42) * 18); txt(ctx, '› add a chart'.slice(0, n), W * .57, H * .36, 9 * s, {mono: true, w: 500}); }
+    else for (let i = 0; i < 6; i++){ const k = sp(seg(t, .52 + i * .03, 1) * 3, 16, .7); ctx.fillStyle = i === 5 ? C.acc : 'rgba(28,28,26,.2)'; const h = (10 + i * 7) * s * k; rr(ctx, W * .58 + i * 11 * s, H * .68 - h, 7 * s, h, 2); ctx.fill(); }
+    return two ? 'scale' : 'start'; },
+];
+
+const PAGE6 = [
+  // 41 count up and land
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), k = ease(seg(t, .1, .65)), v = Math.round(lerp(0, 61, k)); txt(ctx, `${v}`, W / 2, H * .47, 56 * s, {w: 800, al: 'center', ls: -2});
+    txt(ctx, 'chart types', W / 2, H * .7, 11 * s, {w: 500, al: 'center', col: '#77736A'}); if (k > .99) disc(ctx, W / 2 + 40 * s, H * .55, 4 * s); return `${v}`; },
+  // 42 race: same task, two counters; one climbs, one jumps to done
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W); [0, 1].forEach(i => { const x = W * (.06 + i * .48), w = W * .42; card(ctx, x, H * .2, w, H * .62, {r: 8 * s});
+    txt(ctx, i ? 'With the skill' : 'By hand', x + 12 * s, H * .2 + 16 * s, 9 * s, {w: 700, col: i ? C.acc : '#77736A'});
+    const k = i ? ease(seg(t, .3, .38)) : seg(t, .1, .9), v = i ? Math.round(lerp(0, 1, k)) : Math.round(lerp(0, 24, k));
+    txt(ctx, `${v}`, x + 12 * s, H * .5, 36 * s, {w: 800}); txt(ctx, i ? 'step' : 'steps', x + 12 * s, H * .66, 9 * s, {w: 500, col: '#77736A'});
+    ctx.fillStyle = 'rgba(28,28,26,.08)'; rr(ctx, x + 12 * s, H * .74, w - 24 * s, 5 * s, 2.5); ctx.fill(); ctx.fillStyle = i ? C.acc : '#B9B3A7'; rr(ctx, x + 12 * s, H * .74, (w - 24 * s) * k, 5 * s, 2.5); ctx.fill(); }); return 'race'; },
+  // 43 dials: needles spring into the red zone one by one
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W); [.22, .5, .78].forEach((x, i) => { const cx = W * x, cy = H * .62, r = W * .1;
+    ctx.lineWidth = 5 * s; ctx.strokeStyle = 'rgba(28,28,26,.12)'; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = C.acc; ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.75, Math.PI * 2); ctx.stroke();
+    const k = sp(seg(t, .15 + i * .15, 1) * 3, 14, .4), a = Math.PI + Math.PI * lerp(.1, .88, k); ctx.strokeStyle = C.ink; ctx.lineWidth = 2.2 * s; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * r * .85, cy + Math.sin(a) * r * .85); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(cx, cy, 3 * s, 0, 7); ctx.fill(); txt(ctx, ['SPEED', 'TASTE', 'CONTROL'][i], cx, cy + 16 * s, 8 * s, {w: 700, al: 'center', col: k > .9 ? C.ink : '#A7A39A', ls: 1}); }); return 'all in'; },
+  // 44 metric ladder: the value counts down and re-tints bad → good
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), stops = [[48, 'hours'], [6, 'hours'], [40, 'minutes'], [5, 'minutes']], i = Math.min(3, sec(seg(t, .08, .85), 4)), k = ease(seg(t, .08, .85) * 4 % 1);
+    const col = ['#C9473A', '#D88A3A', '#BFA23A', '#3E8E5E'][i]; txt(ctx, 'a launch film in', W / 2, H * .34, 11 * s, {w: 500, al: 'center', col: '#77736A'});
+    ctx.fillStyle = col + '22'; rr(ctx, W * .3, H * .44, W * .4, 40 * s, 10 * s); ctx.fill(); txt(ctx, `${stops[i][0]} ${stops[i][1]}`, W / 2, H * .44 + 20 * s, 22 * s, {w: 800, al: 'center', col}); return ['48h', '6h', '40m', '5m'][i]; },
+  // 45 wall: one item → pull back → a wall that keeps arriving at the edge, counter races
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), z = lerp(3.2, .5, ease(seg(t, .05, .75))), n = Math.round(lerp(1, 61, ease(seg(t, .05, .75))));
+    ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(z, z); for (let i = 0; i < 61; i++){ if (i >= n) break; const c = i % 11 - 5, r = Math.floor(i / 11) - 2; card(ctx, c * 34 * s - 14 * s, r * 26 * s - 10 * s, 28 * s, 20 * s, {r: 3 * s, sh: .06}); ctx.fillStyle = i === 27 ? C.acc : 'rgba(28,28,26,.18)'; rr(ctx, c * 34 * s - 9 * s, r * 26 * s - 3 * s, 14 * s, 3 * s, 1.5); ctx.fill(); } ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; rr(ctx, W / 2 - 34 * s, H - 46 * s, 68 * s, 26 * s, 13 * s); ctx.fill(); txt(ctx, `${n}`, W / 2, H - 33 * s, 14 * s, {w: 800, al: 'center'}); return `×${z.toFixed(1)}`; },
+  // 46 the result grows out of its source (a chip → the finished card)
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W); card(ctx, W * .1, H * .38, W * .2, 26 * s, {r: 6 * s}); txt(ctx, 'survey.csv', W * .12, H * .38 + 13 * s, 8.5 * s, {mono: true, w: 500});
+    const k = sp(seg(t, .25, 1) * 3, 13, .7), x = lerp(W * .2, W * .42, k), w = lerp(W * .2, W * .48, k), h = lerp(26 * s, H * .52, k), y = lerp(H * .38, H * .24, k);
+    if (t > .25){ card(ctx, x, y, w, h, {r: 7 * s}); for (let i = 0; i < 6; i++){ const bh = (8 + i * 7) * s * seg(k, .5, 1); ctx.fillStyle = i === 5 ? C.acc : 'rgba(28,28,26,.2)'; rr(ctx, x + 14 * s + i * 13 * s, y + h - 12 * s - bh, 8 * s, bh, 2); ctx.fill(); } }
+    return t > .25 ? 'grow' : 'source'; },
+  // 47 assets fly in as a loose constellation and settle into a tidy grid
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), k = ease(seg(t, .2, .7)); for (let i = 0; i < 12; i++){ const gx = W * (.2 + (i % 4) * .2), gy = H * (.3 + Math.floor(i / 4) * .22), sx = W * (.05 + rand(i * 3) * .9), sy = H * (.05 + rand(i * 7) * .9);
+    const x = lerp(sx, gx, k), y = lerp(sy, gy, k), a = (1 - k) * (rand(i) - .5) * .8; ctx.save(); ctx.translate(x, y); ctx.rotate(a); card(ctx, -W * .08, -H * .08, W * .16, H * .16, {r: 5 * s, sh: .1, fill: i % 5 === 0 ? '#F9D8CC' : i % 3 === 0 ? '#EDE8DD' : '#fff'}); if (i % 4 === 1){ ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(0, 0, 5 * s, 0, 7); ctx.fill(); } ctx.restore(); }
+    return k > .99 ? 'grid' : 'swarm'; },
+  // 48 one sentence → the result, nothing in between
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), str = 'Make a launch film', n = Math.floor(seg(t, .05, .35) * str.length), go = t > .42;
+    if (!go){ card(ctx, W * .14, H * .45, W * .72, 34 * s, {r: 17 * s}); txt(ctx, str.slice(0, n), W * .14 + 14 * s, H * .45 + 17 * s, 11 * s, {w: 500}); ctx.fillStyle = n === str.length ? C.ink : '#CFCBC2'; ctx.beginPath(); ctx.arc(W * .86 - 17 * s, H * .45 + 17 * s, 11 * s, 0, 7); ctx.fill(); return 'prompt'; }
+    const k = ease(seg(t, .42, .6)); ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(lerp(.2, 1, k), lerp(.2, 1, k)); ctx.translate(-W / 2, -H / 2); shotB(ctx, W, H, camAt(-.6 - t * .6)); ctx.restore();
+    if (k < 1){ disc(ctx, W / 2, H / 2, lerp(11 * s, 2, k), C.acc, .3); } return '→ film'; },
+];
+
+const PAGE7 = [
+  // 49 fly-through: the camera flies low between the windows, they rush past
+  (ctx, W, H, t) => { const z = lerp(-12, 34, t); const cam = {x: Math.sin(t * 6.28) * .8, y: lerp(.7, 1.6, Math.sin(t * 3.14)), z, fov: 58, yaw: Math.sin(t * 6.28) * .12, pitch: -.03, roll: Math.sin(t * 6.28) * .08};
+    scene(ctx, W, H, cam, undefined, {cards: [{x: -2, z: 6}, {x: 2.4, z: 14, kind: 'chart'}, {x: -1.4, z: 22}]}); return `${Math.round(40 + 30 * Math.sin(t * 6.28))} km/h`; },
+  // 50 handheld drift: tiny organic shake + slow breathing, never frozen
+  (ctx, W, H, t) => { const T = t * 6.28, n = (a, b) => Math.sin(T * a + b) * .5 + Math.sin(T * a * 2.3 + b * 1.7) * .3; const cam = lookAt({x: n(3, 1) * .06, y: .92 + n(4, 2) * .03, z: -1 + n(2, 3) * .05, fov: 46}, n(5, 4) * .05, .85, 6); cam.roll = n(3, 5) * .012;
+    shotA(ctx, W, H, cam); return 'HANDHELD'; },
+  // 51 Dutch angle: the frame tilts for tension
+  (ctx, W, H, t) => { const r = lerp(0, .16, ease(seg(t, .1, .4))) * (1 - ease(seg(t, .8, 1))); const cam = camAt(-.6); cam.roll = r; shotA(ctx, W, H, cam); return `∠ ${Math.round(r * 57.3)}°`; },
+  // 52 parallax layers: three depths slide at three speeds
+  (ctx, W, H, t) => { const x = lerp(-3, 3, ping(t)); const cam = lookAt({x, y: 1, z: -1, fov: 46}, x * .3, .85, 6);
+    scene(ctx, W, H, cam, undefined, {cards: [{x: 0, z: 6}, {x: -2.6, z: 3, kind: 'chart'}, {x: 2.8, z: 2.4, kind: 'dark'}]}); return `Δx ${x.toFixed(1)}`; },
+  // 53 rack focus: focus pulls from the near card to the far one
+  (ctx, W, H, t) => { const k = ease(seg(t, .3, .6)) * (1 - ease(seg(t, .8, 1))); const s = S(W);
+    const near = (b) => { ctx.save(); if (b > .3) ctx.filter = `blur(${b}px)`; card(ctx, W * .08, H * .45, W * .38, H * .42, {r: 8 * s}); ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(W * .38, H * .78, 7 * s, 0, 7); ctx.fill(); bars(ctx, W * .11, H * .52, W * .28, 4, 10 * s); ctx.restore(); };
+    ctx.save(); const fb = lerp(5, 0, k) * s; if (fb > .3) ctx.filter = `blur(${fb}px)`; shotB(ctx, W, H, camAt(-1.4, 1.2)); ctx.restore(); near(lerp(0, 6, k) * s); return `◎ ${k > .5 ? '6 m' : '0.8 m'}`; },
+  // 54 burst & scatter: the sentence bursts and its words fly to the next layout
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), ws = ['Draw', '◯', 'by', 'asking.'], k = ease(seg(t, .3, .62)); const tg = [[.18, .25], [.5, .5], [.78, .3], [.6, .8]];
+    ctx.font = `700 ${22 * s}px ${FONT}`; let x = W * .24; ws.forEach((w, i) => { const ww = ctx.measureText(w + ' ').width; const tx = W * tg[i][0], ty = H * tg[i][1], a = 40 * s * Math.sin(Math.PI * k) * (i % 2 ? 1 : -1);
+      const px = lerp(x, tx, k), py = lerp(H * .5, ty, k) + a; if (w === '◯'){ disc(ctx, px + 8 * s, py, lerp(11 * s, 4 * s, k)); } else txt(ctx, w, px, py, lerp(22, 15, k) * s, {w: 700}); x += ww; });
+    if (k > 0 && k < 1){ ctx.strokeStyle = `rgba(245,87,47,${.4 * (1 - k)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(W * .5, H * .5, W * .5 * k, 0, 7); ctx.stroke(); } return k > .99 ? 'landed' : k > 0 ? 'burst' : 'line'; },
+  // 55 blur swap: content changes inside a still container through a short blur
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), p = panel(ctx, W, H, 1.1), i = sec(t, 3) % 3, lt = (t * 3) % 1, b = Math.max(0, 1 - Math.abs(lt - .02) * 10) * 8 * s;
+    ctx.save(); ctx.beginPath(); rr(ctx, p.x, p.y, p.w, p.h, 10 * s); ctx.clip(); if (b > .3) ctx.filter = `blur(${b}px)`;
+    [() => { txt(ctx, '79,883', p.x + 18 * s, p.y + p.h * .45, 26 * s, {w: 800}); txt(ctx, 'visitors', p.x + 18 * s, p.y + p.h * .7, 9 * s, {col: '#77736A'}); },
+     () => { for (let k = 0; k < 6; k++){ const h = (10 + k * 8) * s; ctx.fillStyle = k === 5 ? C.acc : 'rgba(28,28,26,.2)'; rr(ctx, p.x + 18 * s + k * 15 * s, p.y + p.h - 14 * s - h, 10 * s, h, 2); ctx.fill(); } },
+     () => { txt(ctx, '84,320', p.x + 18 * s, p.y + p.h * .45, 26 * s, {w: 800, col: C.acc}); txt(ctx, '+5.6% this week', p.x + 18 * s, p.y + p.h * .7, 9 * s, {col: '#77736A'}); }][i](); ctx.restore(); return ['A', 'B', 'C'][i]; },
+  // 56 re-tint metronome: the line holds, the last word and the whole field change on every beat
+  (ctx, W, H, t) => { const i = sec(t, 6) % 6, cols = ['#F6EFE3', '#F7E6C8', '#EBD3BE', '#F2DCD3', '#E3E6D5', '#E9E1F0'], words = ['Mono', 'Palm', 'Porcelain', 'Clay', 'Sage', 'Lilac']; const s = S(W);
+    ctx.fillStyle = cols[i]; ctx.fillRect(0, 0, W, H); ctx.save(); ctx.filter = `blur(${24 * s}px)`; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(W * (.3 + .1 * i % 3), H * .4, W * .25, 0, 7); ctx.fill(); ctx.restore();
+    txt(ctx, 'Draw it in', W * .46, H * .5, 17 * s, {w: 500, al: 'right'}); ctx.fillStyle = 'rgba(28,28,26,.35)'; ctx.fillRect(W * .48, H * .5, 16 * s, 1.2); txt(ctx, words[i], W * .48 + 24 * s, H * .5, 17 * s, {w: 600}); return `beat ${i + 1}`; },
+];
+
+const PAGE8 = [
+  // 57 slow motion: a hit slows to a crawl (bars of falling dots stretch out)
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), slow = t > .35 && t < .75, u = t < .35 ? t : slow ? .35 + (t - .35) * .25 : .45 + (t - .75) * 2.2;
+    const p = panel(ctx, W, H, .8); disc(ctx, p.x + p.w / 2, p.y - 10 * s + (1 - Math.abs(Math.cos(u * 9))) * p.h * .6, 9 * s);
+    for (let i = 0; i < 8; i++){ const a = i / 8 * 6.28 + u * 3, r = (u * 300 % 60) * s; ctx.fillStyle = `rgba(245,87,47,${.5 - r / 140 / s})`; ctx.beginPath(); ctx.arc(p.x + p.w / 2 + Math.cos(a) * r, p.y + p.h * .55 + Math.sin(a) * r * .5, 2.2 * s, 0, 7); ctx.fill(); }
+    return slow ? '120fps ×0.25' : '1.0×'; },
+  // 58 fixed header, rotating proof: the label holds its slot, the evidence below rotates and earns a chip
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), i = sec(t, 3) % 3, lt = (t * 3) % 1, names = ['Decision flow', 'Mind map', 'Gantt']; txt(ctx, names[i], W / 2, H * .22, 15 * s, {w: 700, al: 'center'});
+    const k = sp(lt * 3, 14, .7); ctx.save(); ctx.translate(lerp(W * 1.2, W / 2, k), H * .58); ctx.rotate((1 - k) * .2); card(ctx, -W * .25, -H * .22, W * .5, H * .4, {r: 8 * s}); bars(ctx, -W * .22, -H * .15, W * .36, 4, 12 * s); ctx.restore();
+    if (lt > .6){ const c = sp((lt - .6) * 4, 16, .6); ctx.fillStyle = '#E3F1E8'; rr(ctx, W / 2 + 54 * s, H * .22 - 9 * s, 52 * s * c, 18 * s, 9 * s); ctx.fill(); txt(ctx, '✓ done', W / 2 + 60 * s, H * .22, 8.5 * s, {w: 700, col: '#3E8E5E'}); } return `${i + 1}/3`; },
+  // 59 condense from noise: characters swarm as noise and settle into text
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), str = 'Answer: 42 tests pass.', k = ease(seg(t, .1, .6)); ctx.font = `600 ${18 * s}px ${FONT}`; let x = W * .14;
+    [...str].forEach((ch, i) => { const w = ctx.measureText(ch).width, d = 1 - seg(k, i / str.length * .6, i / str.length * .6 + .4); const ox = (rand(i * 3) - .5) * 80 * s * d, oy = (rand(i * 7) - .5) * 50 * s * d;
+      ctx.globalAlpha = 1 - d * .7; txt(ctx, d > .5 ? '#%&*@'[i % 5] : ch, x + ox, H * .5 + oy, 18 * s, {w: 600, col: d > .3 ? '#A7A39A' : C.ink}); x += w; }); ctx.globalAlpha = 1; return `${Math.round(k * 100)}%`; },
+  // 60 before / after: a divider sweeps; left the slideshow, right the film
+  (ctx, W, H, t) => { const x = W * lerp(.15, .85, ping(t)); shotA(ctx, W, H, camAt(-.5, 0, 46)); ctx.save(); ctx.beginPath(); ctx.rect(0, 0, x, H); ctx.clip(); ctx.fillStyle = '#ECEAE4'; ctx.fillRect(0, 0, W, H);
+    const s = S(W); card(ctx, W * .25, H * .3, W * .5, H * .42, {r: 4 * s, sh: .05}); txt(ctx, 'Slide 3', W * .5, H * .5, 14 * s, {w: 600, al: 'center', col: '#77736A'}); ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.fillRect(x - 1.5, 0, 3, H); disc(ctx, x, H / 2, 8 * s, C.acc, .2); txt(ctx, 'BEFORE', 24, H - 22, 9 * s, {w: 700, col: '#77736A'}); txt(ctx, 'AFTER', W - 24, H - 22, 9 * s, {w: 700, col: C.acc, al: 'right'}); return `${Math.round(x / W * 100)}%`; },
+  // 61 seamless loop: the last frame is the first frame (the dot travels round and lands where it began)
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), a = t * 6.28; ctx.strokeStyle = 'rgba(28,28,26,.12)'; ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.ellipse(W / 2, H / 2, W * .3, H * .25, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    disc(ctx, W / 2 + Math.cos(a - 1.57) * W * .3, H / 2 + Math.sin(a - 1.57) * H * .25, 8 * s); disc(ctx, W / 2, H / 2 - H * .25, 3 * s, 'rgba(28,28,26,.35)', 0); return `frame ${Math.round(t * 126)} / 126`; },
+  // 62 light sweep: a band of light crosses a surface once
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), p = panel(ctx, W, H, 1.15); txt(ctx, 'lieflat code video', p.x + p.w / 2, p.y + p.h / 2, 15 * s, {w: 800, al: 'center'});
+    const x = lerp(p.x - p.w * .4, p.x + p.w * 1.4, ease(seg(t, .25, .75))); ctx.save(); ctx.beginPath(); rr(ctx, p.x, p.y, p.w, p.h, 10 * s); ctx.clip(); ctx.translate(x, p.y); ctx.rotate(.35);
+    const g = ctx.createLinearGradient(-30 * s, 0, 30 * s, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,240,225,.85)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(-30 * s, -p.h, 60 * s, p.h * 3); ctx.restore(); return 'sheen'; },
+  // 63 one take: card → push into the button → chart → pull back — the camera never cuts
+  (ctx, W, H, t) => { const b = BTN({x: 0, z: 6}); const k1 = ease(seg(t, .1, .4)), k2 = ease(seg(t, .55, .9));
+    const z = t < .5 ? lerp(-1, b[2] - .5, k1) : lerp(b[2] - .5, -2, k2), x = t < .5 ? lerp(0, b[0], k1) : lerp(b[0], 0, k2), y = t < .5 ? lerp(.9, b[1], k1) : lerp(b[1], 1, k2);
+    scene(ctx, W, H, lookAt({x, y, z, fov: 46}, x, y - .02, 6), undefined, {cards: [{x: 0, z: 6, kind: t < .5 ? undefined : 'chart'}]}); return 'take 1 · no cut'; },
+  // 64 end lockup: everything clears, the name lands and holds ≥ 3 s
+  (ctx, W, H, t) => { bg2(ctx, W, H); const s = S(W), k = sp(seg(t, .15, 1) * 3, 10, .85); ctx.globalAlpha = Math.min(1, k * 1.4); ctx.save(); ctx.translate(W / 2, H * .47); ctx.scale(lerp(.92, 1, k), lerp(.92, 1, k));
+    txt(ctx, 'lieflat code video', 0, 0, 24 * s, {w: 800, al: 'center', ls: -.8}); ctx.restore(); txt(ctx, 'Launch films, made in code', W / 2, H * .62, 9.5 * s, {w: 500, al: 'center', col: '#77736A'}); ctx.globalAlpha = 1;
+    return `hold ${(seg(t, .15, 1) * 3.5).toFixed(1)} s`; },
+];
+
+const PAGE1 = MOVES.map((mv, i) => (ctx, W, H, t) => {
+  const [cam, read, extra = {}] = mv(t);
+  if (extra.blur){
+    const [cam0] = mv((t - 1 / 60 / P * 2.5 + 1) % 1); const n = 8;
+    scene(ctx, W, H, cam0, undefined, extra);
+    for (let s = 1; s < n; s++){ ctx.globalAlpha = 1 / (s + 1); scene(ctx, W, H, {...cam, yaw: lerp(cam0.yaw, cam.yaw, s / (n - 1))}, undefined, extra); }
+    ctx.globalAlpha = 1;
+  } else scene(ctx, W, H, cam, undefined, extra);
+  return read;
+});
+const TILEFN = [PAGE1, PAGE2, PAGE7, PAGE3, PAGE4, PAGE5, PAGE6, PAGE8][PAGE];
+function frame(now){
+  canvases.forEach((cv, i) => {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    if (cv.width !== Math.round(r.width * dpr)){ cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+    const ctx = cv.getContext('2d'), W = r.width, H = r.height;
+    const t = ((now / 1000) / P + i * .13) % 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+    const read = TILEFN[i] ? TILEFN[i](ctx, W, H, t, now / 1000) : '';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+    hud(ctx, W, H, read, now / 1000);
+  });
+  requestAnimationFrame(frame);
+}
+// previs: ?seq=01,11,33&dur=2,1.5,3[&bpm=123] plays the chosen moves full-screen, one after another (npm run animatic)
+const QS = new URLSearchParams(location.search);
+if (QS.get('seq')){
+  const ALL = [PAGE1, PAGE2, PAGE7, PAGE3, PAGE4, PAGE5, PAGE6, PAGE8].flat();
+  const NAMES = PAGES.flatMap(pg => pg.tiles);
+  const seq = QS.get('seq').split(',').map(x => Math.max(1, Math.min(ALL.length, parseInt(x, 10) || 1)));
+  const durs = (QS.get('dur') || '').split(',').map(Number);
+  const D = seq.map((_, i) => durs[i] > 0 ? durs[i] : 2), total = D.reduce((a, b) => a + b, 0), bpm = +QS.get('bpm') || 0;
+  document.body.innerHTML = '<canvas id="pv" style="position:fixed;inset:0;width:100vw;height:100vh"></canvas><div id="cap" style="position:fixed;left:24px;bottom:20px;font:600 15px Inter,system-ui,sans-serif;color:#1C1C1A;background:rgba(255,255,255,.85);padding:6px 12px;border-radius:8px"></div>';
+  const cv = document.getElementById('pv'), cap = document.getElementById('cap');
+  const loop = now => {
+    const dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+    if (cv.width !== Math.round(W * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const ctx = cv.getContext('2d'); let t = (now / 1000) % total, i = 0;
+    while (i < D.length - 1 && t >= D[i]){ t -= D[i]; i++; }
+    const id = seq[i], nm = NAMES[id - 1];
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+    const read = ALL[id - 1](ctx, W, H, Math.min(.999, t / D[i]), now / 1000);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+    hud(ctx, W, H, read, now / 1000);
+    if (bpm){
+      const bt = (now / 1000) * bpm / 60, b = Math.floor(bt) % 4, f = 1 - bt % 1;
+      for (let k = 0; k < 4; k++){ ctx.fillStyle = k === b ? `rgba(245,87,47,${.4 + .6 * f})` : 'rgba(28,28,26,.15)'; ctx.beginPath(); ctx.arc(W - 90 + k * 18, H - 30, 5, 0, 7); ctx.fill(); }
+    }
+    cap.textContent = `${i + 1}/${seq.length} · ${nm[0]} ${nm[1]} · ${nm[2]} · ${D[i]}s`;
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+} else requestAnimationFrame(frame);
+</script></body></html>

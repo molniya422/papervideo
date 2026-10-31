@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "PaperVideo paper explain skills pack: 63 skills + WORKFLOW.md + design-picker.html.",
   "skillsRoot": ".zcode/skills",
-  "count": 65,
+  "count": 66,
   "install": {
     "targets": [
       "~/.zcode/skills",
@@ -75,7 +75,8 @@
       "visual-explainer",
       "win11-ui-demos",
       "motion-lab",
-      "wise-motion"
+      "wise-motion",
+      "lieflat-code-video"
     ],
     "extraAssets": [
       "WORKFLOW.md",
@@ -86,7 +87,8 @@
       "node_modules and anatomy PDF demo assets are excluded from the zip (>600MB); reinstall deps in the target project as needed.",
       "The hyperframes engine source lives in engines/hyperframes; not bundled in the zip.",
       "engines/motion-lab (Motion.Lab, 160 effects + 48 templates) is an install-type asset; the motion-lab skill ships indexes + per-effect source in references/.",
-      "engines/wise-motion (Wise Motion, 101 Remotion effects + 243M assets) is an install-type engine; the wise-motion skill ships SKILL.md + references docs."
+      "engines/wise-motion (Wise Motion, 101 Remotion effects + 243M assets) is an install-type engine; the wise-motion skill ships SKILL.md + references docs.",
+      "engines/lieflat-code-video (product launch film starter, 12 kit modules) is an install-type engine; the skill ships SKILL.md + lens-reference.html."
     ]
   },
   "entrySkill": "paper-explain",
