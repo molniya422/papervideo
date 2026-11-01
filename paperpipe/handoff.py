@@ -45,7 +45,7 @@ def create(ctx, handoff_id: str, role: str, stage: str, task: str,
     prompt_path = agent_meta.get("system_prompt")
     prompt_text = ""
     if prompt_path:
-        pp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), prompt_path)
+        pp = os.path.join(os.path.dirname(os.path.abspath(__file__)), prompt_path)
         if os.path.isfile(pp):
             prompt_text = open(pp, encoding="utf-8").read()
     atomic_write_json(os.path.join(d, "request.json"), {
