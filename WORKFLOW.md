@@ -471,6 +471,45 @@ python -m paperpipe publish --confirm <run_id>        # 真实上传双门
 
 ---
 
+## 15.1 多子智能体管线（12 角色 · 三路并行 → 串行汇总 → 并行 QA）
+
+> 来源：用户要求"拆解论文解析、举例细化、建模、数据分别交给 subagent，最后汇总"。
+> 全部角色注册在 `paperpipe/registry/agents.yaml`（唯一事实源）；每阶段的 handoff 信封
+> 由 runner 自动创建（`ensure_stage_handoffs`），全部 passed 才能过阶段门。
+
+```
+论文输入 (arXiv / PDF)
+    │
+    ▼ acquire
+    │
+    ├──→ [researcher]  解析主稿 deep-read.md（机制点/会怎么坏/手算例/证据分级）
+    ├──→ [fact_checker] 数字核查 ←── 并行（读 researcher 的输出快照）
+    ├──→ [example_writer] 举例细化：机制点 → {objects, scene_desc, narration_text, is_3d}
+    └──→ [data_viz_builder] 数据 3D 规格：数字/表格 → {component, values, labels}
+         │                    （example_writer 与 data_viz_builder 数据与举例分开）
+         ▼ 全部回传
+    [model_builder] three.js 场景代码（吃两份规格，串行）
+         ▼
+    [aggregator] 汇总组装 compositions + 时间轴 + 字幕（串行，零遮挡自检）
+         ▼
+    [render_worker] 渲染 → render-raw.mp4
+         ├──→ [technical_qa] 机器 QA    ←── 并行
+         └──→ [visual_qa] 布局审查       ←── 并行
+         ▼ 全部回传
+    [narration_editor] 旁白校对
+         ▼
+    [release_reviewer] 发布确认 → upload_ready
+```
+
+**门禁语义**：每阶段 runner 自动创建 handoff 信封（`ensure_stage_handoffs`）；
+阶段 passed 前 `stage_handoffs_passed` 检查全部信封为 passed——
+任一 pending/failed → 阶段 waiting_for_agent（列明未完成角色）。
+
+**隔离规则**：example_writer 与 data_viz_builder 写不同文件（examples_spec.json / dataviz_spec.json）；
+model_builder 串行吃两份规格；aggregator 串行汇总；pipeline-state.json 仅整合方写入。
+
+---
+
 ## 16. 技能调用门禁（66 技能 → 条件触发 + 可验证证据）
 
 > v2 重构：P0"全量强制"升级为**"条件触发 + 可验证证据"**——每条规则五字段
