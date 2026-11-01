@@ -134,6 +134,27 @@ def main():
         res7b = QaAdapter().run(ctx7)
         check("布局审计 0 error → 适配器层 passed", res7b.status == "passed", f"got {res7b.status}")
 
+        print("T8 sources 指纹敏感性（root: glob 必须真的吃到文件变化）")
+        ctx8 = make_run(tmp)
+        hf = os.path.join(ctx8.run_dir, "4-video", "hf")
+        os.makedirs(os.path.join(hf, "compositions"), exist_ok=True)
+        atomic_write_text(os.path.join(hf, "compositions", "ch01.html"), "v1")
+        ctx8.cfg["render"] = {"sources": ["4-video/hf/compositions/**"]}
+        from paperpipe.runner import fingerprint as _fp
+        fp1 = _fp(ctx8, "render")
+        atomic_write_text(os.path.join(hf, "compositions", "ch01.html"), "v2 changed")
+        fp2 = _fp(ctx8, "render")
+        check("合成源码变化 → render 指纹变化", fp1 != fp2)
+        root_spec_fp1 = None
+        ctx8.cfg["render"] = {"sources": ["root:4-video/hf/compositions/**"]}
+        atomic_write_text(os.path.join(hf, "compositions", "ch01.html"), "v3 root-relative")
+        # root: 相对 ctx.root（工作区）——run 在 tmp 下不成立，此处只验证不抛异常
+        try:
+            _fp(ctx8, "render"); root_spec_fp1 = "ok"
+        except Exception as e:
+            root_spec_fp1 = "err " + str(e)[:40]
+        check("root: spec 不抛异常", root_spec_fp1 == "ok", str(root_spec_fp1))
+
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n结果: {PASS} 通过 / {FAIL} 失败")

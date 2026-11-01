@@ -68,11 +68,13 @@ def write_skill_receipt(ctx, stage: str, skill_id: str, trigger: str, output_pat
 
 def write_tool_receipt(ctx, stage: str, tool: str, command: list, exit_code: int,
                        output_paths: list | None = None, seconds: float | None = None,
-                       note: str | None = None) -> str:
+                       note: str | None = None, extra: dict | None = None) -> str:
     receipt = {"schema": RECEIPT_SCHEMA, "kind": "tool", "tool": tool, "stage": stage,
                "command": command, "exit_code": exit_code, "output_paths": list(output_paths or []),
                "seconds": seconds, "started_at": utcnow(), "finished_at": utcnow(),
                "status": "passed" if exit_code == 0 else "failed", "note": note}
+    if extra:
+        receipt.update(extra)
     p = _receipt_path(ctx, "tools", stage, re.sub(r"[^\w.-]", "_", tool))
     atomic_write_json(p, receipt)
     ctx.rs.register_artifact(stage, p, "tool-receipt")

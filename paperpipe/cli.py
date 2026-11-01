@@ -220,7 +220,7 @@ def cmd_review(args):
               "  5) 事实确认（数字/结论 vs 论文）与听审（人工责任）")
         sys.exit(2)
     from .adapters import validate_review
-    ok, problems, hashes = validate_review(ctx)
+    ok, problems, hashes = validate_review(ctx, compare_saved=False)   # 重新确认=重建基线
     if not ok:
         print("人审门未通过，拒绝确认：")
         for p in problems:

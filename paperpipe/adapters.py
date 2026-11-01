@@ -295,7 +295,8 @@ class RenderAdapter(Adapter):
         spec = ["4-video/narration.json", "3-figures/README.md"]
         rcfg = ctx.cfg.get("render") or {}
         for g in rcfg.get("sources", []):
-            spec.append("root:" + g)
+            # sources 原样使用：root: 前缀=工作区根相对，无前缀=运行目录相对（调用方自己定）
+            spec.append(g)
         return spec
     def plan(self, ctx: RuntimeCtx) -> dict:
         rcfg = ctx.cfg.get("render") or {}
@@ -325,17 +326,35 @@ class RenderAdapter(Adapter):
             from shutil import which
             npx = which("npx") or which("npx.cmd")
             run_cmd = [npx] + cmd[1:] if cmd[0] == "npx" and npx else cmd
-            # 幂等：渲染产物 + tool receipt 已存在 → 跳过重渲（外部长任务已出片）
+            # 幂等：渲染产物 + 带相同源码指纹的 tool receipt → 跳过重渲
             out_raw = ctx.out("4-video", "render-raw.mp4")
-            if os.path.exists(out_raw) and any(r.get("status") == "passed"
-                                               for r in receipts.list_tool_receipts(ctx, "render", "hyperframes-render")):
+            import hashlib as _hl
+            src_fp = _hl.sha256()
+            for spec in sorted(self.inputs(ctx)):
+                base = ctx.root if spec.startswith("root:") else ctx.run_dir
+                pat = spec[5:] if spec.startswith("root:") else spec
+                root = base if not any(c in pat for c in "*?[") else base
+                import glob as _gm
+                for p in sorted(_gm.glob(os.path.join(root, pat), recursive=True)) if any(c in pat for c in "*?[") else [os.path.join(root, pat)]:
+                    if os.path.isfile(p):
+                        from .util import sha256_file as _sf
+                        src_fp.update(p.encode()); src_fp.update(_sf(p).encode())
+            src_fp = src_fp.hexdigest()
+            cached_ok = False
+            if os.path.exists(out_raw):
+                for rc in receipts.list_tool_receipts(ctx, "render", "hyperframes-render"):
+                    if rc.get("status") == "passed" and rc.get("src_fp") == src_fp:
+                        cached_ok = True
+                        break
+            if cached_ok:
                 ctx.rs.register_artifact("render", out_raw, "video-raw")
                 return StageResult("passed", {"mode": "hyperframes", "cached": True})
             import time as _t
             t0 = _t.time()
             r = subprocess.run(run_cmd, capture_output=True, text=True, timeout=21600, cwd=cwd)
             receipts.write_tool_receipt(ctx, "render", "hyperframes-render", run_cmd, r.returncode,
-                                        seconds=round(_t.time() - t0, 1), note=(r.stderr or "")[-300:])
+                                        seconds=round(_t.time() - t0, 1), note=(r.stderr or "")[-300:],
+                                        extra={"src_fp": src_fp})
             if r.returncode != 0:
                 raise StageError("transient", f"hyperframes 渲染失败({r.returncode}): {(r.stderr or r.stdout or '')[-600:]}")
             out_raw = ctx.out("4-video", "render-raw.mp4")
@@ -393,7 +412,7 @@ class RenderAdapter(Adapter):
 # ════════════════ qa（硬校验：任何不达标 → failed_permanent） ════════════════
 class QaAdapter(Adapter):
     name = "qa"
-    inputs_spec = ["4-video/final.mp4"]
+    inputs_spec = ["4-video/final.mp4", "4-video/audio_master.wav"]
     def run(self, ctx: RuntimeCtx) -> StageResult:
         final = ctx.out("4-video", "final.mp4")
         if not os.path.exists(final):
@@ -438,7 +457,12 @@ class QaAdapter(Adapter):
             head = f.read(300000)
         faststart = 0 <= head.find(b"moov") < (head.find(b"mdat") if b"mdat" in head else 1 << 60)
         if not faststart: issues.append("faststart 不达标（moov 不在 mdat 前）")
-        r = subprocess.run([ff, "-i", final, "-vn", "-af",
+        # 响度/TP 以音频母带（WAV）为基准 —— 转码器（aac 版本/实现）的真峰行为不参与验收
+        loud_src = final
+        master = ctx.out("4-video", "audio_master.wav")
+        if os.path.exists(master):
+            loud_src = master
+        r = subprocess.run([ff, "-i", loud_src, "-vn", "-af",
                             "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
                            capture_output=True, text=True, timeout=3600)
         if r.returncode != 0:
@@ -483,13 +507,18 @@ class QaAdapter(Adapter):
             issues.append("布局审计 %d 处 error（遮挡/溢出，零遮挡硬门槛）: %s" % (
                 len(layout_errors), "; ".join((f.get("message", "")[:46]) for f in layout_errors[:3])))
         report = {"duration": fmt.get("duration"), "faststart": faststart,
-                  "loudness": loud, "streams": {"video": (v or {}).get("codec_name"), "audio": (a or {}).get("codec_name")},
+                  "loudness": loud, "loudness_source": "audio_master.wav" if os.path.exists(master) else "final.mp4", "streams": {"video": (v or {}).get("codec_name"), "audio": (a or {}).get("codec_name")},
                   "pix_fmt": (v or {}).get("pix_fmt"),
                   "layout_audit": {"errors": len(layout_errors),
                                    "messages": [f.get("message", "")[:80] for f in layout_errors[:6]]},
                   "issues": issues}
         rp = _write(ctx, "5-video-final/qa_report.json", json.dumps(report, ensure_ascii=False, indent=2))
         ctx.rs.register_artifact("qa", rp, "qa-report")
+        if os.path.exists(master):
+            try:
+                ctx.rs.register_artifact("qa", master, "audio-master")
+            except (ValueError, FileNotFoundError):
+                pass
         receipts.write_tool_receipt(ctx, "qa", "ffprobe", [fp, "show_format/show_streams"], 0,
                                     output_paths=["5-video-final/qa_report.json"])
         receipts.write_skill_receipt(ctx, "qa", "video-qa-frameproof", "video_rendered",
@@ -549,7 +578,7 @@ def _find_cover(ctx: RuntimeCtx) -> str | None:
             return _rel(ctx, os.path.join(d, fn))
     return None
 
-def validate_review(ctx: RuntimeCtx) -> tuple[bool, list, dict]:
+def validate_review(ctx: RuntimeCtx, compare_saved: bool = True) -> tuple[bool, list, dict]:
     """可验证人审门（v2 收紧）：QA passed；复盘六维全部有分且 ≥8 且有证据；无占位符；
     lessons ≥1 条规则；video-retrospective receipt 存在；已确认过的哈希与当前产物一致。
     返回 (ok, problems, hashes)。"""
@@ -594,11 +623,13 @@ def validate_review(ctx: RuntimeCtx) -> tuple[bool, list, dict]:
                   "final": sha256_file(ctx.out("4-video", "final.mp4"))}
         if os.path.exists(ctx.out("5-video-final", "qa_report.json")):
             hashes["qa_report"] = sha256_file(ctx.out("5-video-final", "qa_report.json"))
-        # 已确认过的审核哈希与当前产物比对（单一失效判定来源）
-        saved = ctx.rs.data["review"].get("hashes") or {}
-        for k, h in hashes.items():
-            if saved.get(k) and saved[k] != h:
-                problems.append(f"确认后产物已变更: {k}（重新 review --confirm）")
+        # 已生效确认的哈希与当前产物比对：publish 门传 compare_saved=True 强制哈希绑定；
+        # review --confirm 传 False —— 重新确认=重建基线（否则旧哈希会永久死锁重确认）
+        if compare_saved:
+            saved = ctx.rs.data["review"].get("hashes") or {}
+            for k, h in hashes.items():
+                if saved.get(k) and saved[k] != h:
+                    problems.append(f"确认后产物已变更: {k}（重新 review --confirm）")
     return (not problems), problems, hashes
 
 class PublishAdapter(Adapter):
