@@ -486,14 +486,16 @@ python -m paperpipe publish --confirm <run_id>        # 真实上传双门
     └──→ [fact_checker] 数字核查 ←── wave 1 并行
          │
          ▼ （deep-read 就绪）
-    ┌── wave 1（并行，数据与举例分开）─────────────────────────┐
+    ┌── wave 1（并行，四路独立）───────────────────────────────┐
     │  [example_writer]     举例细化 → examples_spec.json      │
     │  [data_viz_builder]   数据 3D 规格 → dataviz_spec.json   │
+    │  [style_director]     风格选型 → style_refs.json          │
+    │                       （341 风格库 code-animation-prompts）│
     └───────────────────────────────────────────────────────────┘
          ▼
     [spec_enricher] 提示词丰富优化 → enriched_spec.json（串行熔炼）
        · 合并去重 · 相机路径精确化 · 物体布点 · 检测框贴合
-       · 数据组件定位 · 字幕节拍对齐 · 特效指配
+       · 数据组件定位 · 字幕节拍对齐 · 特效指配 · style_ref 落章
          ▼
     ┌── wave 3（并行）─────────────────────────────────────────┐
     │  [model_builder]      three.js 场景代码 → model_manifest │
@@ -522,7 +524,7 @@ python -m paperpipe agents --stage figures --json             # 机器可读
 ```
 stage=figures  all_passed=False
 派发波次（同波次可并行）:
-  wave 1: example_writer | data_viz_builder
+  wave 1: example_writer | data_viz_builder | style_director
   wave 2: spec_enricher
   wave 3: model_builder | visual_planner
 现在可派: example_writer, data_viz_builder
@@ -536,7 +538,7 @@ stage=figures  all_passed=False
 每个 handoff 自身 passed 且其依赖也 passed；未满足依赖的标 `blocked_by(...)`
 → 阶段 waiting_for_agent（消息列明谁 pending / 谁卡在谁身上）。
 
-**系统提示词**：8 个角色配了可执行提示词（`paperpipe/prompts/<role>.md`），
+**系统提示词**：9 个角色配了可执行提示词（`paperpipe/prompts/<role>.md`），
 `handoff.create` 自动把全文内联到 `request.json.system_prompt`——
 分派时直接取用，不需要另查文档。
 

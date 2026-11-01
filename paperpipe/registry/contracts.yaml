@@ -26,7 +26,7 @@ stages:
       - skill: design-intake
         trigger: 有视频/图解/幻灯等视觉交付目标
         required_output: 0-brief/design-intake.md
-        acceptance: 含选择表与一句话风格内核；用户不在线时逐项标注"默认"假设
+        acceptance: 含选择表与一句话风格内核；用户不在线时逐项标注"默认"假设；如引用 code-animation-prompts 风格须写编号
         on_fail: waiting_for_agent（等访谈结果或默认假设落盘）
     outputs: [0-brief/design-intake.md]
     machine_gate: 文件存在且含"风格内核"小节
@@ -147,6 +147,12 @@ stages:
         required_output: brief.md 含审美清单（概念从主题长出来的落点）
         acceptance: 拒绝默认"居中标题+三卡+渐变"已有显式对应
         on_fail: waiting_for_agent
+      - skill: code-animation-prompts
+        trigger: 需要风格化视觉语言（文字动效/粒子/光效/版式/转场）或用户按编号指定风格
+        required_output: 3-figures/README.md 动效匹配列含 cap:<id> 登记，或 route-decision 未选择理由
+        acceptance: 引用保留编号与名称；无静帧条目注明"文字参考"；不改原素材库
+        on_fail: waiting_for_agent（风格引用未登记）
+        optional: true
       - skill: threejs-visual-example
         trigger: 有视频交付目标且例子涉及具象对象（检测目标/物理实体/几何结构）
         required_output: 3-figures/README.md 登记表含「three.js · 3D」例示行（每章例示形式列）
@@ -155,7 +161,7 @@ stages:
     outputs: [3-figures/README.md]
     machine_gate: 登记表非空且每行含技能与产物路径；handoff example_writer+data_viz_builder+model_builder 均 passed
     human_gate: 图解文案与隐喻
-    subagents: [example_writer, data_viz_builder, spec_enricher, model_builder, visual_planner]
+    subagents: [example_writer, data_viz_builder, style_director, spec_enricher, model_builder, visual_planner]
     handoff_plan:
       - role: example_writer
         task: 把 deep-read 机制点转成例举规格 JSON——每个机制点产出 {objects:[], scene_desc, narration_text, is_3d, exempt_reason}
@@ -167,11 +173,16 @@ stages:
         input_paths: ["2-xray/deep-read.md"]
         output_paths: ["3-figures/dataviz_spec.json"]
         depends_on: []
+      - role: style_director
+        task: 从 341 风格库为每章指定参考风格（编号+职责：文字/氛围/转场/整帧），标注有无静帧
+        input_paths: ["0-brief/brief.md", "0-brief/design-intake.md"]
+        output_paths: ["3-figures/style_refs.json"]
+        depends_on: []
       - role: spec_enricher
-        task: 熔炼两份裸规格→制作级规格（相机路径精确化/物体布点/检测框贴合/数据定位/字幕节拍/特效指配/合并去重）
-        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json", "0-brief/brief.md"]
+        task: 熔炼裸规格+风格指定→制作级规格（相机/布点/检测框/数据定位/字幕节拍/特效/style_ref 落章）
+        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json", "3-figures/style_refs.json", "0-brief/brief.md"]
         output_paths: ["3-figures/enriched_spec.json"]
-        depends_on: [example_writer, data_viz_builder]
+        depends_on: [example_writer, data_viz_builder, style_director]
       - role: model_builder
         task: 吃 enriched_spec.json 产出 three.js 场景代码（ES module + lib3d 调用）
         input_paths: ["3-figures/enriched_spec.json"]

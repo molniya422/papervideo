@@ -102,13 +102,13 @@ def main():
         rs_old.data["schema"] = "paperpipe-state/2"
         check("旧 schema → legacy", rs_old.is_legacy)
 
-        print("T6 注册表一致（67）")
+        print("T6 注册表一致（68）")
         man = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__)))), "pack", "paper-explain-skills-pack.json"), encoding="utf-8"))
         local = set(os.listdir(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__)))), ".zcode", "skills")))
         check("manifest 数 = 本地数 = registry 数 = 66",
-              man["count"] == len(local) == len(man["install"]["skillDirs"]) == len(registry.skill_ids()) == 67,
+              man["count"] == len(local) == len(man["install"]["skillDirs"]) == len(registry.skill_ids()) == 68,
               f"{man['count']}/{len(local)}/{len(registry.skill_ids())}")
         reg_problems = registry.validate_registry(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         check("registry 双向差集为空", not reg_problems, str(reg_problems))

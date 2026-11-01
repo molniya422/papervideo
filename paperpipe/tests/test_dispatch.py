@@ -62,8 +62,8 @@ def main():
         print("D1 拓扑序")
         order = dispatch.topo_order("figures")
         check("figures 顺序正确",
-              order == ["example_writer", "data_viz_builder", "spec_enricher",
-                        "model_builder", "visual_planner"], str(order))
+              order == ["example_writer", "data_viz_builder", "style_director",
+                        "spec_enricher", "model_builder", "visual_planner"], str(order))
         check("spec_enricher 在两个创作角色之后、建模之前",
               order.index("spec_enricher") > order.index("example_writer")
               and order.index("spec_enricher") > order.index("data_viz_builder")
@@ -72,22 +72,23 @@ def main():
         print("D2 波次分组（同波可并行）")
         ctx = make_ctx(tmp)
         rep = dispatch.report(ctx, "figures")
-        check("wave1 = 两个创作角色（可并行）",
-              set(rep["waves"][0]) == {"example_writer", "data_viz_builder"}, str(rep["waves"]))
+        check("wave1 = 三个创作角色（可并行）",
+              set(rep["waves"][0]) == {"example_writer", "data_viz_builder", "style_director"}, str(rep["waves"]))
         check("wave2 = spec_enricher（串行熔炼）", rep["waves"][1] == ["spec_enricher"], str(rep["waves"]))
         check("wave3 = model_builder + visual_planner", set(rep["waves"][2]) == {"model_builder", "visual_planner"},
               str(rep["waves"]))
 
         print("D3 next_actionable 随依赖推进")
         check("初始只有 wave1 可派",
-              set(dispatch.next_actionable(ctx, "figures")) == {"example_writer", "data_viz_builder"},
+              set(dispatch.next_actionable(ctx, "figures")) == {"example_writer", "data_viz_builder", "style_director"},
               str(dispatch.next_actionable(ctx, "figures")))
         pass_role(ctx, "figures", "example_writer")
-        check("只 passed 一个创作角色 → 仍只有 data_viz_builder 可派",
-              dispatch.next_actionable(ctx, "figures") == ["data_viz_builder"],
+        check("只 passed 一个创作角色 → 仍剩 data_viz_builder + style_director 可派",
+              set(dispatch.next_actionable(ctx, "figures")) == {"data_viz_builder", "style_director"},
               str(dispatch.next_actionable(ctx, "figures")))
         pass_role(ctx, "figures", "data_viz_builder")
-        check("两个创作角色都 passed → spec_enricher 可派",
+        pass_role(ctx, "figures", "style_director")
+        check("三个创作角色都 passed → spec_enricher 可派",
               dispatch.next_actionable(ctx, "figures") == ["spec_enricher"],
               str(dispatch.next_actionable(ctx, "figures")))
 

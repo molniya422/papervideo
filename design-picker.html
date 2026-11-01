@@ -477,7 +477,30 @@ const SECTIONS = [
     {v:"f7", t:"重复强调同一句话"}, {v:"f8", t:"标题贴近左缘（x<250 裁切区）"},
     {v:"f9", t:"按权重切字幕"}, {v:"f10", t:"只换色不换形"}]},
  ]},
- {"sect":"I · 参考内容（参考哪些内容，产出到 design-intake.md 带路径）", rows:[
+ {"sect":"I · 代码动画风格库（341 种 · code-animation-prompts）", rows:[
+  {key:"cap_enabled", label:"是否启用代码动画风格库（341 种 · 193 静帧）", type:"single", opts:[
+    {v:"on", t:"启用 · 从下方选风格编号与系列"},
+    {v:"off", t:"不启用 · 仅用 NEON ORBIT + three.js"}]},
+  {key:"cap_series", label:"风格系列（可多选；A–G 带代码样片 · M 动态 · K 卡通 · Z 中国风 · H 版式 · L Lemo · V mg-styles · X code-video · R 参考学习 · O 奥斯卡 98 部）", type:"multi", opts:[
+    {v:"AG", t:"A–G 代码样片（26）· 字/光标/大字/光速/爆炸重组"},
+    {v:"M",  t:"M 动态风格（40）· 运动与叙事"},
+    {v:"K",  t:"K 卡通画风（38）"},
+    {v:"Z",  t:"Z 中国风（15）· 水墨/剪纸/敦煌"},
+    {v:"H",  t:"H 现成版式（12）· 杂志式排版"},
+    {v:"L",  t:"L Lemo-Opuscar（59）"},
+    {v:"V",  t:"V mg-styles-15（15）"},
+    {v:"X",  t:"X code-video（31）"},
+    {v:"R",  t:"R 照参考学来的（7）· 霓虹雨夜/像素赛博"},
+    {v:"O",  t:"O 奥斯卡 98 部（98）· 电影视觉参考"}]},
+  {key:"cap_ids", label:"指定风格编号（逗号分隔，如 A1,B3,R1；留空=按系列自动匹配）", type:"text", ph:"例：B3,R1,M1"},
+  {key:"cap_role", label:"风格库职责（与 three.js 主视觉的分工）", type:"single", opts:[
+    {v:"text-fx", t:"文字动效与排版（标题/字幕/数据标签）"},
+    {v:"atmos", t:"氛围层（粒子/光效/雨雪/扫描）"},
+    {v:"transition", t:"转场（光速穿梭/爆炸重组/擦除）"},
+    {v:"full-frame", t:"整帧风格（该章整体画风按参考风格）"},
+    {v:"mixed", t:"混用（按章指定）"}]},
+ ]},
+ {"sect":"J · 参考内容（参考哪些内容，产出到 design-intake.md 带路径）", rows:[
   {key:"ref_episodes", label:"本系列成片参考（可多选）", type:"multi", opts:[
     {v:"ep01", t:"EP01 · 社媒切片 51.7s —— 8 镜结构合同/竖版规则"},
     {v:"ep02", t:"EP02 · brutalist 音乐片 11min —— 纯音乐节奏/仪表板布局"},
@@ -537,6 +560,7 @@ const state = {
   ref_shotlibs:["lieflat-lens","video-shots"],
   ref_effects:["wm-catalog","wm-match","ml-showcase"],
   ref_custom:"",
+  cap_enabled:"off", cap_series:["AG"], cap_ids:"", cap_role:"mixed",
 };
 
 /* ═══════════════ 渲染 ═══════════════ */
@@ -574,7 +598,7 @@ function renderRows(){
     sec.rows.forEach(row=>box.appendChild(renderRow(row, ++no)));
   });
   // 锁定铁律
-  box.appendChild(el(`<div class="sect">J · 锁定铁律（不提供选项，工作流硬约束）</div>`));
+  box.appendChild(el(`<div class="sect">K · 锁定铁律（不提供选项，工作流硬约束）</div>`));
   const lk=el(`<div class="row"><div class="locked">${LOCKED.map(l=>`<span class="lockchip">${l}</span>`).join("")}</div></div>`);
   box.appendChild(lk);
 }
@@ -675,6 +699,8 @@ const LABELS={
   chapter_switch:{shutter:"机械快门 9f",iris:"光圈叶片",explode:"拆解重组","scale-contrast":"尺度对比",camera:"运镜穿越",cut:"硬切"},
   inner_switch:{morph:"同构形变",wipe:"扫描擦除",camera:"运镜滑移",cut:"硬切"},
   form_transition_rate:{"per-45s":"每 45s ≥1","per-chapter":"每章 ≥1",loose:"不强制"},
+  cap_enabled:{on:"启用",off:"不启用"},
+  cap_role:{"text-fx":"文字动效与排版",atmos:"氛围层",transition:"转场","full-frame":"整帧风格",mixed:"混用"},
 };
 function lab(key,v){
   if(key==="visual_language") return (STYLES.find(s=>s.v===v)||{}).name||v;
@@ -762,6 +788,10 @@ function yamlText(){
   L.push(`  ref_shotlibs: [${state.ref_shotlibs.join(", ")}]`);
   L.push(`  ref_effects: [${state.ref_effects.join(", ")}]`);
   L.push(`  ref_custom: ${state.ref_custom?q(state.ref_custom):"null"}`);
+  L.push(`  cap_enabled: ${state.cap_enabled}`);
+  L.push(`  cap_series: [${state.cap_series.join(", ")}]`);
+  L.push(`  cap_ids: ${state.cap_ids ? q(state.cap_ids) : "null"}`);
+  L.push(`  cap_role: ${state.cap_role}`);
   L.push("render:");
   L.push(`  composition: ${q("")}          # Remotion 合成 ID`);
   L.push(`  script: ${q("")}               # TTS/时间轴脚本路径`);
@@ -816,6 +846,9 @@ function mdText(){
   L.push(`- 特效密度：${lab("fx_density",state.fx_density)} · 辉光 ${lab("glow",state.glow)} · 粒子 ${lab("particles",state.particles)} · 噪声 ${lab("noise",state.noise)}`);
   L.push(`- 运镜：${listOf("camera_moves").join("/")} · 每章 ${lab("camera_cues",state.camera_cues)} cue · ${lab("camera_rhythm",state.camera_rhythm)} · 速度 ${lab("orbit_speed",state.orbit_speed)} · ${lab("parallax",state.parallax)}`);
   L.push(`- 场景切换：章间 ${lab("chapter_switch",state.chapter_switch)} · 章内 ${lab("inner_switch",state.inner_switch)} · 形式转场 ${lab("form_transition_rate",state.form_transition_rate)}`);
+  if (state.cap_enabled === "on") {
+    L.push(`- 代码动画风格库：系列 ${state.cap_series.join("/")}${state.cap_ids?` · 指定编号 ${state.cap_ids}`:""} · 职责 ${lab("cap_role",state.cap_role)}（引擎 engines/code-animation-prompts，挑选器 assets/library/风格挑选.html）`);
+  }
   L.push("");
   L.push("## 参考清单（动手前按此打开）");
   L.push("### 本系列成片");

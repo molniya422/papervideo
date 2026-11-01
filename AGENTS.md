@@ -7,7 +7,7 @@
 ④ `paperpipe` 执行器（只管 DAG/状态/哈希/门禁，验证 receipt 不假装调用技能）。
 路由表、阶段合同、技能注册表、子智能体角色的**唯一事实源**：`paperpipe/registry/*.yaml`。
 
-- **66 个技能**注册在 `.zcode/skills/`，总编排技能为 **`paper-explain`**（v3 路由器）。
+- **68 个技能**注册在 `.zcode/skills/`，总编排技能为 **`paper-explain`**（v3 路由器）。
 - 用户要求"讲论文 / 论文讲解 / paper explainer / 做成讲解视频 / 画模型图 / 学习笔记"时，
   优先走 `paper-explain` 工作流，按其路由表选择下游技能。
 - **生成视频前必须先跑 `design-intake`**：用 AskUserQuestion 两轮问清风格/主色/动效/声音/时长/画幅/受众，
@@ -36,6 +36,7 @@
 - HyperFrames 引擎源码检出在 `engines/hyperframes`（不要删）；渲染路线 D 用它，命令 `npx hyperframes --help`。
 - Wise Motion 引擎检出在 `engines/wise-motion`（101 个 Remotion 动效 + 素材库，match/show/export 三命令，技能 `wise-motion`；仅在用户明确调用时使用）。
 - Lieflat Code Video Starter 在 `engines/lieflat-code-video`（产品发布片 Remotion Starter，12 个 kit 模块：camera/springs/transitions/surfaces/type 等，12s 示例影片，lens-reference.html 镜头语言参考）。技能 `lieflat-code-video`。
+- Code Animation Prompts（341 种代码动画风格）检出在 `engines/code-animation-prompts`：193 张参考静帧 + 341 份提示词（含 Canvas 参考实现 `S.<id>(c,w,h,t,s)`）+ 离线挑选器 `assets/library/风格挑选.html`。技能 `code-animation-prompts`；用于**文字动效/氛围层/转场/整帧画风**（具象对象仍走 `threejs-visual-example`）。
 - Motion.Lab 动效库检出在 `engines/motion-lab`（160 动效 + 48 模板，Next.js）；技能 `motion-lab` 提供按需读取的 HTML/CSS/JS 源码（references/effects/<id>.md），零依赖单文件预览 `engines/motion-lab/motion-lab-showcase.html`。
 - 动效法则先读 `motion-doctrine`，再按需 `cut-the-curve` / `seam-craft` / `oversized-cursor`。
 - 完整的阶段/产物/门槛/故障排查写在 `WORKFLOW.md`，修改流程时同步更新它；

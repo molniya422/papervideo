@@ -25,7 +25,7 @@ agents:
     trigger: 有视频交付目标
     inputs: [2-xray/deep-read.md, 0-brief/brief.md]
     outputs: [3-figures/examples_spec.json]
-    parallel_with: [fact_checker, data_viz_builder]
+    parallel_with: [fact_checker, data_viz_builder, style_director]
     forbidden: 不得动 three.js 代码（那是 model_builder 的事）；不得与 data_viz_builder 共写同一文件
   - id: data_viz_builder
     system_prompt: prompts/data_viz_builder.md
@@ -33,13 +33,21 @@ agents:
     trigger: 有视频交付目标且论文含可 3D 化的数据
     inputs: [2-xray/deep-read.md]
     outputs: [3-figures/dataviz_spec.json]
-    parallel_with: [fact_checker, example_writer]
+    parallel_with: [fact_checker, example_writer, style_director]
     forbidden: 与 example_writer 分开——数据和举例各自独立规格，最后由 aggregator 合并
+  - id: style_director
+    system_prompt: prompts/style_director.md
+    purpose: 代码动画风格选型——从 341 风格库为每章指定参考风格（编号+职责+有无静帧）
+    trigger: design.cap_enabled=on 或用户点名风格编号；有视频交付目标
+    inputs: [0-brief/brief.md, 3-figures/examples_spec.json, engines/code-animation-prompts/references/catalog.json]
+    outputs: [3-figures/style_refs.json]
+    parallel_with: [example_writer, data_viz_builder]
+    forbidden: 不得机械叠加多个风格的全部约束（须分主画风/运动/版式）；不得声称无静帧条目有图；不得当 3D 模型库用
   - id: spec_enricher
     system_prompt: prompts/spec_enricher.md
     purpose: 规格丰富优化——把两份裸规格熔炼成 model_builder 可直接执行的制作级规格
     trigger: example_writer + data_viz_builder 的 handoff 均 passed 后串行启动
-    inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json, 0-brief/brief.md]
+    inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json, 3-figures/style_refs.json, 0-brief/brief.md]
     outputs: [3-figures/enriched_spec.json]
     parallel_with: []
     forbidden: 不发明新内容；不改数字；不写 three.js 代码；不确定就保守
@@ -47,7 +55,7 @@ agents:
     system_prompt: prompts/model_builder.md
     purpose: three.js 3D 建模实现——吃 example_writer 的例举规格 + data_viz_builder 的数据规格，产出场景代码
     trigger: 收到两份规格后串行启动（不与它们并行）
-    inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json]
+    inputs: [3-figures/enriched_spec.json, 3-figures/style_refs.json]
     outputs: [compositions 3D 场景代码]
     parallel_with: [narration_editor]
     forbidden: 不得自行发明例子（只实现规格）；不得改 brief.md/pipeline-state.json
@@ -104,7 +112,7 @@ agents:
     forbidden: 不执行上传；只验证与出具结论
 
 # 并行规则（整合方必须遵守）：
-# - acquire 完成后：fact_checker / example_writer / data_viz_builder 三路并行（都只读 deep-read 快照）；
+# - acquire 完成后：fact_checker / example_writer / data_viz_builder / style_director 四路并行（都只读固定快照）；
 # - 全部回传后：model_builder 串行接手（吃两份规格产出场景代码）；
 # - model_builder 完成后：aggregator 串行汇总（compositions + 时间轴 + 字幕）；
 # - render 完成后：technical_qa 与 visual_qa 可并行（各自输出目录）；

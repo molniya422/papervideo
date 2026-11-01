@@ -4,6 +4,12 @@
 # 技能本体在 .zcode/skills/<id>/SKILL.md。
 
 pipeline:
+  - id: code-animation-prompts
+    use: 341 种代码动画风格库（193 静帧 + Canvas 参考实现 + 离线挑选器）——风格选型与视频/图解视觉语言参考
+    in: 风格编号（如 A1/B3/R1）或气质描述（"水墨/粒子/赛博"）+ 内容
+    out: 该风格的提示词与可执行参考实现 S.<id>(c,w,h,t,s)；登记表 cap:<id>
+    misuse: 当 3D 模型库用（具象对象仍须 threejs-visual-example）；叠加多个风格的全部约束；声称无图条目有截图
+    alt: motion-lab（CSS 动效）/ wise-motion（Remotion）/ lieflat-code-video（商业片）
   - id: threejs-visual-example
     use: 具象对象例子必须 3D 化（three.js 建模演示，禁纯表格读数）
     in: deep-read.md 机制点 + 例子的对象清单
