@@ -40,9 +40,19 @@ def create(ctx, handoff_id: str, role: str, stage: str, task: str,
     if role not in registry.agent_roles():
         raise ValueError(f"未注册的子智能体角色: {role}（见 registry/agents.yaml）")
     d = _dir(ctx, handoff_id)
+    # 系统提示词：从注册表解析 prompt 文件路径，内联到 request.json
+    agent_meta = next((a for a in registry.agents() if a["id"] == role), {})
+    prompt_path = agent_meta.get("system_prompt")
+    prompt_text = ""
+    if prompt_path:
+        pp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), prompt_path)
+        if os.path.isfile(pp):
+            prompt_text = open(pp, encoding="utf-8").read()
     atomic_write_json(os.path.join(d, "request.json"), {
         "schema": HANDOFF_SCHEMA, "handoff_id": handoff_id, "role": role, "stage": stage,
         "task": task, "output_requirement": output_requirement or {},
+        "system_prompt_file": prompt_path or None,
+        "system_prompt": prompt_text or None,
         "created_at": utcnow(), "state": "pending"})
     atomic_write_json(os.path.join(d, "input-manifest.json"), _manifest(ctx, input_paths))
     _set_state(d, "pending")

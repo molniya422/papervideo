@@ -4,6 +4,7 @@
 
 agents:
   - id: researcher
+    system_prompt: prompts/researcher.md
     purpose: 论文解析主稿（deep-read 补全：机制点/会怎么坏/可手算例/证据分级）
     trigger: 有视频/图解交付目标（所有 target 均触发）
     inputs: [paper_src/]
@@ -11,6 +12,7 @@ agents:
     parallel_with: [fact_checker]
     forbidden: 不得同时改 brief.md；只读固定版本的 paper_src 输入快照
   - id: fact_checker
+    system_prompt: prompts/fact_checker.md
     purpose: 独立核验数字、公式、结论与归属
     trigger: 论文 ≥20 页 / 数字结论重要 / 用户要求"讲透""严谨核对"
     inputs: [2-xray/deep-read.md, paper_src/]
@@ -18,6 +20,7 @@ agents:
     parallel_with: [researcher, visual_planner, example_writer]
     forbidden: 不得直接改 deep-read.md——只回传问题清单与证据，由整合方落盘
   - id: example_writer
+    system_prompt: prompts/example_writer.md
     purpose: 举例细化讲解——把每个机制点转成「具象对象 + 场景描述 + 讲解文本」的例举规格
     trigger: 有视频交付目标
     inputs: [2-xray/deep-read.md, 0-brief/brief.md]
@@ -25,6 +28,7 @@ agents:
     parallel_with: [fact_checker, data_viz_builder]
     forbidden: 不得动 three.js 代码（那是 model_builder 的事）；不得与 data_viz_builder 共写同一文件
   - id: data_viz_builder
+    system_prompt: prompts/data_viz_builder.md
     purpose: 数据 3D 规格提取——把论文中的数字/表格/公式转成 3D 数据组件规格（柱阵/体素/曲面/管曲线/表盘）
     trigger: 有视频交付目标且论文含可 3D 化的数据
     inputs: [2-xray/deep-read.md]
@@ -32,6 +36,7 @@ agents:
     parallel_with: [fact_checker, example_writer]
     forbidden: 与 example_writer 分开——数据和举例各自独立规格，最后由 aggregator 合并
   - id: model_builder
+    system_prompt: prompts/model_builder.md
     purpose: three.js 3D 建模实现——吃 example_writer 的例举规格 + data_viz_builder 的数据规格，产出场景代码
     trigger: 收到两份规格后串行启动（不与它们并行）
     inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json]
@@ -39,6 +44,7 @@ agents:
     parallel_with: [narration_editor]
     forbidden: 不得自行发明例子（只实现规格）；不得改 brief.md/pipeline-state.json
   - id: aggregator
+    system_prompt: prompts/aggregator.md
     purpose: 最终汇总——把所有 subagent 产出组装成 compositions + 时间轴 + 字幕，确保风格一致与零遮挡
     trigger: 全部前序 handoff passed 后串行启动
     inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json, 4-video/hf/compositions/]
