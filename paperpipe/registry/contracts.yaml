@@ -72,9 +72,18 @@ stages:
         acceptance: 每个机制点有"会怎么坏"；推断标注【文中有据/推断/猜测】；数字对原文核对
         on_fail: waiting_for_agent（骨架已生成，等 agent 按技能补全）
     outputs: [2-xray/deep-read.md]
-    machine_gate: deep-read.md 存在、非骨架（无模板提示行）、含机制点清单
-    human_gate: 深读内容本身；事实存疑处由 fact_checker 子智能体独立复核
+    machine_gate: deep-read.md 存在、非骨架（无模板提示行）、含机制点清单；handoff researcher+fact_checker 均 passed
+    human_gate: 深读内容本身
     subagents: [researcher, fact_checker]
+    handoff_plan:
+      - role: researcher
+        task: 按 paper-xray 技能补全 deep-read.md（机制点/会怎么坏/可手算例/证据分级）
+        input_paths: ["paper_src/"]
+        output_paths: ["2-xray/deep-read.md"]
+      - role: fact_checker
+        task: 逐条核对 deep-read 数字与公式断言（并行于 researcher 的输出快照）
+        input_paths: ["2-xray/deep-read.md", "paper_src/paper_text.txt"]
+        output_paths: ["handoffs/<id>/response.json"]
 
   figures:
     requires: [xray]
@@ -144,9 +153,26 @@ stages:
         acceptance: 具象对象例子有 3D 建模演示；纯表格例示 = 0（伴随标注除外）；抽象数学例已写 route-decision 豁免
         on_fail: waiting_for_agent（例子退回重做为 3D）
     outputs: [3-figures/README.md]
-    machine_gate: 登记表非空且每行含技能与产物路径
+    machine_gate: 登记表非空且每行含技能与产物路径；handoff example_writer+data_viz_builder+model_builder 均 passed
     human_gate: 图解文案与隐喻
-    subagents: [visual_planner]
+    subagents: [example_writer, data_viz_builder, model_builder, visual_planner]
+    handoff_plan:
+      - role: example_writer
+        task: 把 deep-read 机制点转成例举规格 JSON——每个机制点产出 {objects:[], scene_desc, narration_text, is_3d, exempt_reason}
+        input_paths: ["2-xray/deep-read.md", "0-brief/brief.md"]
+        output_paths: ["3-figures/examples_spec.json"]
+      - role: data_viz_builder
+        task: 把论文数字/表格/公式转成 3D 数据组件规格 JSON——{component: bars3d|lossSurface|heatColumns|gauge3d|tubeFromPoints, values, labels}
+        input_paths: ["2-xray/deep-read.md"]
+        output_paths: ["3-figures/dataviz_spec.json"]
+      - role: model_builder
+        task: 吃 example_writer 例举规格 + data_viz_builder 数据规格，产出 three.js 场景代码（ES module + lib3d 调用）
+        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json"]
+        output_paths: ["3-figures/model_manifest.json"]
+      - role: visual_planner
+        task: 整合登记表（每行=章/技能/产物路径/3D 标注）＋动效匹配
+        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json"]
+        output_paths: ["3-figures/README.md"]
 
   render:
     requires: [figures]
@@ -186,9 +212,14 @@ stages:
         acceptance: 字幕由逐句音频驱动，禁按权重切分
         on_fail: failed_permanent（违反铁律）
     outputs: [4-video/narration.json, 4-video/render-raw.mp4]
-    machine_gate: narration 存在→TTS→渲染→产物存在；命令与耗时写 tool receipt
+    machine_gate: narration 存在→渲染→产物存在；命令与耗时写 tool receipt；handoff aggregator passed
     human_gate: 视觉叙事与听审（交付前人工）
-    subagents: [visual_planner, render_worker, narration_editor]
+    subagents: [model_builder, aggregator, render_worker, narration_editor]
+    handoff_plan:
+      - role: aggregator
+        task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检
+        input_paths: ["3-figures/model_manifest.json", "3-figures/examples_spec.json", "3-figures/dataviz_spec.json"]
+        output_paths: ["4-video/hf/index.html", "4-video/narration.json", "4-video/hf/compositions/captions.html"]
 
   qa:
     requires: [render]

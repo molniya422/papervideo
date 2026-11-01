@@ -14,11 +14,45 @@ import glob as globmod
 import json, os, re, shutil, subprocess
 import urllib.request, urllib.error
 
-from . import registry, receipts
+from . import registry, receipts, handoff
 from .util import atomic_write_text, atomic_write_json, env_summary, utcnow
 from .state import RunState
 
 VERSION = "2.0.0"
+
+
+def ensure_stage_handoffs(ctx: RuntimeCtx, stage: str) -> list:
+    """按 contracts.yaml handoff_plan 创建该阶段全部子智能体 handoff 信封。
+    已存在（同名）的信封跳过 —— 幂等。返回 handoff_id 列表。"""
+    plan = registry.stage_contract(stage).get("handoff_plan") or []
+    run_id = ctx.rs.data["run_id"]
+    created = []
+    for i, h in enumerate(plan):
+        hid = f"{run_id}-{stage}-{h['role']}-{i + 1:02d}"
+        try:
+            handoff.get_state(ctx, hid)
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            handoff.create(ctx, hid, h["role"], stage, h["task"],
+                           h.get("input_paths", []),
+                           {"output": h.get("output_paths", [""])[0] if h.get("output_paths") else ""})
+        created.append(hid)
+    return created
+
+
+def stage_handoffs_passed(ctx: RuntimeCtx, stage: str) -> tuple[bool, list]:
+    """检查该阶段全部 handoff 信封均为 passed。返回 (all_passed, pending_or_failed 列表)。"""
+    plan = registry.stage_contract(stage).get("handoff_plan") or []
+    run_id = ctx.rs.data["run_id"]
+    bad = []
+    for i, h in enumerate(plan):
+        hid = f"{run_id}-{stage}-{h['role']}-{i + 1:02d}"
+        try:
+            state = handoff.get_state(ctx, hid)
+            if state != "passed":
+                bad.append(f"{h['role']}={state}")
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            bad.append(f"{h['role']}=missing")
+    return (not bad), bad
 
 class StageError(Exception):
     def __init__(self, cls: str, message: str):

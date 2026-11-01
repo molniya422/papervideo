@@ -116,12 +116,25 @@ def run_stage(ctx: RuntimeCtx, name: str) -> str:
         try:
             rs.set_status(name, "running")
             log(rs, "info", name, "plan", plan=ad.plan(ctx))
+            from .adapters import ensure_stage_handoffs
+            ensure_stage_handoffs(ctx, name)
             result = ad.run(ctx)
             log(rs, "info", name, "run", status=result.status, data=result.data)
             chk = ad.check(ctx)
             log(rs, "info", name, "check", status=chk.status, error=(chk.error.message if chk.error else None))
             final = chk if chk.status != "passed" else result
             if final.status == "passed":
+                # 子智能体 handoff 门（handoff_plan 里的全部信封必须 passed）
+                from .adapters import stage_handoffs_passed
+                hok, hbad = stage_handoffs_passed(ctx, name)
+                if not hok:
+                    log(rs, "warn", name, "handoff_pending", bad=hbad)
+                    st = rs.stage(name)
+                    st["input_hash"] = fp
+                    rs.save()
+                    rs.set_status(name, "waiting_for_agent",
+                                  {"class": "agent", "message": "子智能体 handoff 未完成: " + "; ".join(hbad)})
+                    return "waiting_for_agent"
                 # 技能凭据验证（替换旧字符串匹配）；缺失 → waiting_for_agent
                 rproblems = receipts.verify_stage(ctx, name)
                 if rproblems:

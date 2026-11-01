@@ -4,8 +4,8 @@
 
 agents:
   - id: researcher
-    purpose: 读取论文并生成事实源（deep-read 骨架补全）
-    trigger: 论文 ≥20 页或公式密集
+    purpose: 论文解析主稿（deep-read 补全：机制点/会怎么坏/可手算例/证据分级）
+    trigger: 有视频/图解交付目标（所有 target 均触发）
     inputs: [paper_src/]
     outputs: [2-xray/deep-read.md]
     parallel_with: [fact_checker]
@@ -15,8 +15,36 @@ agents:
     trigger: 论文 ≥20 页 / 数字结论重要 / 用户要求"讲透""严谨核对"
     inputs: [2-xray/deep-read.md, paper_src/]
     outputs: [handoffs/<id>/response.json]
-    parallel_with: [researcher, visual_planner]
+    parallel_with: [researcher, visual_planner, example_writer]
     forbidden: 不得直接改 deep-read.md——只回传问题清单与证据，由整合方落盘
+  - id: example_writer
+    purpose: 举例细化讲解——把每个机制点转成「具象对象 + 场景描述 + 讲解文本」的例举规格
+    trigger: 有视频交付目标
+    inputs: [2-xray/deep-read.md, 0-brief/brief.md]
+    outputs: [3-figures/examples_spec.json]
+    parallel_with: [fact_checker, data_viz_builder]
+    forbidden: 不得动 three.js 代码（那是 model_builder 的事）；不得与 data_viz_builder 共写同一文件
+  - id: data_viz_builder
+    purpose: 数据 3D 规格提取——把论文中的数字/表格/公式转成 3D 数据组件规格（柱阵/体素/曲面/管曲线/表盘）
+    trigger: 有视频交付目标且论文含可 3D 化的数据
+    inputs: [2-xray/deep-read.md]
+    outputs: [3-figures/dataviz_spec.json]
+    parallel_with: [fact_checker, example_writer]
+    forbidden: 与 example_writer 分开——数据和举例各自独立规格，最后由 aggregator 合并
+  - id: model_builder
+    purpose: three.js 3D 建模实现——吃 example_writer 的例举规格 + data_viz_builder 的数据规格，产出场景代码
+    trigger: 收到两份规格后串行启动（不与它们并行）
+    inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json]
+    outputs: [compositions 3D 场景代码]
+    parallel_with: [narration_editor]
+    forbidden: 不得自行发明例子（只实现规格）；不得改 brief.md/pipeline-state.json
+  - id: aggregator
+    purpose: 最终汇总——把所有 subagent 产出组装成 compositions + 时间轴 + 字幕，确保风格一致与零遮挡
+    trigger: 全部前序 handoff passed 后串行启动
+    inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json, 4-video/hf/compositions/]
+    outputs: [4-video/hf/index.html, 4-video/narration.json, 4-video/hf/compositions/captions.html]
+    parallel_with: []
+    forbidden: 串行——不与任何其他 agent 并行；对最终布局审计负全责
   - id: visual_planner
     purpose: 生成镜头、图解与动效匹配登记表
     trigger: 视频 >5 分钟或镜头 >8 个
@@ -61,7 +89,9 @@ agents:
     forbidden: 不执行上传；只验证与出具结论
 
 # 并行规则（整合方必须遵守）：
-# - acquire 完成后：fact_checker 与 visual_planner 可并行，但都只读固定版本的论文输入快照；
+# - acquire 完成后：fact_checker / example_writer / data_viz_builder 三路并行（都只读 deep-read 快照）；
+# - 全部回传后：model_builder 串行接手（吃两份规格产出场景代码）；
+# - model_builder 完成后：aggregator 串行汇总（compositions + 时间轴 + 字幕）；
 # - render 完成后：technical_qa 与 visual_qa 可并行（各自输出目录）；
 # - 最终整合、pipeline-state.json 写入、发布动作必须串行；
 # - 禁止两个 agent 同时写 brief.md / pipeline-state.json / 同一视频源文件。

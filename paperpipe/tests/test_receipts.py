@@ -17,6 +17,32 @@ from paperpipe import receipts
 from paperpipe.config import DEFAULTS
 from paperpipe.state import RunState
 
+
+def _pass_handoffs(ctx, stage):
+    """测试辅助：创建并直通该阶段全部 handoff（跳过子智能体执行）。"""
+    from paperpipe import handoff as _ho
+    from paperpipe import registry as _reg
+    plan = _reg.stage_contract(stage).get("handoff_plan") or []
+    rid = ctx.rs.data["run_id"]
+    for i, h in enumerate(plan):
+        hid = f"{rid}-{stage}-{h['role']}-{i + 1:02d}"
+        try:
+            if _ho.get_state(ctx, hid) == "passed":
+                continue
+        except Exception:
+            pass
+        _ho.create(ctx, hid, h["role"], stage, h["task"], h.get("input_paths", []))
+        _ho.start(ctx, hid)
+        ops = [p.replace("<id>", hid) for p in h.get("output_paths", [])]
+        for op in ops:
+            fp = ctx.out(op)
+            os.makedirs(os.path.dirname(fp) or ".", exist_ok=True)
+            if not os.path.exists(fp):
+                from paperpipe.util import atomic_write_text as _awt
+                _awt(fp, json.dumps({"verdict": "pass"}, ensure_ascii=False))
+        _ho.submit_response(ctx, hid, {"verdict": "pass", "corrections": []}, ops)
+        _ho.verify(ctx, hid)
+
 PASS, FAIL = 0, 0
 def check(name, cond, detail=""):
     global PASS, FAIL
@@ -107,6 +133,7 @@ def main():
         ctx6 = make_ctx(tmp, {"2-xray/deep-read.md": "# 深度解读\n## 机制点\n1. A"})
         ctx6.rs.stage("acquire")["status"] = "passed"
         ctx6.rs.stage("acquire")["input_hash"] = runner.fingerprint(ctx6, "acquire")
+        _pass_handoffs(ctx6, "xray")
         res6 = runner.run_stage(ctx6, "xray")
         check("deep-read 完成但无 paper-xray receipt → waiting_for_agent",
               res6 == "waiting_for_agent", res6)

@@ -17,6 +17,31 @@ from paperpipe.state import RunState, SCHEMA
 from paperpipe.util import atomic_write_text
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+def _pass_handoffs(ctx, stage):
+    """测试辅助：创建并直通该阶段全部 handoff（跳过子智能体执行）。"""
+    from paperpipe import handoff as _ho
+    from paperpipe import registry as _reg
+    plan = _reg.stage_contract(stage).get("handoff_plan") or []
+    rid = ctx.rs.data["run_id"]
+    for i, h in enumerate(plan):
+        hid = f"{rid}-{stage}-{h['role']}-{i + 1:02d}"
+        try:
+            if _ho.get_state(ctx, hid) == "passed":
+                continue
+        except Exception:
+            pass
+        _ho.create(ctx, hid, h["role"], stage, h["task"], h.get("input_paths", []))
+        _ho.start(ctx, hid)
+        ops = [p.replace("<id>", hid) for p in h.get("output_paths", [])]
+        for op in ops:
+            fp = ctx.out(op)
+            os.makedirs(os.path.dirname(fp) or ".", exist_ok=True)
+            if not os.path.exists(fp):
+                atomic_write_text(fp, json.dumps({"verdict": "pass"}, ensure_ascii=False))
+        _ho.submit_response(ctx, hid, {"verdict": "pass", "corrections": []}, ops)
+        _ho.verify(ctx, hid)
+
 PASS, FAIL = 0, 0
 def check(name, cond, detail=""):
     global PASS, FAIL
@@ -100,6 +125,7 @@ def main():
     ctx = make_ctx({"2-xray/deep-read.md": "# 深读\n## 机制点\n1. A —— 会坏于 X\n内容 v1"})
     ctx.rs.stage("acquire")["status"] = "passed"
     ctx.rs.stage("acquire")["input_hash"] = runner.fingerprint(ctx, "acquire")
+    _pass_handoffs(ctx, "xray")
     receipts.write_skill_receipt(ctx, "xray", "paper-xray", "t", ["2-xray/deep-read.md"])
     res = runner.run_stage(ctx, "xray")
     check("首次 passed", res == "passed", res)
@@ -149,6 +175,7 @@ def main():
                     "本文档多处提到 paper-xray 与 motion-doctrine 等技能名"})
     ctx.rs.stage("acquire")["status"] = "passed"
     ctx.rs.stage("acquire")["input_hash"] = runner.fingerprint(ctx, "acquire")
+    _pass_handoffs(ctx, "xray")
     res = runner.run_stage(ctx, "xray")
     check("提到名字 ≠ 凭据 → waiting_for_agent", res == "waiting_for_agent", res)
     check("停机原因写明凭据", "凭据" in (ctx.rs.stage("xray")["error"] or {}).get("message", ""),
