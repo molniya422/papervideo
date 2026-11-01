@@ -266,6 +266,21 @@ def cmd_publish(args):
     pub = ctx.rs.data["publish"]
     print(f"状态: upload_ready={pub['upload_ready']} uploading={pub['uploading']} uploaded={pub['uploaded']}")
 
+def cmd_agents(args):
+    """子智能体调度报告：派发波次 / 状态 / 下一步可派 / 卡点。"""
+    from . import dispatch
+    run_dir = _resolve_run_dir(args.run_dir)
+    ctx = _ctx(run_dir)
+    stages = [args.stage] if args.stage else [s for s in registry.stage_names()
+                                              if registry.stage_contract(s).get("handoff_plan")]
+    reps = [dispatch.report(ctx, s) for s in stages]
+    if args.json:
+        print(json.dumps(reps, ensure_ascii=False, indent=2))
+    else:
+        print("\n\n".join(dispatch.format_report(r) for r in reps))
+    if any(not r["all_passed"] for r in reps):
+        sys.exit(2)     # 有未完成 handoff：编排方据此决定是否继续派发
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="paperpipe", description=f"paperpipe {VERSION} — 论文讲解流水线执行器（v2：registry/8 态/receipt/handoff）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -281,6 +296,7 @@ def main(argv=None):
     p = sub.add_parser("validate"); p.add_argument("--target", default="video"); p.set_defaults(fn=cmd_validate)
     p = sub.add_parser("review"); p.add_argument("--confirm", action="store_true"); p.add_argument("--by"); p.add_argument("--run-dir"); p.set_defaults(fn=cmd_review)
     p = sub.add_parser("publish"); p.add_argument("--dry-run", action="store_true"); p.add_argument("--confirm"); p.add_argument("--run-dir"); p.set_defaults(fn=cmd_publish)
+    p = sub.add_parser("agents"); p.add_argument("--stage"); p.add_argument("--json", action="store_true"); p.add_argument("--run-dir"); p.set_defaults(fn=cmd_agents)
     args = ap.parse_args(argv)
     args.fn(args)
 

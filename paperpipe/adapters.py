@@ -40,18 +40,25 @@ def ensure_stage_handoffs(ctx: RuntimeCtx, stage: str) -> list:
 
 
 def stage_handoffs_passed(ctx: RuntimeCtx, stage: str) -> tuple[bool, list]:
-    """检查该阶段全部 handoff 信封均为 passed。返回 (all_passed, pending_or_failed 列表)。"""
+    """按 depends_on 拓扑序检查：每个 handoff 自身 passed 且其依赖也 passed。返回 (all_passed, 问题列表)。"""
     plan = registry.stage_contract(stage).get("handoff_plan") or []
     run_id = ctx.rs.data["run_id"]
-    bad = []
+    states = {}
     for i, h in enumerate(plan):
         hid = f"{run_id}-{stage}-{h['role']}-{i + 1:02d}"
         try:
-            state = handoff.get_state(ctx, hid)
-            if state != "passed":
-                bad.append(f"{h['role']}={state}")
+            states[h["role"]] = handoff.get_state(ctx, hid)
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            bad.append(f"{h['role']}=missing")
+            states[h["role"]] = "missing"
+    bad = []
+    for h in plan:
+        role = h["role"]
+        state = states.get(role, "missing")
+        if state == "passed":
+            continue
+        # 依赖尚未 passed 的 handoff 标 blocked_by —— 编排方据此决定分派顺序
+        unmet = [d for d in (h.get("depends_on") or []) if states.get(d) != "passed"]
+        bad.append(f"{role}=blocked_by({', '.join(unmet)})" if unmet else f"{role}={state}")
     return (not bad), bad
 
 class StageError(Exception):

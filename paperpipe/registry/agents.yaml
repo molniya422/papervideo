@@ -35,6 +35,14 @@ agents:
     outputs: [3-figures/dataviz_spec.json]
     parallel_with: [fact_checker, example_writer]
     forbidden: 与 example_writer 分开——数据和举例各自独立规格，最后由 aggregator 合并
+  - id: spec_enricher
+    system_prompt: prompts/spec_enricher.md
+    purpose: 规格丰富优化——把两份裸规格熔炼成 model_builder 可直接执行的制作级规格
+    trigger: example_writer + data_viz_builder 的 handoff 均 passed 后串行启动
+    inputs: [3-figures/examples_spec.json, 3-figures/dataviz_spec.json, 0-brief/brief.md]
+    outputs: [3-figures/enriched_spec.json]
+    parallel_with: []
+    forbidden: 不发明新内容；不改数字；不写 three.js 代码；不确定就保守
   - id: model_builder
     system_prompt: prompts/model_builder.md
     purpose: three.js 3D 建模实现——吃 example_writer 的例举规格 + data_viz_builder 的数据规格，产出场景代码
@@ -52,6 +60,7 @@ agents:
     parallel_with: []
     forbidden: 串行——不与任何其他 agent 并行；对最终布局审计负全责
   - id: visual_planner
+    system_prompt: prompts/visual_planner.md
     purpose: 生成镜头、图解与动效匹配登记表
     trigger: 视频 >5 分钟或镜头 >8 个
     inputs: [2-xray/deep-read.md, 0-brief/brief.md]

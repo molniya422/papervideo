@@ -124,7 +124,7 @@ def run_stage(ctx: RuntimeCtx, name: str) -> str:
             log(rs, "info", name, "check", status=chk.status, error=(chk.error.message if chk.error else None))
             final = chk if chk.status != "passed" else result
             if final.status == "passed":
-                # 子智能体 handoff 门（handoff_plan 里的全部信封必须 passed）
+                # 子智能体 handoff 门（按 depends_on 拓扑检查：每个 handoff 自身 passed 且其依赖也 passed）
                 from .adapters import stage_handoffs_passed
                 hok, hbad = stage_handoffs_passed(ctx, name)
                 if not hok:

@@ -155,24 +155,33 @@ stages:
     outputs: [3-figures/README.md]
     machine_gate: 登记表非空且每行含技能与产物路径；handoff example_writer+data_viz_builder+model_builder 均 passed
     human_gate: 图解文案与隐喻
-    subagents: [example_writer, data_viz_builder, model_builder, visual_planner]
+    subagents: [example_writer, data_viz_builder, spec_enricher, model_builder, visual_planner]
     handoff_plan:
       - role: example_writer
         task: 把 deep-read 机制点转成例举规格 JSON——每个机制点产出 {objects:[], scene_desc, narration_text, is_3d, exempt_reason}
         input_paths: ["2-xray/deep-read.md", "0-brief/brief.md"]
         output_paths: ["3-figures/examples_spec.json"]
+        depends_on: []
       - role: data_viz_builder
         task: 把论文数字/表格/公式转成 3D 数据组件规格 JSON——{component: bars3d|lossSurface|heatColumns|gauge3d|tubeFromPoints, values, labels}
         input_paths: ["2-xray/deep-read.md"]
         output_paths: ["3-figures/dataviz_spec.json"]
+        depends_on: []
+      - role: spec_enricher
+        task: 熔炼两份裸规格→制作级规格（相机路径精确化/物体布点/检测框贴合/数据定位/字幕节拍/特效指配/合并去重）
+        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json", "0-brief/brief.md"]
+        output_paths: ["3-figures/enriched_spec.json"]
+        depends_on: [example_writer, data_viz_builder]
       - role: model_builder
-        task: 吃 example_writer 例举规格 + data_viz_builder 数据规格，产出 three.js 场景代码（ES module + lib3d 调用）
-        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json"]
+        task: 吃 enriched_spec.json 产出 three.js 场景代码（ES module + lib3d 调用）
+        input_paths: ["3-figures/enriched_spec.json"]
         output_paths: ["3-figures/model_manifest.json"]
+        depends_on: [spec_enricher]
       - role: visual_planner
         task: 整合登记表（每行=章/技能/产物路径/3D 标注）＋动效匹配
-        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json"]
+        input_paths: ["3-figures/enriched_spec.json"]
         output_paths: ["3-figures/README.md"]
+        depends_on: [spec_enricher]
 
   render:
     requires: [figures]
@@ -218,7 +227,7 @@ stages:
     handoff_plan:
       - role: aggregator
         task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检
-        input_paths: ["3-figures/model_manifest.json", "3-figures/examples_spec.json", "3-figures/dataviz_spec.json"]
+        input_paths: ["3-figures/model_manifest.json", "3-figures/enriched_spec.json"]
         output_paths: ["4-video/hf/index.html", "4-video/narration.json", "4-video/hf/compositions/captions.html"]
 
   qa:

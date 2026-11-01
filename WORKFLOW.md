@@ -483,12 +483,22 @@ python -m paperpipe publish --confirm <run_id>        # 真实上传双门
     ▼ acquire
     │
     ├──→ [researcher]  解析主稿 deep-read.md（机制点/会怎么坏/手算例/证据分级）
-    ├──→ [fact_checker] 数字核查 ←── 并行（读 researcher 的输出快照）
-    ├──→ [example_writer] 举例细化：机制点 → {objects, scene_desc, narration_text, is_3d}
-    └──→ [data_viz_builder] 数据 3D 规格：数字/表格 → {component, values, labels}
-         │                    （example_writer 与 data_viz_builder 数据与举例分开）
-         ▼ 全部回传
-    [model_builder] three.js 场景代码（吃两份规格，串行）
+    └──→ [fact_checker] 数字核查 ←── wave 1 并行
+         │
+         ▼ （deep-read 就绪）
+    ┌── wave 1（并行，数据与举例分开）─────────────────────────┐
+    │  [example_writer]     举例细化 → examples_spec.json      │
+    │  [data_viz_builder]   数据 3D 规格 → dataviz_spec.json   │
+    └───────────────────────────────────────────────────────────┘
+         ▼
+    [spec_enricher] 提示词丰富优化 → enriched_spec.json（串行熔炼）
+       · 合并去重 · 相机路径精确化 · 物体布点 · 检测框贴合
+       · 数据组件定位 · 字幕节拍对齐 · 特效指配
+         ▼
+    ┌── wave 3（并行）─────────────────────────────────────────┐
+    │  [model_builder]      three.js 场景代码 → model_manifest │
+    │  [visual_planner]     图解登记表 → README.md              │
+    └───────────────────────────────────────────────────────────┘
          ▼
     [aggregator] 汇总组装 compositions + 时间轴 + 字幕（串行，零遮挡自检）
          ▼
@@ -501,9 +511,34 @@ python -m paperpipe publish --confirm <run_id>        # 真实上传双门
     [release_reviewer] 发布确认 → upload_ready
 ```
 
+**调度查询**（编排方派子智能体前必看）：
+
+```bash
+python -m paperpipe agents --run-dir output/<run-id>          # 派发波次/状态/下一步可派/卡点
+python -m paperpipe agents --stage figures --json             # 机器可读
+```
+
+输出示例：
+```
+stage=figures  all_passed=False
+派发波次（同波次可并行）:
+  wave 1: example_writer | data_viz_builder
+  wave 2: spec_enricher
+  wave 3: model_builder | visual_planner
+现在可派: example_writer, data_viz_builder
+卡在: spec_enricher←example_writer,data_viz_builder; model_builder←spec_enricher
+```
+
+退出码：全部 handoff passed → 0；仍有未完成 → 2（编排方据此决策）。
+
 **门禁语义**：每阶段 runner 自动创建 handoff 信封（`ensure_stage_handoffs`）；
-阶段 passed 前 `stage_handoffs_passed` 检查全部信封为 passed——
-任一 pending/failed → 阶段 waiting_for_agent（列明未完成角色）。
+阶段 passed 前 `stage_handoffs_passed` **按 depends_on 拓扑**检查——
+每个 handoff 自身 passed 且其依赖也 passed；未满足依赖的标 `blocked_by(...)`
+→ 阶段 waiting_for_agent（消息列明谁 pending / 谁卡在谁身上）。
+
+**系统提示词**：8 个角色配了可执行提示词（`paperpipe/prompts/<role>.md`），
+`handoff.create` 自动把全文内联到 `request.json.system_prompt`——
+分派时直接取用，不需要另查文档。
 
 **隔离规则**：example_writer 与 data_viz_builder 写不同文件（examples_spec.json / dataviz_spec.json）；
 model_builder 串行吃两份规格；aggregator 串行汇总；pipeline-state.json 仅整合方写入。
