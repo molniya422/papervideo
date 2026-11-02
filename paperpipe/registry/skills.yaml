@@ -4,6 +4,12 @@
 # 技能本体在 .zcode/skills/<id>/SKILL.md。
 
 pipeline:
+  - id: blender-visual
+    use: Blender 3D 建模与离线渲染——高保真模型/PBR 材质/物理模拟/粒子系统，输出确定性帧序列
+    in: enriched_spec.json 的 objects/camera_path（或 GLTF/FBX 模型路径）
+    out: PNG 帧序列或 MP4（EEVEE/Cycles），由 aggregator 以 <video> 或帧序列合入 hyperframes
+    misuse: 当轻量 three.js 可满足时用 Blender（渲染成本高 10-100×）；随机种子未固定；改原素材库
+    alt: threejs-visual-example（轻量 DOM 级）/ code-animation-prompts（风格化 Canvas）
   - id: code-animation-prompts
     use: 341 种代码动画风格库（193 静帧 + Canvas 参考实现 + 离线挑选器）——风格选型与视频/图解视觉语言参考
     in: 风格编号（如 A1/B3/R1）或气质描述（"水墨/粒子/赛博"）+ 内容

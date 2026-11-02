@@ -147,7 +147,7 @@ output/<run-id>/
 
 ---
 
-## 5. 组件地图 · 技能库（68 个，`D:\papervideo\.zcode\skills\<name>\SKILL.md`）
+## 5. 组件地图 · 技能库（69 个，`D:\papervideo\.zcode\skills\<name>\SKILL.md`）
 
 > 每个 skill 至少含 `SKILL.md`；部分带 `references/`、`scripts/`、`templates/`。
 > 打包分发见 §9。
@@ -207,6 +207,7 @@ output/<run-id>/
 | `engines\motion-lab\` | 12MB | Motion.Lab：160 CSS/JS 动效（索引数据 `data\effects.ts`）+ 48 模板 + Next.js 交互实验室 | 单文件预览 `motion-lab-showcase.html`；`npm run dev` 起实验室 |
 | `engines\lieflat-code-video\` | 411KB | 产品发布片 Remotion Starter（重媒体已裁剪）：`starter\src\kit\` 12 模块（motion.ts / springs.tsx / transitions.tsx / timeline.ts / lens.tsx / type.tsx / surfaces.tsx / motion-blur.tsx / clock.tsx / fonts.ts / props.tsx / index.ts） | `lens\lens-reference.html` 镜头语言参考；`starter\` 可独立 npm install 渲染 |
 | `engines\code-animation-prompts\` | 76MB | 341 种代码动画风格（193 静帧 + 341 份提示词含 Canvas 参考实现 `S.<id>(c,w,h,t,s)`）+ 离线挑选器 `assets/library/风格挑选.html` + `references/catalog.json` | `python scripts/styles.py search 粒子` · `show B3` · `list --series Z`；`scripts/render_video.py` |
+| `engineslender-pipeline\` | — | Blender 5.2.4 LTS 离线渲染管线：测试脚本 + 输出目录 | `blender.exe --background --factory-startup --python script.py`；EEVEE/Cycles |
 | `engines\hyperframes\` | 338MB | HyperFrames monorepo（HTML→确定性 MP4）：CLI / Studio / registry / skills | `npx hyperframes --help`；路线 D 渲染底座 |
 
 **动效库匹配流程（每章动效动手前必做，结果登记进 3-figures）**：

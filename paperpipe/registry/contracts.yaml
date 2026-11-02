@@ -147,6 +147,12 @@ stages:
         required_output: brief.md 含审美清单（概念从主题长出来的落点）
         acceptance: 拒绝默认"居中标题+三卡+渐变"已有显式对应
         on_fail: waiting_for_agent
+      - skill: blender-visual
+        trigger: model_builder 判定某章需要高保真 3D（物理模拟/PBR/复杂曲面）且 three.js 精度不够
+        required_output: 4-video/blender/<chapter>/frame_*.png 或 .mp4
+        acceptance: 帧序列确定性（固定 seed/固定相机路径）；分辨率 1920×1080@30fps；无黑帧/丢帧
+        on_fail: failed_retryable（渲染失败重试）
+        optional: true
       - skill: code-animation-prompts
         trigger: 需要风格化视觉语言（文字动效/粒子/光效/版式/转场）或用户按编号指定风格
         required_output: 3-figures/README.md 动效匹配列含 cap:<id> 登记，或 route-decision 未选择理由
@@ -232,9 +238,14 @@ stages:
         acceptance: 字幕由逐句音频驱动，禁按权重切分
         on_fail: failed_permanent（违反铁律）
     outputs: [4-video/narration.json, 4-video/render-raw.mp4]
-    machine_gate: narration 存在→渲染→产物存在；命令与耗时写 tool receipt；handoff aggregator passed
+    machine_gate: narration 存在→渲染→产物存在；命令与耗时写 tool receipt；handoff aggregator passed；Blender 帧序列（如有）须确定性且无丢帧；混合管线须视频层+音频层分离 remux
     human_gate: 视觉叙事与听审（交付前人工）
     subagents: [model_builder, aggregator, render_worker, narration_editor]
+    handoff_plan:
+      - role: aggregator
+        task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检；如有 Blender 帧序列以视频层合入
+        input_paths: ["3-figures/model_manifest.json", "3-figures/enriched_spec.json"]
+        output_paths: ["4-video/hf/index.html", "4-video/narration.json", "4-video/hf/compositions/captions.html"]
     handoff_plan:
       - role: aggregator
         task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检

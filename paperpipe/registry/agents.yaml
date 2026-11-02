@@ -53,12 +53,12 @@ agents:
     forbidden: 不发明新内容；不改数字；不写 three.js 代码；不确定就保守
   - id: model_builder
     system_prompt: prompts/model_builder.md
-    purpose: three.js 3D 建模实现——吃 example_writer 的例举规格 + data_viz_builder 的数据规格，产出场景代码
+    purpose: 3D 建模实现——three.js（轻量 DOM 级）或 Blender（高保真离线渲染）按章选择；吃 enriched_spec + style_refs 产出场景代码或 Blender 帧序列
     trigger: 收到两份规格后串行启动（不与它们并行）
     inputs: [3-figures/enriched_spec.json, 3-figures/style_refs.json]
     outputs: [compositions 3D 场景代码]
     parallel_with: [narration_editor]
-    forbidden: 不得自行发明例子（只实现规格）；不得改 brief.md/pipeline-state.json
+    forbidden: 不得自行发明例子（只实现规格）；不得改 brief.md/pipeline-state.json；Blender 模式须固定随机种子并 bake 物理
   - id: aggregator
     system_prompt: prompts/aggregator.md
     purpose: 最终汇总——把所有 subagent 产出组装成 compositions + 时间轴 + 字幕，确保风格一致与零遮挡

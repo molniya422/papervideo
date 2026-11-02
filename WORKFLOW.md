@@ -270,7 +270,10 @@ output/<project>/
 | **零遮挡布局** | 所有成片 | hyperframes check 的 layout 段或 layout-safety-review：`content_overlap` / `container_overflow` error = 0；报告落 `5-video-final/layout_audit.json` | qa 阶段 failed_permanent |
 | **3D 豁免** | 抽象数学例子（无具象对象） | route-decision 写明 reason（stage=figures, skill=threejs-visual-example, decision=skipped） | 缺豁免记录 → figures waiting_for_agent |
 
-实现要点：three.module.js 本地 importmap；检测框用 EdgesGeometry 线框贴合物体；
+实现要点：three.module.js 本地 importmap
+
+**Blender 路线**（技能 `blender-visual`）：three.js 精度不够时（物理模拟/高保真 PBR），
+用 Blender 5.2.4 LTS 离线渲染帧序列，aggregator 以视频层合入 hyperframes。；检测框用 EdgesGeometry 线框贴合物体；
 单场景 ≤3 光源 ≤5 万面；GSAP onUpdate 里同步相机与位姿（确定性 seek）。
 
 ---
