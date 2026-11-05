@@ -390,6 +390,17 @@ class RenderAdapter(Adapter):
             if cached_ok:
                 ctx.rs.register_artifact("render", out_raw, "video-raw")
                 return StageResult("passed", {"mode": "hyperframes", "cached": True})
+            # 渲染前人工预览门（hyperframes 路线）：预览包过审 + 分类意见全 resolved 才许渲成片
+            from . import preview as _prev
+            pst = _prev.status(ctx)
+            if not pst["confirmed"]:
+                return StageResult(
+                    "waiting_for_human",
+                    error=StageError(
+                        "human",
+                        f"渲染预览门未过：预览包{'未生成' if not pst['generated'] else '已生成未过审'}，"
+                        f"修改意见 open {pst['open']}/{pst['total']}。流程：python -m paperpipe preview → "
+                        "用户逐章审看 → revise add 登记意见 → 修复 → revise resolve → preview --confirm 过审"))
             import time as _t
             t0 = _t.time()
             r = subprocess.run(run_cmd, capture_output=True, text=True, timeout=21600, cwd=cwd)
@@ -547,14 +558,50 @@ class QaAdapter(Adapter):
         if layout_errors:
             issues.append("布局审计 %d 处 error（遮挡/溢出，零遮挡硬门槛）: %s" % (
                 len(layout_errors), "; ".join((f.get("message", "")[:46]) for f in layout_errors[:3])))
+        # 帧级检查真实执行（video-qa-frameproof 的帧级部分）：黑帧 blackdetect + 冻结帧 freezedetect
+        frame_ev = {"blackdetect": [], "freezedetect": []}
+        r = subprocess.run([ff, "-i", final, "-an", "-vf", "blackdetect=d=0.5:pix_th=0.10",
+                            "-f", "null", "-"], capture_output=True, text=True, timeout=1800)
+        for m in re.finditer(r"black_start:([\d.]+)[^\n]*black_end:([\d.]+)", r.stderr or ""):
+            frame_ev["blackdetect"].append({"start": round(float(m.group(1)), 2),
+                                            "end": round(float(m.group(2)), 2)})
+        r = subprocess.run([ff, "-i", final, "-an", "-vf", "freezedetect=n=0.003:d=3",
+                            "-f", "null", "-"], capture_output=True, text=True, timeout=1800)
+        fz_start = None
+        for line in (r.stderr or "").splitlines():
+            m = re.search(r"freeze_start:([\d.]+)", line)
+            if m:
+                fz_start = float(m.group(1))
+            m = re.search(r"freeze_duration:([\d.]+)", line)
+            if m and fz_start is not None:
+                frame_ev["freezedetect"].append({"start": round(fz_start, 2),
+                                                 "duration": round(float(m.group(1)), 2)})
+                fz_start = None
+        if frame_ev["blackdetect"]:
+            issues.append(f"黑帧 {len(frame_ev['blackdetect'])} 段（≥0.5s，帧级检查）: "
+                          + str(frame_ev["blackdetect"][:3]))
+        if frame_ev["freezedetect"]:
+            issues.append(f"冻结帧 {len(frame_ev['freezedetect'])} 段（≥3s，帧级检查）: "
+                          + str(frame_ev["freezedetect"][:3]))
+        # 内容验收（三验收分离）：数值→图形映射核对必须实际发生并落 receipt，缺失则等编排器补
+        if not (receipts.skill_receipts(ctx, "qa", "content-mapping-review")
+                or receipts.skill_receipts(ctx, "qa", "qa-content-mapping-review")):
+            return StageResult("waiting_for_agent", error=StageError(
+                "agent", "缺内容验收 receipt：核对每个数据组件数值→几何映射与轴刻度同基准"
+                "（含教学示意标注），然后写 receipts/skills/qa-content-mapping-review-*.json"))
         report = {"duration": fmt.get("duration"), "faststart": faststart,
                   "loudness": loud, "loudness_source": "audio_master.wav" if os.path.exists(master) else "final.mp4", "streams": {"video": (v or {}).get("codec_name"), "audio": (a or {}).get("codec_name")},
                   "pix_fmt": (v or {}).get("pix_fmt"),
                   "layout_audit": {"errors": len(layout_errors),
                                    "messages": [f.get("message", "")[:80] for f in layout_errors[:6]]},
+                  "frame_checks": frame_ev,
                   "issues": issues}
         rp = _write(ctx, "5-video-final/qa_report.json", json.dumps(report, ensure_ascii=False, indent=2))
         ctx.rs.register_artifact("qa", rp, "qa-report")
+        if issues:
+            # 布局/帧级缺陷属于内容不合格 —— 写完报告后必须 failed，不得带病 passed
+            return StageResult("failed", data={"issues": issues},
+                               error=StageError("permanent", "QA 不达标（布局/帧级）: " + "; ".join(issues)))
         if os.path.exists(master):
             try:
                 ctx.rs.register_artifact("qa", master, "audio-master")
@@ -564,9 +611,13 @@ class QaAdapter(Adapter):
                                     output_paths=["5-video-final/qa_report.json"])
         receipts.write_skill_receipt(ctx, "qa", "video-qa-frameproof", "video_rendered",
                                      ["5-video-final/qa_report.json"], agent_id="paperpipe-auto",
-                                     note="机器层 QA（流/规格/faststart/响度/布局审计）由执行器内置同源检查代跑；"
-                                          "video-technical-review 与 layout-safety-review 由编排器补 receipt")
-        return StageResult("passed", {"checks": ["ffprobe", "streams", "specs", "faststart", "loudness", "layout"]})
+                                     evidence=[f"blackdetect 0 段", f"freezedetect 0 段",
+                                               f"layout error 0", f"I={loud.get('input_i')} TP={loud.get('input_tp')}"],
+                                     note="技术验收真实执行：流/规格/faststart/响度/布局审计/黑帧/冻结帧；"
+                                          "内容验收（数值→图形映射）看 qa-content-mapping-review receipt；"
+                                          "观看验收由导演与用户完成（带时间码问题清单）")
+        return StageResult("passed", {"checks": ["ffprobe", "streams", "specs", "faststart", "loudness",
+                                                 "layout", "blackdetect", "freezedetect"]})
 
 # ════════════════ retrospective（waiting_for_human） ════════════════
 class RetroAdapter(Adapter):
@@ -620,9 +671,9 @@ def _find_cover(ctx: RuntimeCtx) -> str | None:
     return None
 
 def validate_review(ctx: RuntimeCtx, compare_saved: bool = True) -> tuple[bool, list, dict]:
-    """可验证人审门（v2 收紧）：QA passed；复盘六维全部有分且 ≥8 且有证据；无占位符；
-    lessons ≥1 条规则；video-retrospective receipt 存在；已确认过的哈希与当前产物一致。
-    返回 (ok, problems, hashes)。"""
+    """可验证人审门（v2 收紧）：QA passed；复盘六维全部有分且有证据（低分合法但须附整改决定，
+    不强制作者给高分）；无占位符；lessons ≥1 条规则；video-retrospective receipt 存在；
+    已确认过的哈希与当前产物一致。返回 (ok, problems, hashes)。"""
     problems = []
     from .util import sha256_file
     if ctx.rs.stage("qa")["status"] != "passed":
@@ -649,8 +700,9 @@ def validate_review(ctx: RuntimeCtx, compare_saved: bool = True) -> tuple[bool, 
         score, ev = m.group(1).strip(), m.group(2).strip()
         if not re.fullmatch(r"\d+", score):
             problems.append(f"{dim} 评分未填数字")
-        elif int(score) < 8:
-            problems.append(f"{dim} 评分 {score} < 8（门槛）")
+        elif int(score) < 8 and not re.search(r"整改|退回|拒收|删除|重做", ev):
+            # 低分合法（不诱导作者自证合格），但低分项必须带整改决定：退回哪/删哪/怎么改
+            problems.append(f"{dim} 评分 {score} < 8 且无整改决定（证据列须写明 整改/退回/拒收/删除/重做）")
         if not ev or ev in ("证据", "—", "-"):
             problems.append(f"{dim} 缺证据")
     rules = [ln for ln in ltxt.splitlines() if re.match(r"^- \[.+?\]", ln)]

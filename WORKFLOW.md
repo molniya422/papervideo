@@ -278,6 +278,48 @@ output/<project>/
 
 ---
 
+## 10.7 渲染前人工预览门 + 导演制 + 三验收分离（2026-11-03 起 P0）
+
+> 来源：yolo-v5 用户审查——"成片渲染前没有人工预览和分类修改意见环节"；
+> 以及外部对标诊断（镜头配额化/构图遮挡/形式通过三项缺陷）。
+
+### 渲染预览门（技能 `preview-review`）
+
+| 规则 | 触发条件 | 硬指标 | 失败行为 |
+|---|---|---|---|
+| **预览包** | aggregator 组装完成、渲成片前 | `paperpipe preview` 产出 4-video/preview/（index.html 逐章播放 + storyboard.md + narration.md） | RenderAdapter waiting_for_human |
+| **分类意见** | 用户审看后 | 意见按十类登记（`paperpipe revise add`：文稿/运镜/转场/建模/动效/布局/节奏/声音/数据/字幕），路由到唯一责任角色 | 意见不分类 = 不可执行，退回澄清 |
+| **过审** | 意见全 resolved | `preview --confirm` 写 preview_confirmed.json（hyperframes 路线渲染强制检查） | 有 open 意见 → 拒绝渲染 |
+
+### 三张风格帧小样门（批量生成章节前）
+
+`3-figures/style_frames/{entity,mechanism,data}.png` 三帧**真实渲染器**产出（实体演示/机制推导/
+数据比较），验证造型方向/主背景分离/接触阴影/标签可读性/数值映射——导演过审才许 model_builder
+批量铺章（on_fail: waiting_for_human）。通过后该视觉语法全片复用，偏离即退回。
+
+### 导演制
+
+- **主编排 agent = 导演**：对全片画面负最终责任，拥有退回权/删改权/样片否决权；
+- visual_planner 恢复**镜头规划**职责（shot_plan.json：每章镜头序列 + pacing 裁定 + 退回建议），
+  登记表 README.md 由 aggregator 从规格自动生成；
+- 相机/粒子**无数量配额**：每个动作过三问（观众现在需要看什么？说明什么？为何必须动？），
+  答不上保持稳定；粒子只在表示数据/采样/流动时默认启用；
+- 关键标签用 lib3d `labels2d` 屏幕坐标标注层（投影锚点/实测边界/避让/引线/逐相机帧检查）——
+  零遮挡指**观众看到的画面**，标签成为 DOM 盒子后才可被布局审计真正看见。
+
+### 三验收分离（qa 阶段）
+
+| 验收 | 检查什么 | 通过证据 |
+|---|---|---|
+| 技术验收 | 流/规格/faststart/响度 + 布局审计 + **黑帧 blackdetect + 冻结帧 freezedetect**（执行器真实执行，布局 error 不得带病 passed） | qa_report.json 实测数据 |
+| 内容验收 | 数值→几何映射与轴刻度同基准（ch18 教训：75 的柱在 0-80 轴 = 75/80×轴高）；教学示意标注示意性质 | `content-mapping-review` receipt（缺失 → waiting_for_agent） |
+| 观看验收 | 构图/可读性/节奏/解释效果 | 带时间码问题清单（导演+用户；创作 agent 不自评） |
+
+评分纪律：brief 只写**可判定的验收问题**（不预填分数）；复盘低分合法但 <8 项必须附整改决定
+（整改/退回/拒收/删除/重做）；不允许无证据的高分，也不允许无整改决定的低分。
+
+---
+
 ## 11. 故障排查
 
 | 现象 | 原因 | 处理 |
@@ -300,7 +342,7 @@ output/<project>/
 
 ---
 
-## 12. 技能清单（66）
+## 12. 技能清单（72）
 
 **编排与元技能（7）**
 `paper-explain` · `design-intake` · `prompt-forge` · `video-retrospective` ·
@@ -474,7 +516,7 @@ python -m paperpipe publish --confirm <run_id>        # 真实上传双门
 
 ---
 
-## 15.1 多子智能体管线（12 角色 · 三路并行 → 串行汇总 → 并行 QA）
+## 15.1 多子智能体管线（14 角色 · 三路并行 → 串行汇总 → 并行 QA）
 
 > 来源：用户要求"拆解论文解析、举例细化、建模、数据分别交给 subagent，最后汇总"。
 > 全部角色注册在 `paperpipe/registry/agents.yaml`（唯一事实源）；每阶段的 handoff 信封
@@ -550,7 +592,7 @@ model_builder 串行吃两份规格；aggregator 串行汇总；pipeline-state.j
 
 ---
 
-## 16. 技能调用门禁（66 技能 → 条件触发 + 可验证证据）
+## 16. 技能调用门禁（72 技能 → 条件触发 + 可验证证据）
 
 > v2 重构：P0"全量强制"升级为**"条件触发 + 可验证证据"**——每条规则五字段
 > `触发条件 → 唯一责任技能 → 必需产物 → 验收判据 → 失败行为`，唯一事实源

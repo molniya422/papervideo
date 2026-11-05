@@ -1,8 +1,19 @@
 # PaperVideo · 论文讲解工作区
 
+> **状态：还在调整没完工（WIP）**。当前重心：机器门硬化与资产管线（见
+> `docs/workflow-audit-2026-11-05.md` 的 65 项体检发现与四批修复计划）。
+
+
 一套在本文件夹（`D:\papervideo`）安装注册的 **论文讲解技能套件**：从一篇 PDF/arXiv 论文出发，
-经深度解读、图解可视化，一路做成讲解动画视频并发布。共 **66 个技能**，注册在 `.zcode/skills/`（workspace 级，打开本文件夹即生效）；
+经深度解读、图解可视化，一路做成讲解动画视频并发布。共 **72 个技能**，注册在 `.zcode/skills/`（workspace 级，打开本文件夹即生效）；
 路由表/阶段合同/子智能体角色的唯一事实源在 `paperpipe/registry/*.yaml`，由 `paperpipe` 执行器（v2）按其验证。
+
+## 一键全流程指令
+
+**`/paper-video <PDF|arXiv|目录> [design.json]`**（技能 `paper-video`）：一条指令跑完
+设计合同→brief→DAG→14 角子智能体派发环→三张风格帧小样门→渲染前人工预览（十类修改意见）→
+渲染→三验收分离 QA→复盘→交付。子智能体派发环用 `paperpipe agents` +
+`paperpipe handoff show/finish` 命令驱动；渲染预览用 `paperpipe preview` + `revise`。
 
 ## 论文讲解工作流
 
@@ -116,3 +127,8 @@ papervideo/
 Node.js 20.10+（已满足）、Git Bash。按需：MinerU（GPU，pdf-to-markdown 用）、
 ffmpeg 与 edge-tts（paper-slides-to-video 用）、LaTeX（beamer 编译用）、Chrome/Chromium（anatomy 自检用，Remotion 已自带 headless shell）。
 本机网络直连 raw.githubusercontent.com 不通，补取 AI_Animation 重型素材时可用 `https://ghproxy.net/https://raw.githubusercontent.com/...` 镜像前缀。
+
+## 引用的仓库
+
+本工作流引用的第三方引擎/技能上游/运行时依赖**不入本仓库**（体积与许可原因），
+完整清单（上游地址·许可·恢复方式）见 **[docs/REFERENCED-REPOS.md](docs/REFERENCED-REPOS.md)**。

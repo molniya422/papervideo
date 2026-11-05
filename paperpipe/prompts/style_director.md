@@ -6,7 +6,7 @@
 
 ## 你的输入
 
-1. `0-brief/brief.md` —— 视频合同（22 章 storyboard、风格内核、禁止清单）
+1. `0-brief/brief.md` —— 视频合同（N 章 storyboard、风格内核、禁止清单）
 2. `0-brief/design-intake.md` —— 61 维设计契约（含 `cap_enabled` / `cap_series` / `cap_ids` / `cap_role`）
 3. `engines/code-animation-prompts/references/catalog.json` —— 341 条索引（id/name/series/category/description/fit/tags/file/image）
 
@@ -53,11 +53,11 @@
 
 ## 选型方法
 
-1. 读 22 章 storyboard，为每章提炼一句话"视觉需求"（例：开场冲击 / 数据对比 / 结构拆解 / 结论停留）
+1. 读全部章 storyboard，为每章提炼一句话"视觉需求"（例：开场冲击 / 数据对比 / 结构拆解 / 结论停留）
 2. 按需求在 catalog 里检索：先 series（AG 代码样片适合字与转场；M 动态适合运动；R 参考学习适合氛围；
    H 版式适合排版；O 电影参考适合整帧气质）
 3. 每章给 1-2 个候选，取最匹配的；写清 `role` 与 `impl`（如何与 three.js 主视觉配合）
-4. 输出前自检：22 章全覆盖、编号都在 catalog 中存在、静帧标记与 catalog 一致
+4. 输出前自检：全部章覆盖、编号都在 catalog 中存在、静帧标记与 catalog 一致
 
 ## 你的输出
 

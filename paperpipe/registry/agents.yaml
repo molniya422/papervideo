@@ -69,10 +69,10 @@ agents:
     forbidden: 串行——不与任何其他 agent 并行；对最终布局审计负全责
   - id: visual_planner
     system_prompt: prompts/visual_planner.md
-    purpose: 生成镜头、图解与动效匹配登记表
-    trigger: 视频 >5 分钟或镜头 >8 个
-    inputs: [2-xray/deep-read.md, 0-brief/brief.md]
-    outputs: [3-figures/README.md, 4-video/narration.json]
+    purpose: 镜头规划——每章镜头序列（先看什么/再看什么/持时）+ pacing 裁定（拖沓/信息量不足→向导演提退回建议）
+    trigger: 有视频交付目标（默认参与）
+    inputs: [3-figures/enriched_spec.json, 0-brief/brief.md]
+    outputs: [3-figures/shot_plan.json]
     parallel_with: [fact_checker]
     forbidden: 不得写 pipeline-state.json；不得与 narration_editor 同时写 narration.json
   - id: narration_editor

@@ -1,4 +1,4 @@
-"""paperpipe.cli — 命令行入口（8 个子命令，v2）。
+"""paperpipe.cli — 命令行入口（9 个子命令，v2）。
 
   paperpipe init <PDF|arXiv> --run-id ID [--target video]   # 建 run（--force 清空重建）
   paperpipe run  [--auto] [--target video] [--stage a,b]    # 执行 DAG 到等待/失败处（--stage 按拓扑序）
@@ -8,6 +8,10 @@
   paperpipe validate [--target video]                       # 注册表驱动：组件/引擎/技能/差集
   paperpipe review --confirm [--by NAME]                    # 人审门（六维评分+证据+receipt 程序化核对）
   paperpipe publish --dry-run | --confirm <run_id>          # 双门：review --confirm 之后才可 --confirm
+  paperpipe agents [--stage s] [--json]                     # 子智能体调度报告（波次/可派/卡点）
+  paperpipe handoff list | show <id> | finish <id> --output p1,p2 [--response-file f]
+  paperpipe preview [--chapters 0,5] [--confirm --by NAME]  # 渲染前人工预览包（生成/过审，渲染人工门凭证）
+  paperpipe revise add|list|resolve                          # 分类修改意见（文稿/运镜/转场/建模/…）
 """
 from __future__ import annotations
 import argparse, json, os, re, shutil, sys
@@ -281,6 +285,108 @@ def cmd_agents(args):
     if any(not r["all_passed"] for r in reps):
         sys.exit(2)     # 有未完成 handoff：编排方据此决定是否继续派发
 
+def cmd_handoff(args):
+    """子智能体信封操作：list（状态一览）/ show（读任务）/ finish（回传+核验，一条命令闭环）。
+
+    派发环（编排方 = 主 agent）：
+      run --stage <s>            # 生成信封（幂等）
+      handoff list / agents      # 看波次与状态
+      handoff show <hid>         # 取 task + system_prompt + 输入清单 → 派发 Agent
+      handoff finish <hid> --output p1,p2 [--response-file f.json | --note "..."]
+      run --stage <s>            # 全部 passed 后重跑过机器门
+    """
+    from . import handoff as H
+    run_dir = _resolve_run_dir(args.run_dir)
+    ctx = _ctx(run_dir)
+    if args.action == "list":
+        items = H.list_handoffs(ctx)
+        if args.json:
+            print(json.dumps(items, ensure_ascii=False, indent=2))
+        else:
+            for it in items:
+                print(f"{it['state']:<18} {it['handoff_id']}")
+            print(f"共 {len(items)} 个信封" if items else "（无信封：先 python -m paperpipe run --stage <stage>）")
+        return
+    hid = args.handoff_id
+    if not hid:
+        sys.exit("show/finish 需要 <handoff_id>（用 `paperpipe handoff list` 查）")
+    try:
+        H.get_state(ctx, hid)
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        sys.exit(f"handoff 不存在: {hid}（先 python -m paperpipe run --stage <stage> 生成信封）")
+    if args.action == "show":
+        d = ctx.out("handoffs", hid)
+        print(json.dumps(json.load(open(os.path.join(d, "request.json"), encoding="utf-8")),
+                         ensure_ascii=False, indent=2))
+        return
+    # finish：start → submit_response → verify 一条命令闭环
+    outs = [p.strip().replace("\\", "/") for p in (args.output or "").split(",") if p.strip()]
+    if not outs:
+        sys.exit("finish 需要 --output p1,p2,...（相对 run 目录的产出路径）")
+    if args.response_file:
+        raw = sys.stdin.read() if args.response_file == "-" else open(
+            args.response_file, encoding="utf-8").read()
+        try:
+            response = json.loads(raw)
+        except json.JSONDecodeError as e:
+            sys.exit(f"--response-file 不是合法 JSON: {e}")
+    else:
+        response = {"verdict": "pass", "note": args.note or ""}
+    H.start(ctx, hid)
+    try:
+        H.submit_response(ctx, hid, response, outs)
+    except FileNotFoundError as e:
+        sys.exit(f"finish 失败: {e}")
+    ok, problems, verified = H.verify(ctx, hid)
+    print(json.dumps({"handoff_id": hid, "state": H.get_state(ctx, hid),
+                      "verified_outputs": verified, "problems": problems},
+                     ensure_ascii=False, indent=2))
+    sys.exit(0 if ok else 2)
+
+def cmd_preview(args):
+    """渲染前人工预览：生成预览包 / 确认过审（渲染人工门凭证）。"""
+    from . import preview as P
+    run_dir = _resolve_run_dir(args.run_dir)
+    ctx = _ctx(run_dir)
+    if args.confirm:
+        res = P.confirm(ctx, by=args.by or "user")
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        sys.exit(0 if res.get("ok") else 2)
+    chs = [int(x) for x in args.chapters.split(",") if x.strip()] if args.chapters else None
+    res = P.generate(ctx, chs)
+    res.update(P.status(ctx))
+    print(json.dumps(res, ensure_ascii=False, indent=2))
+    print(f"预览包: {os.path.join(res['dir'], 'index.html')}（浏览器打开逐章审看）\n"
+          f"下一步: 审看 → python -m paperpipe revise add 登记意见 → 修复 → revise resolve → preview --confirm")
+
+def cmd_revise(args):
+    """分类修改意见：add / list / resolve（意见路由到唯一责任角色，见 paperpipe/preview.py CATEGORIES）。"""
+    from . import preview as P
+    run_dir = _resolve_run_dir(args.run_dir)
+    ctx = _ctx(run_dir)
+    if args.action == "add":
+        if not args.category or not args.wanted:
+            sys.exit("add 需要 --category <十类之一> --wanted \"改成什么\"（可选 --chapter --target --severity minor|major）")
+        it = P.revise_add(ctx, args.category, args.wanted, target=args.target or "",
+                          chapter=(int(args.chapter) if args.chapter not in (None, "") else None),
+                          severity=args.severity or "major", note=args.note or "")
+        print(json.dumps(it, ensure_ascii=False, indent=2))
+    elif args.action == "resolve":
+        if not args.id:
+            sys.exit("resolve 需要 <意见id>（如 R003，用 revise list 查）")
+        try:
+            it = P.revise_resolve(ctx, args.id, note=args.note or "")
+        except ValueError as e:
+            sys.exit(str(e))
+        print(json.dumps(it, ensure_ascii=False, indent=2))
+    else:
+        items = P.revise_list(ctx, status=args.status)
+        if not items:
+            print("（无意见）")
+        for it in items:
+            ch = f" ch{it['chapter']:02d}" if it.get("chapter") is not None else ""
+            print(f"{it['id']}  [{it['status']:<8}] {it['severity']:<5} {it['label']}({it['category']}){ch}  {it['wanted'][:56]}")
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="paperpipe", description=f"paperpipe {VERSION} — 论文讲解流水线执行器（v2：registry/8 态/receipt/handoff）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -297,6 +403,19 @@ def main(argv=None):
     p = sub.add_parser("review"); p.add_argument("--confirm", action="store_true"); p.add_argument("--by"); p.add_argument("--run-dir"); p.set_defaults(fn=cmd_review)
     p = sub.add_parser("publish"); p.add_argument("--dry-run", action="store_true"); p.add_argument("--confirm"); p.add_argument("--run-dir"); p.set_defaults(fn=cmd_publish)
     p = sub.add_parser("agents"); p.add_argument("--stage"); p.add_argument("--json", action="store_true"); p.add_argument("--run-dir"); p.set_defaults(fn=cmd_agents)
+    p = sub.add_parser("handoff"); p.add_argument("action", choices=["list", "show", "finish"])
+    p.add_argument("handoff_id", nargs="?"); p.add_argument("--output")
+    p.add_argument("--response-file", help="finish: 结构化回传 JSON（- = stdin）")
+    p.add_argument("--note"); p.add_argument("--stage"); p.add_argument("--json", action="store_true")
+    p.add_argument("--run-dir"); p.set_defaults(fn=cmd_handoff)
+    p = sub.add_parser("preview"); p.add_argument("--chapters")
+    p.add_argument("--confirm", action="store_true"); p.add_argument("--by")
+    p.add_argument("--run-dir"); p.set_defaults(fn=cmd_preview)
+    p = sub.add_parser("revise"); p.add_argument("action", choices=["add", "list", "resolve"])
+    p.add_argument("id", nargs="?"); p.add_argument("--category"); p.add_argument("--wanted")
+    p.add_argument("--chapter"); p.add_argument("--target"); p.add_argument("--severity")
+    p.add_argument("--status"); p.add_argument("--note")
+    p.add_argument("--run-dir"); p.set_defaults(fn=cmd_revise)
     args = ap.parse_args(argv)
     args.fn(args)
 

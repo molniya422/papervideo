@@ -148,10 +148,15 @@ stages:
         acceptance: 拒绝默认"居中标题+三卡+渐变"已有显式对应
         on_fail: waiting_for_agent
       - skill: blender-visual
-        trigger: model_builder 判定某章需要高保真 3D（物理模拟/PBR/复杂曲面）且 three.js 精度不够
-        required_output: 4-video/blender/<chapter>/frame_*.png 或 .mp4
-        acceptance: 帧序列确定性（固定 seed/固定相机路径）；分辨率 1920×1080@30fps；无黑帧/丢帧
-        on_fail: failed_retryable（渲染失败重试）
+        trigger: 镜头涉及布料/流体/碎片等物理模拟（three.js 无确定性物理——硬触发，不可用 route-decision 豁免）
+        required_output: 4-video/blender/<chapter>/frame_*.png 或 .mp4（bake 后确定性帧序列）
+        acceptance: 物理模拟已 bake（bpy.ops.ptcache.bake_all）；固定 seed/固定相机路径；1920×1080@30fps；无黑帧/丢帧
+        on_fail: waiting_for_agent（物理模拟镜头缺 Blender 层不许过 figures 门）
+      - skill: blender-visual
+        trigger: 封面帧或英雄镜头需写实级精度（单帧成本可接受时导演可选）
+        required_output: 4-video/blender/<chapter>/frame_*.png 或封面素材帧
+        acceptance: 同上；写实层与 three.js 风格化场景不得同章混搭（风格一致性优先）
+        on_fail: failed_retryable
         optional: true
       - skill: code-animation-prompts
         trigger: 需要风格化视觉语言（文字动效/粒子/光效/版式/转场）或用户按编号指定风格
@@ -161,12 +166,19 @@ stages:
         optional: true
       - skill: threejs-visual-example
         trigger: 有视频交付目标且例子涉及具象对象（检测目标/物理实体/几何结构）
-        required_output: 3-figures/README.md 登记表含「three.js · 3D」例示行（每章例示形式列）
-        acceptance: 具象对象例子有 3D 建模演示；纯表格例示 = 0（伴随标注除外）；抽象数学例已写 route-decision 豁免
+        required_output: 3-figures/README.md 登记表含「three.js · 3D」例示行 + model_manifest.fidelity 字段
+        acceptance: 具象对象例子有 3D 建模演示且过**精度四项**（①场景挂环境反射 ②真接触阴影 ③结构细节≥4处 ④玻璃/透光件非裸Box）；
+          纯表格例示 = 0（伴随标注除外）；抽象数学例已写 route-decision 豁免；新模型/改模型先过资产小样门
         on_fail: waiting_for_agent（例子退回重做为 3D）
-    outputs: [3-figures/README.md]
-    machine_gate: 登记表非空且每行含技能与产物路径；handoff example_writer+data_viz_builder+model_builder 均 passed
-    human_gate: 图解文案与隐喻
+      - skill: preview-review
+        trigger: model_builder 批量生成章节前（三张风格帧小样门）
+        required_output: 3-figures/style_frames/{entity,mechanism,data}.png（真实渲染器产出的风格帧）
+        acceptance: 实体演示/机制推导/数据比较各一帧，导演过审并登记 receipt；未过审不得批量生成章节
+        on_fail: waiting_for_human（等导演过审风格帧）
+        optional: true
+    outputs: [3-figures/README.md, 3-figures/shot_plan.json]
+    machine_gate: 登记表非空且每行含技能与产物路径；shot_plan.json 存在且 flagged 段有导演裁定记录；handoff example_writer+data_viz_builder+model_builder 均 passed
+    human_gate: 图解文案与隐喻 + 三张风格帧小样门（导演过审后才许批量生成章节）
     subagents: [example_writer, data_viz_builder, style_director, spec_enricher, model_builder, visual_planner]
     handoff_plan:
       - role: example_writer
@@ -190,14 +202,14 @@ stages:
         output_paths: ["3-figures/enriched_spec.json"]
         depends_on: [example_writer, data_viz_builder, style_director]
       - role: model_builder
-        task: 吃 enriched_spec.json 产出 three.js 场景代码（ES module + lib3d 调用）
+        task: 吃 enriched_spec.json 产出 three.js 场景代码（ES module + lib3d 调用；关键标签用 labels2d 标注层）
         input_paths: ["3-figures/enriched_spec.json"]
         output_paths: ["3-figures/model_manifest.json"]
         depends_on: [spec_enricher]
       - role: visual_planner
-        task: 整合登记表（每行=章/技能/产物路径/3D 标注）＋动效匹配
-        input_paths: ["3-figures/enriched_spec.json"]
-        output_paths: ["3-figures/README.md"]
+        task: 镜头规划——每章镜头序列（先看什么/持时/purpose）+ pacing 裁定（拖沓/信息量不足→向导演提退回建议）
+        input_paths: ["3-figures/enriched_spec.json", "0-brief/brief.md"]
+        output_paths: ["3-figures/shot_plan.json"]
         depends_on: [spec_enricher]
 
   render:
@@ -237,20 +249,15 @@ stages:
         required_output: 4-video/narration.json 逐句字幕与音频同源
         acceptance: 字幕由逐句音频驱动，禁按权重切分
         on_fail: failed_permanent（违反铁律）
-    outputs: [4-video/narration.json, 4-video/render-raw.mp4]
-    machine_gate: narration 存在→渲染→产物存在；命令与耗时写 tool receipt；handoff aggregator passed；Blender 帧序列（如有）须确定性且无丢帧；混合管线须视频层+音频层分离 remux
-    human_gate: 视觉叙事与听审（交付前人工）
+    outputs: [4-video/narration.json, 4-video/render-raw.mp4, 4-video/preview/index.html]
+    machine_gate: narration 存在→渲染→产物存在；命令与耗时写 tool receipt；handoff aggregator passed；Blender 帧序列（如有）须确定性且无丢帧；混合管线须视频层+音频层分离 remux；渲染预览门= 4-video/preview/preview_confirmed.json 存在（hyperframes 路线，执行器强制）
+    human_gate: 渲染前人工预览审核（preview 生成预览包 → 用户逐章审看 → revise 分类意见 → 修复 → 全部 resolved → preview --confirm）；交付前听审
     subagents: [model_builder, aggregator, render_worker, narration_editor]
     handoff_plan:
       - role: aggregator
-        task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检；如有 Blender 帧序列以视频层合入
+        task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检；自动生成 3-figures/README.md 登记表（从规格合成）；如有 Blender 帧序列以视频层合入
         input_paths: ["3-figures/model_manifest.json", "3-figures/enriched_spec.json"]
-        output_paths: ["4-video/hf/index.html", "4-video/narration.json", "4-video/hf/compositions/captions.html"]
-    handoff_plan:
-      - role: aggregator
-        task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检
-        input_paths: ["3-figures/model_manifest.json", "3-figures/enriched_spec.json"]
-        output_paths: ["4-video/hf/index.html", "4-video/narration.json", "4-video/hf/compositions/captions.html"]
+        output_paths: ["4-video/hf/index.html", "4-video/narration.json", "4-video/hf/compositions/captions.html", "3-figures/README.md"]
 
   qa:
     requires: [render]
@@ -269,10 +276,15 @@ stages:
       - skill: layout-safety-review
         trigger: 同上
         required_output: receipts/skills/qa-layout-safety-review*.json
-        acceptance: 安全区/遮挡/字幕审查通过
+        acceptance: 安全区/遮挡/字幕审查通过（labels2d 标注层使 3D 标签可被 DOM 审计看到）
         on_fail: waiting_for_agent（等审查 receipt）
+      - skill: content-mapping-review
+        trigger: 图表/数据组件入片后（内容验收）
+        required_output: receipts/skills/qa-content-mapping-review*.json
+        acceptance: 每个数据组件的数值→几何映射与轴刻度同基准（如 75 的柱在 0-80 轴上=75/80×轴高，ch18 教训）；教学示意的数值标注了示意性质，不冒充论文实测
+        on_fail: failed_permanent（映射错误=事实错误）
     outputs: [5-video-final/qa_report.json]
-    machine_gate: ffprobe/流/规格/faststart/响度任一不达标 → failed_permanent；布局审计存在 content_overlap/container_overflow error → failed_permanent（零遮挡硬门槛）
+    machine_gate: 三验收分离——技术验收（流/规格/faststart/响度/布局审计/黑帧/冻结帧，执行器真实执行）任一不达标 → failed_permanent；内容验收（content-mapping-review receipt）缺失 → waiting_for_agent；布局审计存在 content_overlap/container_overflow error → failed_permanent（零遮挡硬门槛）；观看验收（带时间码问题清单）由导演与用户完成，不进机器门
     human_gate: 人眼抽帧（首帧/转场/最密/末帧）+ 听审
     subagents: [technical_qa, visual_qa]
 
@@ -283,7 +295,7 @@ stages:
       - skill: video-retrospective
         trigger: 视频交付后
         required_output: 6-review/retrospective.md + lessons.md
-        acceptance: 六维全部有分且 ≥8、每项有证据、lessons ≥1 条具体规则
+        acceptance: 六维全部有分且有证据；低分合法（不诱导作者自证合格），但 <8 项必须附整改决定（整改/退回/拒收/删除/重做）；允许拒收结论并退回对应阶段；lessons ≥1 条具体规则
         on_fail: waiting_for_human（复盘是人工门）
     outputs: [6-review/retrospective.md, 6-review/lessons.md]
     machine_gate: validate_review：评分齐+证据齐+无占位符

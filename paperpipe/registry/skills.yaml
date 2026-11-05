@@ -1,9 +1,28 @@
-# paperpipe 注册表 · skills —— 技能注册表（66 个，唯一事实源）
+# paperpipe 注册表 · skills —— 技能注册表（72 个，唯一事实源）
 # 每个技能声明：use 适用条件 · in 输入 · out 输出 · misuse 禁止误用 · alt 可替代技能。
 # pipeline = 流水线相关（全字段）；catalog = 领域不符/演示库（简条目，同样受合法性检查约束）。
 # 技能本体在 .zcode/skills/<id>/SKILL.md。
 
 pipeline:
+  - id: preview-review
+    use: 渲染前人工预览 + 分类修改意见（十类：文稿/运镜/转场/建模/动效/布局/节奏/声音/数据/字幕）+
+      三张风格帧小样门（批量生成章节前）；preview --confirm 是渲染人工门凭证
+    in: 4-video/hf/compositions + narration.json + enriched_spec（或 3-figures 风格帧草图）
+    out: 4-video/preview/{index.html,storyboard.md,narration.md,revisions.json,preview_confirmed.json}
+    misuse: 跳过预览直接渲成片；意见不分类直接乱改；把自然语言"改好了"当 resolved（须 revise resolve）
+    alt: 无（人工门，不可替代；hyperframes 路线由 RenderAdapter 强制）
+  - id: content-mapping-review
+    use: 内容验收——数据组件的数值→几何映射与轴刻度同基准核对（ch18 教训：75 的柱在 80 轴上顶满）
+    in: 5-video-final/final.mp4 抽帧 + dataviz_spec/enriched_spec 数值 + 原文数字核对表
+    out: receipts/skills/qa-content-mapping-review-*.json（逐组件核对结论）
+    misuse: 只看"图好看"不核对数值；教学示意数值不标注示意性质
+    alt: fact_checker（数字事实核对，上游）；video-technical-review（画面缺陷）
+  - id: paper-video
+    use: 一条指令跑完论文→讲解视频全流程（参数解析→设计合同→brief→DAG→子智能体派发环→渲染→QA→复盘→交付）
+    in: 论文输入（PDF/arXiv/目录）+ 可选 design.json（design-picker 三件套）+ --target/--run-id/--route
+    out: output/<run-id>/ 全阶段产物 + final.mp4 + 复盘；流程与门禁全部由 registry 驱动
+    misuse: 跳过参数解析直接开工；改旧 run 产物；把子智能体自然语言回复当通过；用户未验收自称完成
+    alt: paper-explain（交互式路由器，目标不明确的对话用它）
   - id: blender-visual
     use: Blender 3D 建模与离线渲染——高保真模型/PBR 材质/物理模拟/粒子系统，输出确定性帧序列
     in: enriched_spec.json 的 objects/camera_path（或 GLTF/FBX 模型路径）

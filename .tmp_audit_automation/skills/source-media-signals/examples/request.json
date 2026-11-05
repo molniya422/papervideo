@@ -1,5 +1,0 @@
-{
-  "videoPath": "./output/example-run/output.mp4",
-  "sceneThreshold": 0.08,
-  "extractRepresentativeFrames": true
-}

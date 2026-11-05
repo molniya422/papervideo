@@ -1,8 +1,0 @@
-{
-  "left": {
-    "outputDir": "./output/baseline-run"
-  },
-  "right": {
-    "outputDir": "./output/current-run"
-  }
-}

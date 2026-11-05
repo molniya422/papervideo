@@ -13,9 +13,14 @@
 3. `3-figures/dataviz_spec.json` —— 数据规格（数据章节的补充）
 4. `hf/assets/vendor/` —— lib3d.js + three3d.global.js + gsap.min.js（共享库，不修改）
 
+## 登记表自动生成（visual_planner 已改为镜头规划，登记表归你）
+
+组装完成后从 enriched_spec/model_manifest 自动生成 `3-figures/README.md` 登记表：
+每行一章（章/标题/形式/3D 对象/数据组件/动效结论/产物路径），不手写、不遗漏。
+
 ## 你的输出
 
-1. `hf/index.html` —— 根合成（22 章宿主 + captions 宿主 + audio，无 SFX 双发）
+1. `hf/index.html` —— 根合成（全部章宿主 + captions 宿主 + audio，无 SFX 双发）
 2. `hf/compositions/ch00.html ~ ch21.html` —— 每章子合成
 3. `hf/compositions/captions.html` —— 全片字幕宿主（data-track-kind=captions）
 4. `4-video/narration.json` —— 逐句字幕时间轴

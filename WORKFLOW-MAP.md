@@ -45,20 +45,29 @@ cd D:\papervideo
 python -m paperpipe init 1706.03762 --target video
 #    → 生成 output/<run-id>/paperpipe.yaml + 阶段子目录
 
-# ② 自动执行 DAG 到人审门（intake/brief/acquire/xray/figures/render/qa 全自动，
-#    停在 retrospective / publish 两个人审门上）
+# ② 自动执行 DAG 到人工门（intake/brief/acquire/xray/figures 全自动，
+#    渲染停在预览门：hyperframes 路线未 preview --confirm 不渲成片）
 python -m paperpipe run --auto
 
-# ③ 中断后续跑（按输入指纹决定重跑范围，不清零失败历史）
+# ③ 渲染前人工预览 + 分类修改意见（十类：script/camera/transition/model/motion/
+#    layout/pacing/audio/dataviz/caption；全部 resolved 才许过审）
+python -m paperpipe preview                          # 预览包 → 浏览器逐章审看
+python -m paperpipe revise add --category camera --chapter 5 --wanted "…"
+python -m paperpipe preview --confirm                # 过审 → 渲染放行
+
+# ④ 中断后续跑（按输入指纹决定重跑范围，不清零失败历史）
 python -m paperpipe resume
 python -m paperpipe retry <stage>          # 显式重试单个失败阶段
 python -m paperpipe status --json          # 机器可读状态
 python -m paperpipe validate --target video # 检查组件/引擎/技能文件齐不齐
 
-# ④ 人审门（程序化核对 QA 通过/无占位符/lessons 规则/哈希绑定）
+# ⑤ QA 三验收分离：技术验收（执行器真实跑黑帧/冻结/布局审计）+ 内容验收
+#    （content-mapping-review receipt：数值→几何映射与轴同基准）+ 观看验收（时间码问题清单）
+
+# ⑥ 人审门（程序化核对 QA 通过/无占位符/lessons 规则/哈希绑定；复盘低分合法须附整改决定）
 python -m paperpipe review --confirm
 
-# ⑤ 发布（默认 dry-run 只出计划；--confirm 才置 upload_ready）
+# ⑦ 发布（默认 dry-run 只出计划；--confirm 才置 upload_ready）
 python -m paperpipe publish --dry-run
 python -m paperpipe publish --confirm <run_id>
 ```
@@ -147,21 +156,22 @@ output/<run-id>/
 
 ---
 
-## 5. 组件地图 · 技能库（69 个，`D:\papervideo\.zcode\skills\<name>\SKILL.md`）
+## 5. 组件地图 · 技能库（72 个，`D:\papervideo\.zcode\skills\<name>\SKILL.md`）
 
 > 每个 skill 至少含 `SKILL.md`；部分带 `references/`、`scripts/`、`templates/`。
 > 打包分发见 §9。
 
-### 编排与元技能（8）
+### 编排与元技能（11）
 | 技能 | 用途 |
 |---|---|
+| `paper-video` | ⭐ 一键指令：`/paper-video` 论文→讲解视频全流程（PHASE A→I，含预览门/小样门/导演权） |
+| `paper-explain` | ⭐ 总编排（五段流水线、路由表、验收门；目标不明确的对话分流用它） |
+| `preview-review` | ⭐ 渲染前人工预览 + 十类修改意见 + 三张风格帧小样门（preview --confirm=渲染门凭证） |
+| `content-mapping-review` | ⭐ 内容验收：数值→几何映射与轴刻度同基准核对（ch18 教训） |
 | `threejs-visual-example` | ⭐ 例子 3D 化强制（three.js 建模演示；禁纯表格读数；抽象数学 route-decision 豁免） |
-| 技能 | 用途 |
-|---|---|
-| `paper-explain` | ⭐ 总编排（五段流水线、路由表、验收门） |
 | `design-intake` | 设计访谈（AskUserQuestion 两轮 / 选择器），产出 design-intake.md |
-| `prompt-forge` | 提示词锻造：三套方案 + XML brief + 禁止清单 + 8 分验收 |
-| `video-retrospective` | 复盘：retrospective.md + lessons.md + 规则写回 |
+| `prompt-forge` | 提示词锻造：三套方案 + XML brief + 禁止清单 + 可判定验收问题清单（不预填分数） |
+| `video-retrospective` | 复盘：retrospective.md + lessons.md + 规则写回（低分合法须附整改决定） |
 | `humanize-writing` | 旁白去 AI 味（一句一个意思、长短句交错、动词优先） |
 | `video-production-guide` | 视频生产总指南 |
 | `design-taste-frontend` | 审美方向（概念从主题长出来，拒绝模板脸） |
@@ -373,11 +383,21 @@ Git 提交线（`git log --oneline`）：`c9d838f` paperpipe v1.1 → `79583e0` 
 
 ```bash
 cd D:\papervideo
+# ⓪ 一键指令（推荐）：/paper-video <PDF|arXiv|目录> [design.json]  —— 全流程 A→I 自动推进
+
 python -m paperpipe init <arxiv-id> --target video   # ① 建目录
-python -m paperpipe run --auto                        # ② 跑到人审门（agent 按阶段调技能）
-python -m paperpipe resume                            # ③ 断点续跑
-python -m paperpipe review --confirm                  # ④ 人审
-python -m paperpipe publish --dry-run                 # ⑤ 发布计划
+python -m paperpipe run --auto                        # ② 跑到人审/预览门（agent 按阶段调技能）
+python -m paperpipe preview                           # ③ 渲染前预览包（index.html 逐章审看）
+python -m paperpipe revise add --category camera --chapter 5 --wanted "…"  # ④ 分类修改意见
+python -m paperpipe preview --confirm                 # ⑤ 过审（渲染门凭证）
+python -m paperpipe resume                            # ⑥ 断点续跑
+python -m paperpipe review --confirm                  # ⑦ 人审
+python -m paperpipe publish --dry-run                 # ⑧ 发布计划
+
+# 子智能体派发环（figures/xray/render 阶段）
+python -m paperpipe agents --stage figures            # 波次/可派/卡点
+python -m paperpipe handoff show <hid>                # 读任务+系统提示词
+python -m paperpipe handoff finish <hid> --output 3-figures/x.json --response-file r.json
 
 # 渲染调试（remotion-studio 内）
 cd remotion-studio
@@ -389,4 +409,4 @@ node engines/wise-motion/scripts/match.mjs "两排卡片反向持续滚动"
 # CSS 动效 → .zcode/skills/motion-lab/SKILL.md 索引
 ```
 
-**说"帮我讲这篇论文 / 做成讲解视频"给 agent，即自动触发以上全流程。**
+**说"帮我讲这篇论文 / 做成讲解视频 / 重做"给 agent，即自动触发以上全流程。**

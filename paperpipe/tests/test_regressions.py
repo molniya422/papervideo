@@ -102,13 +102,13 @@ def main():
         rs_old.data["schema"] = "paperpipe-state/2"
         check("旧 schema → legacy", rs_old.is_legacy)
 
-        print("T6 注册表一致（68）")
+        print("T6 注册表一致（72）")
         man = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__)))), "pack", "paper-explain-skills-pack.json"), encoding="utf-8"))
         local = set(os.listdir(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.abspath(__file__)))), ".zcode", "skills")))
-        check("manifest 数 = 本地数 = registry 数 = 66",
-              man["count"] == len(local) == len(man["install"]["skillDirs"]) == len(registry.skill_ids()) == 68,
+        check("manifest 数 = 本地数 = registry 数 = 72",
+              man["count"] == len(local) == len(man["install"]["skillDirs"]) == len(registry.skill_ids()) == 72,
               f"{man['count']}/{len(local)}/{len(registry.skill_ids())}")
         reg_problems = registry.validate_registry(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         check("registry 双向差集为空", not reg_problems, str(reg_problems))
@@ -130,9 +130,26 @@ def main():
         os.makedirs(os.path.join(ctx7.run_dir, "5-video-final"), exist_ok=True)
         atomic_write_text(os.path.join(ctx7.run_dir, "5-video-final", "layout_audit.json"),
                           json.dumps({"layout": {"ok": True, "findings": []}}))
+        # 内容验收 receipt（三验收分离）：缺失 → waiting_for_agent
+        res7c = QaAdapter().run(ctx7)
+        check("缺内容验收 receipt → waiting_for_agent", res7c.status == "waiting_for_agent",
+              f"got {res7c.status}: {(res7c.error.message if res7c.error else '')[:60]}")
+        from paperpipe import receipts as _rc
+        atomic_write_text(os.path.join(ctx7.run_dir, "5-video-final", "content_mapping_review.md"),
+                          "# 内容验收\n- ch18: 柱高与轴刻度同基准（75/80）核对通过")
+        _rc.write_skill_receipt(ctx7, "qa", "content-mapping-review", "charts_rendered",
+                                ["5-video-final/content_mapping_review.md"],
+                                evidence=["数值→几何映射与轴刻度同基准", "教学示意已标注"])
         # 需要 qa receipt 的条件技能在 runner 层验证；适配器层应 passed
         res7b = QaAdapter().run(ctx7)
         check("布局审计 0 error → 适配器层 passed", res7b.status == "passed", f"got {res7b.status}")
+        # 回归（2026-11-03 整改）：布局 error 曾被静默吞掉仍 passed —— 必须 failed
+        atomic_write_text(os.path.join(ctx7.run_dir, "5-video-final", "layout_audit.json"),
+                          json.dumps({"layout": {"ok": False, "findings": [
+                              {"severity": "error", "message": "标签 dog 从右缘裁切"}]}}))
+        res7d = QaAdapter().run(ctx7)
+        check("布局审计 1 error → failed（不得带病 passed）", res7d.status == "failed",
+              f"got {res7d.status}")
 
         print("T8 sources 指纹敏感性（root: glob 必须真的吃到文件变化）")
         ctx8 = make_run(tmp)

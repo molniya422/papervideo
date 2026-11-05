@@ -11,3 +11,9 @@ engines/
 *.wav
 __pycache__/
 *.pyc
+
+# 陈旧快照与临时目录
+.analysis/
+.tmp_audit_automation/
+.tmp-example-writer/
+.tmp-render/
