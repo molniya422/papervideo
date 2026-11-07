@@ -120,19 +120,19 @@ pipeline:
     misuse: 当作视频图解主路线
     alt: visual-explainer
   - id: card-theater
-    use: 叙事型分步演示
+    use: 【参考库·创作期按需检索，style_director 调度】叙事型分步演示
     in: deep-read.md
     out: 3-figures/*.html
     misuse: 用于数据密集内容
     alt: stacked-data-cards
   - id: stacked-data-cards
-    use: 论点数据卡牌堆（录屏即成片）
+    use: 【参考库·创作期按需检索，style_director 调度】论点数据卡牌堆（录屏即成片）
     in: 结论清单
     out: 3-figures/*.html
     misuse: 与口播时长不对齐
     alt: card-theater
   - id: ppt-animation
-    use: PPT 风格翻页演示（适配录屏）
+    use: 【参考库·创作期按需检索，style_director 调度】PPT 风格翻页演示（适配录屏）
     in: 大纲
     out: 3-figures/*.html
     misuse: 当作最终成片而不录屏
@@ -288,13 +288,13 @@ pipeline:
     misuse: 未遇到报错就预修
     alt: 无
   - id: business-motion-film
-    use: 产品/服务宣传短片 15-40s（路线 E）
+    use: 【参考库·创作期按需检索，style_director 调度】产品/服务宣传短片 15-40s（路线 E）
     in: 产品信息
     out: 商业片
     misuse: 用于论文讲解
     alt: product-launch-motion / lieflat-code-video
   - id: product-launch-motion
-    use: 产品发布动效（一镜到底/光标驱动）
+    use: 【参考库·创作期按需检索，style_director 调度】产品发布动效（一镜到底/光标驱动）
     in: 发布内容
     out: 短片
     misuse: 用于论文讲解
@@ -324,7 +324,7 @@ pipeline:
     misuse: 日常交付滥用
     alt: 无
   - id: skill-catalog
-    use: agent 发现可用技能
+    use: 【参考库·创作期按需检索，style_director 调度】agent 发现可用技能
     in: 需求
     out: 技能索引
     misuse: 替代本注册表

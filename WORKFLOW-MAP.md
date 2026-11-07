@@ -182,7 +182,8 @@ output/<run-id>/
 ### 图解可视化（9）
 `visual-explainer`（通用 HTML 图解，默认）· `flowchart`（AI/ML 模型范式）· `dynamic-archify`（工程架构图）· `network-protocol-viz`（协议图）· `anatomy`（等距 SVG 机械插画）· `scholar-notes`（学霸笔记页）· `card-theater` · `stacked-data-cards` · `ppt-animation`
 
-### 成片引擎技能（8）
+### 成片引擎技能（9，含 Blender）
+`blender-visual`（⭐ Blender 5.2.4 LTS 离线渲染——物理模拟硬触发/封面英雄镜头可选；精度四项见 threejs-visual-example）·
 `remotion-video`（⭐ 本工作台技能，路线 C 默认）· `knowledge-explainer-skill`（路线 A）· `paper-to-beamer`+`paper-slides-to-video`（路线 B，归 B 站组）· `hyperframes`（路线 D）· `code-mv-render` · `lemo-opuscar`（59 风格库）· `opus-video-skills`（手绘水彩）· `product-launch-motion`（一镜到底形变）· `business-motion-film`（Gauntlet 评审）· `lieflat-code-video`（产品发布片 Starter）
 
 ### 动效方法论（6，HyperFrames 官方）

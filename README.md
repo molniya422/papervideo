@@ -41,62 +41,126 @@ PDF/arXiv ─▶ [0.5 提示词锻造] ─▶ [1 获取] ─▶ [2 深度解读]
 **C** `remotion-video`（Remotion 自定义动画/仿真，自由）·
 **D** 阶段 3 的 HTML 动画页 → `hyperframes` 确定性渲染成 MP4。
 
-## 已注册技能一览（30 个）
+## 已注册技能一览（74 个 · 与 `paperpipe/registry/skills.yaml` 三账对齐）
 
-### 核心流水线
-
-| 技能 | 来源 | 用途 |
-|---|---|---|
-| `paper-explain` | 本工作区编写 | ⭐ 工作流总编排（五阶段、路由表、验收门） |
-| `paper-xray` | [Wang-auspicious/paper-xray](https://github.com/Wang-auspicious/paper-xray) | 深度解读：还原作者思路、公式讲透、怀疑式审读，出 MD/可标注 HTML |
-| `paper-download-arxiv-paper-source` | [yhbcode000/paper-share-skills](https://github.com/yhbcode000/paper-share-skills) | arXiv TeX 源码下载解包 |
-| `pdf-to-markdown` | 同上 | MinerU（GPU）PDF→干净 Markdown |
-| `paper-video-cover` | 同上 | 16:10 视频封面海报 |
-| `paper-bilibili-uploader` | 同上 | biliup B 站投稿（横+竖、定时发布） |
-| `paper-to-bilibili` | 同上 | B 站流水线一键编排器（slides/video/bilibili 三模式） |
-
-### 图解可视化
+### 核心流水线与元技能（11）
 
 | 技能 | 来源 | 用途 |
 |---|---|---|
-| `visual-explainer` | [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer) | 自包含 HTML 图解页：架构图/对比表/可步进状态机/幻灯片（通用默认） |
-| `flowchart` | [Unclecheng-li/AI_Animation](https://github.com/Unclecheng-li/AI_Animation) | 教育/科普动画流程图，AI 模型可视化（RNN/LSTM/GRU/MLP 范式齐全） |
-| `dynamic-archify` | 同上 | 精确工程风动态架构图/数据流/状态机，流动动画+多格式导出 |
-| `network-protocol-viz` | 同上 | 网络协议可视化（TCP/IP、以太帧、路由、HTTPS） |
-| `anatomy` | [wheresryan22/anatomy](https://github.com/wheresryan22/anatomy) | 等距 SVG"物理装置"插画，把机制画成会动的机器（含 WebGL/3D） |
-| `scholar-notes` | AI_Animation | 手写笔记本风格单文件 HTML 学习笔记 |
-| `card-theater` | AI_Animation | 侧边栏叙事 + 3D 卡片轮播的分步讲解演示 |
-| `stacked-data-cards` | AI_Animation | 论点数据卡牌堆自动播放动画（对齐口播，录屏即成片） |
-| `ppt-animation` | AI_Animation | PPT 风格翻页 HTML 演示（5 套主题，适配录屏） |
+| `paper-video` | 本工作区编写 | 一条指令跑完论文→讲解视频全流程（参数解析→设计合同→brief→DAG→子智能体派发环→渲染→QA→复盘→交付） |
+| `paper-explain` | 本工作区编写 | 用户要求讲论文/做成讲解视频时的总路由器 |
+| `preview-review` | 本工作区编写 | 渲染前人工预览 + 分类修改意见（十类：文稿/运镜/转场/建模/动效/布局/节奏/声音/数据/字幕）+ 三张风格帧小样门 |
+| `content-mapping-review` | 本工作区编写 | 内容验收——数据组件的数值→几何映射与轴刻度同基准核对（ch18 教训：75 的柱在 80 轴上顶满） |
+| `design-intake` | 本工作区编写 / 检出改编 | 有视觉交付目标时的设计访谈 |
+| `prompt-forge` | 本工作区编写 | 任何画面生成之前的合同锻造 |
+| `humanize-writing` | 本工作区编写 | 旁白进 TTS 之前 |
+| `video-retrospective` | 本工作区编写 | 视频交付后 |
+| `video-production-guide` | 本工作区编写 | 视频生产总方法论参考 |
+| `design-taste-frontend` | 本工作区编写 | 任何视觉生成之前 |
+| `skill-catalog` | 本工作区编写 | agent 发现可用技能 |
 
-### 动画成片
+### 获取与解读（3）
 
 | 技能 | 来源 | 用途 |
 |---|---|---|
-| `knowledge-explainer-skill` | [znyupup/knowledge-explainer-skill](https://github.com/znyupup/knowledge-explainer-skill) | 分页 markdown 文稿 → Remotion 渲染讲解动画 mp4（依赖已装、已验证可出片） |
-| `remotion-video` | 本工作区编写 | 自定义动画工作台 `remotion-studio/` 的使用技能 |
-| `hyperframes` | AI_Animation | HTML→确定性 MP4 渲染底座导航（需按其说明安装上游 CLI） |
-| `code-mv-render` | AI_Animation | 确定性音乐视频/数据纪录片工程库（帧 = f(时间)） |
-| `lemo-opuscar` | AI_Animation | 59 种代码导演视频风格库 |
-| `opus-video-skills` | AI_Animation | 手绘水彩/水墨角色动画与动态排版 Reel 风格库 |
-| `video-qa-frameproof` | AI_Animation | 成片 QA：空帧/冻结/字幕/音频/编码检查与修复闭环 |
-| `video-technical-review` · `layout-safety-review` · `compare-video-runs` | [45ck/video-evaluator](https://github.com/45ck/video-evaluator) | 成片内容级 QA：画面缺陷/版式安全区审查、多版本对比择优 |
-| `storyboard-extract` · `storyboard-understand` · `storyboard-ocr` · `storyboard-transitions` · `segment-*` · `video-shots` · `source-media-signals` · `video-artifact-intake` · `review-bundle` · `skill-catalog` · `package-review-prompt` | 同上 | 视频理解包：参考视频拆解（镜头/转场/OCR/叙事）、素材信号分析等 12 技能 |
-| `hell-grind-aigc-skill` | [renmu2017/Hell-Grind-AIGC-Skill](https://github.com/renmu2017/Hell-Grind-AIGC-Skill) | 模型无关的 AI 图/视频提示词工程：七层提示词架构、镜头契约、生成记录追踪与失败诊断 |
-| `video-shot-demos` · `swiss-shot-demos` · `phone-ui-demos` · `win11-ui-demos` · `ui2v-motions` | AI_Animation | 分镜演示风格库与 GSAP 动效索引（仅注册文档，重型媒体未下载，见各 SKILL.md 顶部说明） |
+| `paper-download-arxiv-paper-source` | [yhbcode000/paper-share-skills](https://github.com/yhbcode000/paper-share-skills) | 输入为 arXiv id |
+| `paper-xray` | [Wang-auspicious/paper-xray](https://github.com/Wang-auspicious/paper-xray) | 需要论文事实/机制说明 |
+| `pdf-to-markdown` | 同上 | 本地 PDF 且需结构化文本（公式/表格） |
 
-### B 站流水线附属
+### 图解可视化（9）
 
-| 技能 | 用途 |
-|---|---|
-| `paper-to-beamer` | 论文→SUSTech Beamer 11 节幻灯片→编译 PDF |
-| `sustech-beamer-theme-fix` | 修复旧模板缺 `\setsource` 等宏 |
-| `paper-slides-to-video` | 幻灯片 PDF→横竖双配音 MP4（edge-tts） |
+| 技能 | 来源 | 用途 |
+|---|---|---|
+| `visual-explainer` | [nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer) | 通用系统/流程/对比图解（默认主图解技能） |
+| `flowchart` | [Unclecheng-li/AI_Animation](https://github.com/Unclecheng-li/AI_Animation) | AI/ML 模型原理图 |
+| `dynamic-archify` | 同上 | 工程架构/数据流 |
+| `network-protocol-viz` | 同上 | 网络协议类论文 |
+| `anatomy` | [wheresryan22/anatomy](https://github.com/wheresryan22/anatomy) | 需要物理结构直觉（等距机械插画） |
+| `scholar-notes` | AI_Animation | 用户要学习笔记页 |
+| `card-theater` | AI_Animation | 叙事型分步演示 |
+| `stacked-data-cards` | AI_Animation | 论点数据卡牌堆（录屏即成片） |
+| `ppt-animation` | AI_Animation | PPT 风格翻页演示（适配录屏） |
 
-> 完整阶段、产物、门槛、排查表见 **[WORKFLOW.md](WORKFLOW.md)**；
-> 每个组件的具体路径与用法速查见 **[WORKFLOW-MAP.md](WORKFLOW-MAP.md)**（有什么 · 怎么做 · 在哪里）。
-> 可视化风格选择器：[design-picker.html](design-picker.html)（双击打开：8 风格卡 × 61 决策维度·九区，含动效库匹配/运镜/场景切换/特效密度/参考清单，
-> 出 JSON / paperpipe.yaml / design-intake.md 三件套）。
+### 3D 资产与建模（2）
+
+| 技能 | 来源 | 用途 |
+|---|---|---|
+| `threejs-visual-example` | 本工作区编写 | 具象对象例子必须 3D 化（three.js 建模演示，禁纯表格读数） |
+| `blender-visual` | 本工作区编写 | Blender 3D 建模与离线渲染——高保真模型/PBR 材质/物理模拟/粒子系统，输出确定性帧序列 |
+
+### 成片引擎（13）
+
+| 技能 | 来源 | 用途 |
+|---|---|---|
+| `remotion-video` | 本工作区编写 | 定制讲解成片（路线 C，默认） |
+| `knowledge-explainer-skill` | [znyupup/knowledge-explainer-skill](https://github.com/znyupup/knowledge-explainer-skill) | 快速视频（路线 A 模板） |
+| `paper-to-beamer` | 论文→SUSTech Beamer 11 节幻灯片→编译 PDF | 组会幻灯片（路线 B） |
+| `paper-slides-to-video` | 幻灯片 PDF→横竖双配音 MP4（edge-tts） | 幻灯片 PDF → 配音 MP4 |
+| `hyperframes` | AI_Animation | 已有 HTML 动画 → 确定性 MP4（路线 D） |
+| `code-mv-render` | AI_Animation | 代码音乐视频/数据纪录片 |
+| `lemo-opuscar` | AI_Animation | 59 种代码导演风格库 |
+| `opus-video-skills` | AI_Animation | 手绘水彩/水墨角色动画 |
+| `product-launch-motion` | 上游检出（product-launch-motion） | 产品发布动效（一镜到底/光标驱动） |
+| `business-motion-film` | 风格演示库（检出） | 产品/服务宣传短片 15-40s（路线 E） |
+| `lieflat-code-video` | 引擎检出（PolyForm-NC） | 产品发布片 Remotion Starter（12 kit 模块） |
+| `hyperframes-cli` | 引擎检出（同上） | hyperframes 命令行细节 |
+| `remotion-to-hyperframes` | 引擎检出（同上） | Remotion 工程迁移到 hyperframes |
+
+### 动效方法论与动效库（9）
+
+| 技能 | 来源 | 用途 |
+|---|---|---|
+| `motion-doctrine` | HyperFrames 官方方法论 | 实际制作任何动效之前（网关，先读） |
+| `cut-the-curve` | HyperFrames 官方方法论 | 使用自定义缓动曲线 |
+| `seam-craft` | HyperFrames 官方方法论 | 有转场的镜头 |
+| `oversized-cursor` | HyperFrames 官方方法论 | 光标驱动演示 |
+| `captions-overlay` | HyperFrames 官方方法论 | 有字幕的成片 |
+| `changelog-video` | HyperFrames 官方方法论 | 版本变更视频，领域不符 |
+| `motion-lab` | 引擎检出（Motion.Lab） | HTML/CSS 运行时动效（先查库再动手） |
+| `wise-motion` | 引擎检出（[WiseWong6/wise-motion](https://github.com/WiseWong6/wise-motion)，Apache-2.0） | Remotion 运行时动效（先查库再动手） |
+| `code-animation-prompts` | 引擎检出（[XiaoyeCodes/code-animation-prompts](https://github.com/XiaoyeCodes/code-animation-prompts)） | 341 种代码动画风格库（193 静帧 + Canvas 参考实现 + 离线挑选器）——风格选型与视频/图解视觉语言参考 |
+
+### 质检与发布（13）
+
+| 技能 | 来源 | 用途 |
+|---|---|---|
+| `video-qa-frameproof` | AI_Animation | 视频渲染完成后的机器技术 QA |
+| `video-technical-review` | 本工作区编写 | QA 机器检查通过后、交付前的内容技术审查 |
+| `layout-safety-review` | 本工作区编写 | 安全区/遮挡/字幕审查 |
+| `content-mapping-review` | 本工作区编写 | 内容验收——数据组件的数值→几何映射与轴刻度同基准核对（ch18 教训：75 的柱在 80 轴上顶满） |
+| `compare-video-runs` | 本工作区编写 | 多版本对比择优 |
+| `video-retrospective` | 本工作区编写 | 视频交付后 |
+| `paper-video-cover` | 同上 | 用户要求发布或平台要求封面 |
+| `paper-bilibili-uploader` | 同上 | 真实上传 B 站 |
+| `paper-to-bilibili` | 同上 | B 站全流程一键编排 |
+| `hell-grind-aigc-skill` | [renmu2017/Hell-Grind-AIGC-Skill](https://github.com/renmu2017/Hell-Grind-AIGC-Skill) | 需要 AI 生图素材/概念封面 |
+| `review-bundle` | 本工作区编写 | 打包评审材料 |
+| `package-review-prompt` | 本工作区编写 | 打包评审提示词 |
+| `sustech-beamer-theme-fix` | 修复旧模板缺 `\setsource` 等宏 | 旧 Beamer 模板缺宏 |
+
+### 参考视频理解（9）
+
+| 技能 | 来源 | 用途 |
+|---|---|---|
+| `storyboard-extract` | 参考视频理解（检出改编） | 参考视频镜头拆解 |
+| `storyboard-understand` | 参考视频理解（检出改编） | 参考视频叙事理解 |
+| `storyboard-ocr` | 参考视频理解（检出改编） | 参考视频 OCR |
+| `storyboard-transitions` | 参考视频理解（检出改编） | 参考视频转场分析 |
+| `segment-evidence` | 参考视频理解（检出改编） | 视频证据分段理解 |
+| `segment-storyboard` | 参考视频理解（检出改编） | 视频分段故事板 |
+| `video-shots` | 参考视频理解（检出改编） | 镜头语言参考 |
+| `source-media-signals` | 参考视频理解（检出改编） | 素材信号分析 |
+| `video-artifact-intake` | 本工作区编写 | 复盘前产物清点 |
+
+### 风格演示库（5）
+
+| 技能 | 来源 | 用途 |
+|---|---|---|
+| `video-shot-demos` | 风格演示库（检出） | 分镜演示风格库 |
+| `swiss-shot-demos` | 风格演示库（检出） | 瑞士风格分镜演示库 |
+| `phone-ui-demos` | 风格演示库（检出） | 手机 UI 演示风格库 |
+| `win11-ui-demos` | 风格演示库（检出） | Win11 UI 演示风格库 |
+| `ui2v-motions` | 风格演示库（检出） | GSAP 动效索引 |
 
 ## 目录结构
 

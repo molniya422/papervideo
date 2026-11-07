@@ -51,6 +51,15 @@
    `cap_series` 限定检索范围；`cap_role` 决定默认职责。
 7. **缺口如实说**：某章找不到合适风格时，`style_id: null` + `why: "缺口：自写（原因）"`。
 
+## 参考库检索清单（创作期按需，不进阶段合同）
+
+整片画风/版式/镜头参考——需要"这段该长什么样"的参照时按需检索：
+business-motion-film（Gauntlet 评审）· card-theater（卡牌剧场）· stacked-data-cards（堆叠数据卡）·
+ppt-animation（PPT 动画）· product-launch-motion（一镜到底形变）· changelog-video（更新日志片）·
+lemo-opuscar（59 风格库）· opus-video-skills（手绘水彩）· video-shot-demos · swiss-shot-demos ·
+phone-ui-demos · win11-ui-demos · ui2v-motions（GSAP 索引）· lieflat-code-video（镜头语言 lens-reference.html）。
+检索结果写进 style_refs 的 impl 字段（编号/文件路径），不复制其代码进章节。
+
 ## 选型方法
 
 1. 读全部章 storyboard，为每章提炼一句话"视觉需求"（例：开场冲击 / 数据对比 / 结构拆解 / 结论停留）

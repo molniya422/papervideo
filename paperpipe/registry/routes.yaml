@@ -37,8 +37,8 @@ routes:
     input: 论文
     target: video
     terminal: qa
-    skills: [paper-xray, paper-to-beamer, paper-slides-to-video]
-    route_hints: 路线 B；视频可选，只要 PDF 则 target=md 只需 paper-to-beamer 产物
+    skills: [paper-xray, paper-to-beamer, paper-slides-to-video, sustech-beamer-theme-fix]
+    route_hints: 路线 B；视频可选，只要 PDF 则 target=md 只需 paper-to-beamer 产物；SUSTECH 主题渲染异常时用 theme-fix
   - id: html-to-video
     intent: 已有 HTML 动画转视频
     input: HTML 页面
@@ -67,3 +67,11 @@ routes:
     terminal: publish
     skills: [video-retrospective]
     route_hints: 读取旧状态 → 复盘 → 改 brief → 指纹缓存自动只重跑受影响阶段
+  - id: one-shot-video
+    intent: 一键出片 / 跑全流程 / 重做（/paper-video 指令入口）
+    input: PDF、arXiv、目录或旧 run
+    target: publish
+    terminal: publish
+    skills: [paper-video, design-intake, prompt-forge, paper-xray, preview-review, video-qa-frameproof, video-retrospective]
+    route_hints: 直通车道——按 paper-video 技能 PHASE A→I 推进（hyperframes 路线 + 14 角子智能体链 + 小样门/预览门）；
+      目标不明确时回退 custom-video 或 explain-only；返工开 -vN 新 run 绝不改旧 run

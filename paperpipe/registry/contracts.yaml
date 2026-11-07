@@ -36,7 +36,13 @@ stages:
   brief:
     requires: [intake]
     primary_skill: prompt-forge
-    conditional_skills: []
+    conditional_skills:
+      - skill: video-production-guide
+        trigger: 有视频交付目标（通读生产总指南，约束后续所有阶段）
+        required_output: brief.md 末尾含"指南要点摘录"小节（≥5 条影响本片的要点）
+        acceptance: 摘录与 brief 的验收问题清单互相引用；不是复制粘贴目录
+        on_fail: waiting_for_agent（未通读不得写 brief）
+        optional: true
     outputs: [0-brief/brief.md]
     machine_gate: brief.md 存在且含 <acceptance>；storyboard 占位视为未定稿
     human_gate: 三套方案取舍应由用户拍板（可默认并标注）
@@ -170,6 +176,60 @@ stages:
         acceptance: 具象对象例子有 3D 建模演示且过**精度四项**（①场景挂环境反射 ②真接触阴影 ③结构细节≥4处 ④玻璃/透光件非裸Box）；
           纯表格例示 = 0（伴随标注除外）；抽象数学例已写 route-decision 豁免；新模型/改模型先过资产小样门
         on_fail: waiting_for_agent（例子退回重做为 3D）
+      - skill: storyboard-extract
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: storyboard-understand
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: storyboard-ocr
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: storyboard-transitions
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: segment-evidence
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: segment-storyboard
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: video-shots
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: source-media-signals
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: video-artifact-intake
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
       - skill: preview-review
         trigger: model_builder 批量生成章节前（三张风格帧小样门）
         required_output: 3-figures/style_frames/{entity,mechanism,data}.png（真实渲染器产出的风格帧）
@@ -244,6 +304,36 @@ stages:
         required_output: brief.md 或代码注释标注 easing 选型出处
         acceptance: 无"凭感觉"的缓动
         on_fail: waiting_for_agent
+      - skill: seam-craft
+        trigger: 自定义转场接缝（非内置 opener 的章间衔接）
+        required_output: 转场接缝登记（章节对 + 接缝类型 + exit/entry 向量）
+        acceptance: Vector Law（同轴/同向/同速/切在运动中）逐缝核对
+        on_fail: waiting_for_agent（接缝动量断裂退回）
+        optional: true
+      - skill: oversized-cursor
+        trigger: 有光标驱动的 UI/操作演示镜头
+        required_output: 光标运动 tween（确定性 f(t)）与点击反馈动效
+        acceptance: 光标路径无瞬移；点击与被点元素动效对齐
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: hyperframes-cli
+        trigger: route=hyperframes（路线 D 渲染的 CLI 细则：check/snapshot/render 参数与排障）
+        required_output: 渲染命令 tool receipt（含 --browser-timeout 等实际参数）
+        acceptance: 命令与耗时落 receipt；失败按 CLI 排障表处置
+        on_fail: failed_retryable
+        optional: true
+      - skill: remotion-to-hyperframes
+        trigger: 从 remotion-studio 工程迁移到路线 D
+        required_output: 迁移对照表（Composition→composition.html 映射 + 差异说明）
+        acceptance: 迁移后 hyperframes check 六门全绿
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: code-mv-render
+        trigger: route=code-mv（代码 MV 类成片）
+        required_output: 4-video/render-raw.mp4
+        acceptance: 与 hyperframes 同级检查通过
+        on_fail: failed_retryable
+        optional: true
       - skill: captions-overlay
         trigger: 有字幕（所有讲解视频）
         required_output: 4-video/narration.json 逐句字幕与音频同源
@@ -278,6 +368,12 @@ stages:
         required_output: receipts/skills/qa-layout-safety-review*.json
         acceptance: 安全区/遮挡/字幕审查通过（labels2d 标注层使 3D 标签可被 DOM 审计看到）
         on_fail: waiting_for_agent（等审查 receipt）
+      - skill: compare-video-runs
+        trigger: output/ 存在同源多版本 run（v2/v3 返工对比）
+        required_output: receipts/skills/qa-compare-video-runs*.json（逐节拍 A/B 结论）
+        acceptance: 对比基于同时间码抽帧；"更好看"与"更容易懂"分开下结论
+        on_fail: waiting_for_agent
+        optional: true
       - skill: content-mapping-review
         trigger: 图表/数据组件入片后（内容验收）
         required_output: receipts/skills/qa-content-mapping-review*.json
@@ -306,6 +402,36 @@ stages:
     requires: [qa, retrospective]
     primary_skill: paper-video-cover
     conditional_skills:
+      - skill: paper-to-bilibili
+        trigger: 上传 B 站（一键编排器：slides/video/bilibili 三模式调度）
+        required_output: 5-video-final/upload_receipt.json（经 paper-bilibili-uploader）
+        acceptance: 回执 exit=0；无回执绝不置 uploaded
+        on_fail: failed_retryable
+        optional: true
+      - skill: hell-grind-aigc-skill
+        trigger: 封面/概念图需要 AIGC 素材
+        required_output: AIGC 提示词与素材产出（登记 receipt）
+        acceptance: 提示词七层架构完整；素材用途与封面构图说明绑定
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: review-bundle
+        trigger: 发布前需要打包审查材料（成片+报告+清单）
+        required_output: 审查包（成片副本 + qa_report + 复盘 + 意见账本导出）
+        acceptance: 包内文件与哈希一致；可直接发给独立评审
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: skill-catalog
+        trigger: pack 打包或发布前刷新技能目录清单
+        required_output: pack/paper-explain-skills-pack.json 与 README 技能表同步（数量一致）
+        acceptance: 磁盘=registry=manifest 三账对齐（paperpipe validate 通过）
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: package-review-prompt
+        trigger: 生成给独立评审的审查提示词包
+        required_output: 审查提示词文件（带时间码问题清单模板）
+        acceptance: 提示词含三验收分离结构，不接受"打个分"
+        on_fail: waiting_for_agent
+        optional: true
       - skill: paper-video-cover
         trigger: 用户要求发布或平台要求封面
         required_output: 5-video-final/cover.png（或 cover.jpg）
