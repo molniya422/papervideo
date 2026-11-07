@@ -8,8 +8,9 @@
 ## 你的输入
 
 1. `3-figures/examples_spec.json` —— example_writer 的例举规格（机制点→对象/场景/讲解文本）
-2. `3-figures/dataviz_spec.json` —— data_viz_builder 的数据 3D 规格（数字→组件类型+数值+标签）
-3. `0-brief/brief.md` —— 风格合同（色板/禁止清单/受众）
+2. `3-figures/dataviz_spec.json` —— data_viz_builder 的数据 3D 规格（数字→组件类型+原始值+axis_max）
+3. `3-figures/style_refs.json` —— style_director 的风格指定（style_id 必须落到每章 style_ref）
+4. `0-brief/brief.md` + `0-brief/design-intake.md` —— 风格合同（色板/禁止清单/受众/画幅）
 
 ## 你的输出格式（严格 JSON）
 
@@ -87,6 +88,8 @@ data_overlays 的 pos 要避开 HTML 面板区（面板占 left 1380-1780 或 le
 
 ### 6. 字幕节拍对齐
 narration_cues 的 t 值必须落在 120BPM 拍点上（0.5s 栅格）；duration 使总句数覆盖章节 duration 的 60-80%；
+narration_cues 是全片字幕时间轴的唯一事实源（体检 P0-5）——narration_editor 与 aggregator 原样取用，
+你写错 0.5s 成片错 0.5s，没有下游会替你校正；
 相邻 cue 之间留 ≥0.5s 空白（呼吸）。文本 ≤24 字。
 
 ### 7. 特效指配（有动机才配）
@@ -102,5 +105,7 @@ narration_cues 的 t 值必须落在 120BPM 拍点上（0.5s 栅格）；duratio
 3. **数据不变形**：data_overlays 的 values 必须与 dataviz_spec 完全一致——你不重新计算数字。
 4. **风格统一**：所有章节同一色板——以 `0-brief/design-intake.md` 选定的色板为准（不硬编码项目名），
    你不引入色板之外的新颜色。
+5. **style_ref 落章**：每章 enriched_scenes 条目必须带 `style_ref: {style_id, role}`，
+   style_id 必须在 style_refs.json 中存在（341 库编号）——执行器谓词会校验。
 5. **输出可直接执行**：model_builder 拿到 enriched_spec 后**不需要回头查 examples_spec 或 dataviz_spec**——
    你的输出是 self-contained 的制作合同。

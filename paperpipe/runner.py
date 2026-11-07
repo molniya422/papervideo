@@ -40,7 +40,10 @@ def fingerprint(ctx: RuntimeCtx, name: str) -> str:
     up = {u: ctx.rs.stage(u)["input_hash"] for u in registry.requires(name)}
     cfg = ctx.cfg
     if name == "publish":
-        cfg_slice = {"publish": cfg.get("publish")}
+        # 体检 C3：confirm 改的是 state 不是配置——并入指纹，否则 confirm 后 cache_hit 空转不上传。
+        # 只含外部写入的 confirmed；upload_ready/uploaded 由本阶段 run 自己写，纳入会自激循环。
+        cfg_slice = {"publish": cfg.get("publish"),
+                     "review_confirmed": bool(ctx.rs.data.get("review", {}).get("confirmed"))}
     elif name == "render":
         cfg_slice = {"render": cfg.get("render"), "target": ctx.rs.data["target"]}
     else:

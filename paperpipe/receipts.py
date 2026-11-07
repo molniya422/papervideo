@@ -161,6 +161,13 @@ def verify_stage(ctx, stage: str) -> list:
             for op in r.get("output_paths", []):
                 if not os.path.exists(ctx.out(op)):
                     problems.append(f"receipt {fn} 声称的产物缺失: {op}")
+            # input_hashes 重验（体检 P1-4）：凭据所依据的输入被改 → 凭据失效
+            for ip, ih in (r.get("input_hashes") or {}).items():
+                ipf = ctx.out(ip)
+                if not os.path.exists(ipf):
+                    problems.append(f"receipt {fn} 的输入已不存在: {ip}")
+                elif sha256_file(ipf) != ih:
+                    problems.append(f"receipt {fn} 的输入已变更（凭据过期）: {ip}——重跑该技能再 resume")
     return problems
 
 def list_tool_receipts(ctx, stage: str, tool: str) -> list:

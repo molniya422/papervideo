@@ -6,9 +6,11 @@
 
 ## 你的输入
 
-1. `3-figures/examples_spec.json` —— 例举规格（每个机制点的具象对象、场景描述、讲解文本）
-2. `3-figures/dataviz_spec.json` —— 数据 3D 规格（数字/表格 → 组件类型+数值+标签）
-3. `hf/assets/vendor/lib3d.js` —— 3D 共享库 API（你必须只使用这些导出函数，不要自己造轮子）
+1. `3-figures/enriched_spec.json` —— **唯一规格来源**（spec_enricher 熔炼后的制作级合同：
+   objects 布点 / camera_path 相机表 / det_boxes 检测框 / data_overlays 数据组件 /
+   narration_cues 拍点 / style_ref 风格——全在这里，禁止回头读 examples_spec/dataviz_spec）
+2. `hf/assets/vendor/lib3d.js` —— 3D 共享库 API（你必须只使用这些导出函数，不要自己造轮子）
+3. `6-review/lessons.md`（如存在）—— 历史教训（同一类错误犯第二次 = 输出作废）
 
 ## lib3d.js API（你唯一能用的 3D 组件库）
 
@@ -131,41 +133,18 @@ tl.fromTo(cam, {az: A, elv: B, r: C}, {az: D, elv: E, r: F, duration: N, ease: "
 为什么必须移动相机？比较读数、公式推导的章允许全章一次相机运动甚至不动——
 讲得清 > 动得多。所有关键位姿用 frameCheck() 自查锚点是否出画/落入字幕带。
 
-## 例子规格的解读
+## enriched_spec 的解读（唯一规格来源）
 
-examples_spec.json 每条：
-```json
-{
-  "chapter": 5,
-  "mechanism": "每格预测 B 框 + C 类条件概率",
-  "objects": ["car", "person"],
-  "scene_desc": "3D 玻璃单格舱内含两个检测框槽，右侧 20 类条件概率柱条",
-  "narration_text": "每格预测 2 个框…再加 20 类条件概率",
-  "is_3d": true,
-  "data_ref": null
-}
-```
-- `objects` 列出需要的 lib3d 模型函数名；
-- `scene_desc` 是空间布局描述（你按此布置物体位置/相机）；
-- `narration_text` 是字幕文本（你不写字幕，aggregator 负责）；
-- `is_3d: false` 的条目 → 该章走 2D（你不产出代码）；
-- `data_ref` 非空时去 dataviz_spec.json 找对应数据组件规格。
-
-## 数据规格的解读
-
-dataviz_spec.json 每条：
-```json
-{
-  "chapter": 18,
-  "component": "bars3d",
-  "values": [0.70, 0.845, 0.892, 0.957],
-  "labels": ["Fast YOLO 52.7", "YOLO 63.4", "Fast R-CNN 66.9", "最佳 71.8"],
-  "position": {"x": 0, "z": 0},
-  "narration_ref": "Fast YOLO 52.7 / YOLO 63.4"
-}
-```
-- component 映射到 lib3d 函数：bars3d / heatColumns / gauge3d / lossSurface / tubeFromPoints；
-- values → 高度/半径/振幅；labels → textSprite；position → 场景内放置。
+enriched_scenes 每章一条，字段即制作合同：
+- `objects: [{fn, pos, rot_y, scale}]` —— 逐物体布点，直接实例化，不需要你想象；
+- `camera_path: [{t, az, elv, r, purpose}]` —— 相机路径表，**你的相机 tween 终值必须逐条一致**
+  （资产门会脚本 diff tween 终值 vs camera_path）；
+- `det_boxes: [{w, h, d, pos, label}]` —— 检测框（用 detBox，贴合尺寸）；
+- `data_overlays: [{component, values, axis_max, labels, pos}]` —— 数据组件；
+  **柱高 = value / axis_max × maxH**（与轴刻度同基准——ch18 教训，内容验收 receipt 会核对）；
+- `narration_cues: [{t, duration, text}]` —— 字幕拍点（你不写，aggregator 组装）；
+- `style_ref: {style_id, role}` —— 本章风格参考（style_director 选定，氛围/转场按此实现）；
+- `camera_notes` 之类的自由文本字段已废弃——相机只认 camera_path 数值。
 
 ## 你的输出
 

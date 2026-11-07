@@ -132,7 +132,16 @@ def main():
         ctx3.rs.stage("acquire")["status"] = "passed"
         ctx3.rs.stage("acquire")["input_hash"] = runner.fingerprint(ctx3, "acquire")
         ctx3.rs.stage("xray")["status"] = "passed"
-        atomic_write_text(ctx3.out("3-figures/README.md"), "| 图 | 机制点 | 技能 | 路径 |\n|---|---|---|---|\n| k1 | A | visual-explainer | x.html |")
+        atomic_write_text(ctx3.out("3-figures/README.md"), "| 图 | 机制点 | 技能 | 路径 |\n|---|---|---|---|\n| k1 | A | visual-explainer | 2-xray/deep-read.md |")
+        atomic_write_text(ctx3.out("3-figures/shot_plan.json"), json.dumps(
+            {"shots": [{"chapter": 0, "verdict": "pass"}], "pacing": {"flagged": []}}, ensure_ascii=False))
+        atomic_write_text(ctx3.out("3-figures/model_manifest.json"), json.dumps(
+            {"scenes": [{"chapter": 0, "module_js": "x"}], "fidelity": {"envMap": True}}, ensure_ascii=False))
+        atomic_write_text(ctx3.out("3-figures/examples_spec.json"), json.dumps(
+            {"examples": [{"chapter": 0, "mechanism": "M", "scene_desc": "三辆车在路口排成一行，相机从东南侧俯视",
+                           "narration_text": "示例", "is_3d": True, "objects": ["car"]}]}, ensure_ascii=False))
+        atomic_write_text(ctx3.out("3-figures/dataviz_spec.json"), json.dumps(
+            [{"chapter": 0, "component": "bars3d", "values": [1], "labels": ["a"]}], ensure_ascii=False))
         res = runner.run_stage(ctx3, "figures")
         check("figures 因 handoff 未完成 → waiting_for_agent", res == "waiting_for_agent", res)
         err = (ctx3.rs.stage("figures")["error"] or {}).get("message", "")

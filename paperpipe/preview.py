@@ -211,6 +211,30 @@ if (CH.length) play(0);
                       html.replace("%s", data).replace("%COMP%", comp_rel))
 
 # ── 过审门 ─────────────────────────────────────────────────────
+
+def gate(ctx) -> tuple[bool, str]:
+    """渲染人工门的真谓词（体检 C4）：confirmed 文件存在 ≠ 过审。
+    绑定意见账本计数 —— confirm 后再 add 意见 → 计数失配 → 门自动关闭。"""
+    st = status(ctx)
+    if not st["generated"]:
+        return False, "预览包未生成（先 python -m paperpipe preview）"
+    if not st["confirmed"]:
+        return False, "预览包未过审（preview --confirm）"
+    if st["open"] > 0:
+        return False, "修改意见 open %d/%d" % (st["open"], st["total"])
+    if not os.path.exists(ctx.out("4-video", "narration.json")):
+        return False, "4-video/narration.json 缺失"
+    try:
+        conf = json.load(open(os.path.join(_prev_dir(ctx), "preview_confirmed.json"), encoding="utf-8"))
+    except Exception:
+        return False, "过审凭据损坏（重新 preview --confirm）"
+    if conf.get("revisions_total") != st["total"]:
+        return False, "confirm 后账本已变更（confirm 时 %s 条，现 %d 条）→ 重新 --confirm" % (
+            conf.get("revisions_total"), st["total"])
+    if st["total"] > 0 and conf.get("revisions_resolved") != st["resolved"]:
+        return False, "resolved 计数与过审凭据不符 → 重新 --confirm"
+    return True, "ok"
+
 def status(ctx) -> dict:
     d = _prev_dir(ctx)
     conf = os.path.exists(os.path.join(d, "preview_confirmed.json"))

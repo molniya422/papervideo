@@ -75,7 +75,7 @@ def main():
     try:
         from paperpipe.util import atomic_write_text
         print("R1 写入+验证闭环")
-        ctx = make_ctx(tmp, {"2-xray/deep-read.md": "# 深度解读\n## 机制点\n1. 机制A"})
+        ctx = make_ctx(tmp, {"2-xray/deep-read.md": "# 深度解读\n## 机制点\n1. 机制A——它会怎么坏：条件不满足时失效。\n2. B——它会怎么坏：参数越界时失效。\n3. C——它会怎么坏：分布偏移时失效。\n"})
         p = receipts.write_skill_receipt(ctx, "xray", "paper-xray", "paper_facts_needed",
                                          ["2-xray/deep-read.md"], agent_id="fact-checker-01")
         check("receipt 落盘", os.path.exists(os.path.join(ctx.run_dir, p)))
@@ -130,7 +130,7 @@ def main():
 
         print("R6 runner 集成：缺 receipt → waiting_for_agent 不 passed")
         from paperpipe import runner
-        ctx6 = make_ctx(tmp, {"2-xray/deep-read.md": "# 深度解读\n## 机制点\n1. A"})
+        ctx6 = make_ctx(tmp, {"2-xray/deep-read.md": "# 深度解读\n## 机制点\n1. 机制A——它会怎么坏：条件不满足时失效。\n2. B——它会怎么坏：参数越界时失效。\n3. C——它会怎么坏：分布偏移时失效。\n"})
         ctx6.rs.stage("acquire")["status"] = "passed"
         ctx6.rs.stage("acquire")["input_hash"] = runner.fingerprint(ctx6, "acquire")
         _pass_handoffs(ctx6, "xray")

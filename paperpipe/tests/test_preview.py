@@ -41,7 +41,8 @@ def make_ctx(tmp, name="run"):
     ctx = RuntimeCtx(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                      rd, dict(DEFAULTS), rs)
     ctx.cfg["render"] = {"mode": "hyperframes", "cwd": "4-video/hf",
-                         "command": ["npx", "hyperframes", "render", "-o", "out.mp4"]}
+                         "command": ["npx", "hyperframes", "render", "-o", "out.mp4"],
+                         "sources": ["4-video/hf/compositions/**"]}
     return ctx
 
 def main():

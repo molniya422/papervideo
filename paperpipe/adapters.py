@@ -15,6 +15,7 @@ import json, os, re, shutil, subprocess
 import urllib.request, urllib.error
 
 from . import registry, receipts, handoff
+from . import schemas as _schemas
 from .util import atomic_write_text, atomic_write_json, env_summary, utcnow
 from .state import RunState
 
@@ -154,10 +155,10 @@ class IntakeAdapter(Adapter):
         txt = _read(ctx, "0-brief/design-intake.md")
         if not txt:
             return StageResult("failed", error=StageError("permanent", "design-intake.md 缺失"))
-        if "风格内核" not in txt:
-            raise_result = StageResult("waiting_for_human",
-                                       error=StageError("human", "缺一句话风格内核，请人工补"))
-            return raise_result
+        probs = _schemas.validate_text("design-intake.md", txt)
+        if probs:
+            return StageResult("waiting_for_human",
+                               error=StageError("human", "design-intake 谓词未过: " + "; ".join(probs)))
         return StageResult("passed")
 
 # ════════════════ brief ════════════════
@@ -191,9 +192,10 @@ class BriefAdapter(Adapter):
         txt = _read(ctx, "0-brief/brief.md") or ""
         if "<acceptance>" not in txt:
             return StageResult("failed", error=StageError("permanent", "brief 缺 <acceptance>"))
-        if "待 xray 产出机制点后回填" in txt:
+        probs = _schemas.validate_text("brief.md", txt)
+        if probs:
             return StageResult("waiting_for_agent",
-                               error=StageError("agent", "storyboard 未回填（xray 后由 agent 回填）"))
+                               error=StageError("agent", "brief 谓词未过（修后 resume）: " + "; ".join(probs)))
         return StageResult("passed")
 
 # ════════════════ acquire ════════════════
@@ -294,8 +296,10 @@ class XrayAdapter(Adapter):
             return StageResult("failed", error=StageError("permanent", "deep-read.md 缺失"))
         if "请按 paper-xray 技能完成" in txt:
             return StageResult("waiting_for_agent", error=StageError("agent", "deep-read.md 仍是骨架"))
-        if "机制点" not in txt:
-            return StageResult("waiting_for_agent", error=StageError("agent", "缺机制点清单"))
+        probs = _schemas.validate_text("deep-read.md", txt)
+        if probs:
+            return StageResult("waiting_for_agent", error=StageError("agent",
+                               "deep-read 谓词未过（修后 resume）: " + "; ".join(probs)))
         return StageResult("passed")
 
 # ════════════════ figures（waiting_for_agent） ════════════════
@@ -329,6 +333,68 @@ class FiguresAdapter(Adapter):
                                error=StageError("agent", "图解登记表为空（waiting_for_agent），需 agent 产出并登记"))
         return StageResult("passed", {"figures": len(rows)})
 
+    def check(self, ctx: RuntimeCtx) -> StageResult:
+        import json as _json
+        reg_ids = registry.skill_ids()
+        readme = _read(ctx, "3-figures/README.md") or ""
+        rows = [ln for ln in readme.splitlines()
+                if ln.strip().startswith("|") and not re.match(r"^[\s\-|]*$", ln.strip())]
+        rows = [ln for ln in rows if "对应机制点" not in ln]
+        if not rows:
+            return StageResult("waiting_for_agent", error=StageError("agent", "登记表为空（复验）"))
+        cwd = (ctx.cfg.get("render") or {}).get("cwd") or "4-video/hf"
+        for ln in rows:
+            cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+            if len(cells) >= 2 and cells[0] in ("图", "章", "ID", "No", "序号"):
+                continue  # 表头行（v5 用"章"，模板用"图"——按首列标记识别）
+            if len(cells) < 4:
+                return StageResult("failed", error=StageError("permanent", "登记表行列数<4: " + ln[:60]))
+            if not any(c in reg_ids for c in cells):
+                return StageResult("failed", error=StageError("permanent", "登记表行无已注册技能: " + ln[:60]))
+            cand = cells[-1]
+            if cand and not any(os.path.exists(ctx.out(x)) for x in
+                                (cand, cwd + "/" + cand, "4-video/hf/" + cand)):
+                return StageResult("failed", error=StageError("permanent", "登记表产物不存在: " + cand))
+        probs = []
+        for rel in ("3-figures/examples_spec.json", "3-figures/dataviz_spec.json", "3-figures/enriched_spec.json"):
+            fp2 = ctx.out(rel)
+            if os.path.exists(fp2):
+                try:
+                    data = _json.load(open(fp2, encoding="utf-8"))
+                except _json.JSONDecodeError as e:
+                    probs.append(rel.split("/")[-1] + ": JSON 损坏 " + str(e)); continue
+                pr = _schemas.validate_json(rel, data)
+                if rel.endswith("enriched_spec.json") and any("style_ref" in x for x in pr)                         and os.path.exists(ctx.out("3-figures/style_refs.json")):
+                    pr = [x for x in pr if "style_ref" not in x]  # 兼容口：style_refs.json 整体落章（v1 产物）
+                probs += [rel.split("/")[-1] + ": " + x for x in pr]
+        sp = ctx.out("3-figures", "shot_plan.json")
+        if not os.path.exists(sp):
+            probs.append("shot_plan.json 缺失（visual_planner 镜头规划层）")
+        else:
+            try:
+                spd = _json.load(open(sp, encoding="utf-8"))
+                probs += ["shot_plan: " + x for x in _schemas.validate_json("shot_plan.json", spd)]
+                for fl in (spd.get("pacing") or {}).get("flagged") or []:
+                    if isinstance(fl, dict) and not str(fl.get("decision") or "").strip():
+                        probs.append("shot_plan.flagged[%s] 缺导演裁定 decision" % fl.get("chapter"))
+            except _json.JSONDecodeError as e:
+                probs.append("shot_plan.json: JSON 损坏 " + str(e))
+        mm = ctx.out("3-figures", "model_manifest.json")
+        if os.path.exists(mm):
+            try:
+                probs += ["manifest: " + x for x in _schemas.validate_json(
+                    "model_manifest.json", _json.load(open(mm, encoding="utf-8")))]
+            except _json.JSONDecodeError as e:
+                probs.append("model_manifest.json: JSON 损坏 " + str(e))
+        else:
+            probs.append("model_manifest.json 缺失（model_builder 场景清单）")
+        if probs:
+            return StageResult("waiting_for_agent",
+                               error=StageError("agent", "figures 产物谓词未过（修后 resume）: " + "; ".join(probs[:6])))
+        return StageResult("passed")
+
+
+
 # ════════════════ render ════════════════
 class RenderAdapter(Adapter):
     name = "render"
@@ -358,8 +424,21 @@ class RenderAdapter(Adapter):
                    "就绪后重跑：`paperpipe resume` —— 渲染自动执行并按输入指纹缓存。\n")
             return StageResult("waiting_for_agent",
                                error=StageError("agent", "缺 4-video/narration.json（agent 产出 + humanize-writing receipt 后 resume 自动渲染）"))
+        try:
+            _nd = json.load(open(narration, encoding="utf-8"))
+        except Exception as e:
+            return StageResult("waiting_for_agent",
+                               error=StageError("agent", f"narration.json 解析失败: {e}"))
+        _nprobs = _schemas.validate_json("narration.json", _nd)
+        if _nprobs:
+            return StageResult("waiting_for_agent",
+                               error=StageError("agent", "narration.json 谓词未过（体检 P1-2，修后 resume）: "
+                                                + "; ".join(_nprobs[:4])))
         # 路线 D：render.mode=hyperframes —— 通用命令模式（执行器只跑命令+写 tool receipt+断言产物）
         if rcfg.get("mode") == "hyperframes" or rcfg.get("command"):
+            if not rcfg.get("sources"):
+                raise StageError("agent", "render.sources 未配置——指纹白名单为空会让源码改动不触发重渲（体检 C2）。"
+                                         "在 paperpipe.yaml render.sources 声明合成/资产/音频/字体 glob 后 resume")
             cmd = rcfg.get("command")
             if not cmd:
                 raise StageError("agent", "render.mode=hyperframes 需配置 render.command（如 npx hyperframes render -o …）")
@@ -392,15 +471,14 @@ class RenderAdapter(Adapter):
                 return StageResult("passed", {"mode": "hyperframes", "cached": True})
             # 渲染前人工预览门（hyperframes 路线）：预览包过审 + 分类意见全 resolved 才许渲成片
             from . import preview as _prev
-            pst = _prev.status(ctx)
-            if not pst["confirmed"]:
+            pok, preason = _prev.gate(ctx)
+            if not pok:
                 return StageResult(
                     "waiting_for_human",
                     error=StageError(
                         "human",
-                        f"渲染预览门未过：预览包{'未生成' if not pst['generated'] else '已生成未过审'}，"
-                        f"修改意见 open {pst['open']}/{pst['total']}。流程：python -m paperpipe preview → "
-                        "用户逐章审看 → revise add 登记意见 → 修复 → revise resolve → preview --confirm 过审"))
+                        "渲染预览门未过：" + preason + "。流程：python -m paperpipe preview → 用户逐章审看 → "
+                        "revise add 登记意见 → 修复 → revise resolve → preview --confirm 过审"))
             import time as _t
             t0 = _t.time()
             r = subprocess.run(run_cmd, capture_output=True, text=True, timeout=21600, cwd=cwd)
@@ -531,6 +609,30 @@ class QaAdapter(Adapter):
                 issues.append("响度字段不可解析")
         else:
             issues.append("未获得响度数据")
+        # 音画一致性四项（体检 P1-3）：时长差 / 容器偏移 / 码率下限 / 帧数一致
+        if v:
+            try:
+                vd = float(v.get("duration") or fmt.get("duration") or 0)
+                adur = float(a.get("duration") or fmt.get("duration") or 0) if a else vd
+                if vd > 0 and adur > 0 and abs(vd - adur) > 0.5:
+                    issues.append("音画时长差 %.2fs > 0.5s（音轨截断或垫底）" % abs(vd - adur))
+                vs0 = float(v.get("start_time") or 0)
+                as0 = float(a.get("start_time") or 0) if a else vs0
+                if abs(vs0 - as0) > 0.05:
+                    issues.append("容器级音画偏移 %.3fs > 0.05s" % abs(vs0 - as0))
+                br = int(fmt.get("bit_rate") or v.get("bit_rate") or 0)
+                if br and br < 500000 and vd >= 5:
+                    issues.append("总码率 %dkbps < 500kbps 下限（低码率花屏风险）" % (br // 1000))
+                nf = v.get("nb_frames")
+                try:
+                    _n, _d2 = (v.get("avg_frame_rate") or "0/1").split("/")
+                    fps_v = float(_n) / float(_d2 or 1)
+                except Exception:
+                    fps_v = 0.0
+                if nf and fps_v > 0 and vd > 0 and abs(int(nf) - vd * fps_v) > max(2, vd * fps_v * 0.01):
+                    issues.append("帧数不一致 nb_frames=%s vs duration×fps=%.0f" % (nf, vd * fps_v))
+            except (TypeError, ValueError):
+                pass
         if issues:
             return StageResult("failed", data={"issues": issues},
                                error=StageError("permanent", "QA 不达标: " + "; ".join(issues)))
@@ -619,10 +721,35 @@ class QaAdapter(Adapter):
         return StageResult("passed", {"checks": ["ffprobe", "streams", "specs", "faststart", "loudness",
                                                  "layout", "blackdetect", "freezedetect"]})
 
+    def check(self, ctx: RuntimeCtx) -> StageResult:
+        rep = ctx.out("5-video-final", "qa_report.json")
+        if not os.path.exists(rep):
+            return StageResult("waiting_for_agent", error=StageError("agent", "qa_report.json 缺失（复验）"))
+        try:
+            data = json.load(open(rep, encoding="utf-8"))
+        except Exception:
+            return StageResult("failed", error=StageError("permanent", "qa_report.json 损坏（复验）"))
+        if data.get("issues"):
+            return StageResult("failed", error=StageError("permanent", "qa_report 含未清 issues（复验）: "
+                                                          + "; ".join(map(str, data["issues"][:3]))))
+        if not os.path.exists(ctx.out("4-video", "final.mp4")):
+            return StageResult("failed", error=StageError("permanent", "final.mp4 缺失（passed 后被删？复验失败）"))
+        return StageResult("passed")
+
 # ════════════════ retrospective（waiting_for_human） ════════════════
 class RetroAdapter(Adapter):
     name = "retrospective"
     inputs_spec = ["4-video/final.mp4", "5-video-final/qa_report.json"]
+    def check(self, ctx: RuntimeCtx) -> StageResult:
+        retro = ctx.out("6-review", "retrospective.md")
+        lessons = ctx.out("6-review", "lessons.md")
+        if not os.path.exists(retro) or not os.path.exists(lessons):
+            return StageResult("waiting_for_human", error=StageError("human", "复盘文件缺失（复验）"))
+        rtxt = open(retro, encoding="utf-8").read()
+        for ph in ("待人工填写", "（填写）", "__/10"):
+            if ph in rtxt:
+                return StageResult("failed", error=StageError("permanent", "复盘占位符残留: " + ph + "（复验）"))
+        return StageResult("passed")
     def run(self, ctx: RuntimeCtx) -> StageResult:
         tpl_dir = ctx.out("6-review")
         os.makedirs(tpl_dir, exist_ok=True)
@@ -728,6 +855,15 @@ def validate_review(ctx: RuntimeCtx, compare_saved: bool = True) -> tuple[bool, 
 class PublishAdapter(Adapter):
     name = "publish"
     inputs_spec = ["4-video/final.mp4"]
+    def check(self, ctx: RuntimeCtx) -> StageResult:
+        pub = ctx.rs.data["publish"]
+        if pub.get("uploaded") and not pub.get("upload_ready"):
+            return StageResult("failed", error=StageError("permanent", "状态矛盾: uploaded 但未 upload_ready（复验）"))
+        if pub.get("upload_ready") and not ctx.rs.data["review"].get("confirmed"):
+            return StageResult("failed", error=StageError("permanent", "状态矛盾: upload_ready 但 review 未确认（复验）"))
+        if pub.get("upload_ready") and not _find_cover(ctx):
+            return StageResult("failed", error=StageError("permanent", "封面缺失（passed 后被删？复验）"))
+        return StageResult("passed")
     def run(self, ctx: RuntimeCtx) -> StageResult:
         pub = ctx.rs.data["publish"]
         ok, problems, _ = validate_review(ctx)

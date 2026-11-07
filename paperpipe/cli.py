@@ -320,6 +320,9 @@ def cmd_handoff(args):
                          ensure_ascii=False, indent=2))
         return
     # finish：start → submit_response → verify 一条命令闭环
+    if not args.response_file and not (args.note or "").strip():
+        sys.exit('finish 拒绝零内容回传（体检 P1）：需要 --response-file <json> 或 --note "一句话结论"'
+                 "——空壳 verdict:pass 不构成子智能体完成证据")
     outs = [p.strip().replace("\\", "/") for p in (args.output or "").split(",") if p.strip()]
     if not outs:
         sys.exit("finish 需要 --output p1,p2,...（相对 run 目录的产出路径）")
