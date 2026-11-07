@@ -388,6 +388,10 @@ class FiguresAdapter(Adapter):
                 probs.append("model_manifest.json: JSON 损坏 " + str(e))
         else:
             probs.append("model_manifest.json 缺失（model_builder 场景清单）")
+        tprobs = handoff.trace_check(ctx, "figures", [
+            "3-figures/examples_spec.json", "3-figures/dataviz_spec.json", "3-figures/style_refs.json",
+            "3-figures/enriched_spec.json", "3-figures/shot_plan.json", "3-figures/model_manifest.json"])
+        probs += ["溯源: " + x for x in tprobs]
         if probs:
             return StageResult("waiting_for_agent",
                                error=StageError("agent", "figures 产物谓词未过（修后 resume）: " + "; ".join(probs[:6])))
@@ -732,6 +736,10 @@ class QaAdapter(Adapter):
         if data.get("issues"):
             return StageResult("failed", error=StageError("permanent", "qa_report 含未清 issues（复验）: "
                                                           + "; ".join(map(str, data["issues"][:3]))))
+        tprobs = handoff.trace_check(ctx, "render", ["4-video/narration.json"])
+        if tprobs:
+            return StageResult("failed", error=StageError("permanent", "narration 溯源失败（复验）: "
+                                                          + "; ".join(tprobs)))
         if not os.path.exists(ctx.out("4-video", "final.mp4")):
             return StageResult("failed", error=StageError("permanent", "final.mp4 缺失（passed 后被删？复验失败）"))
         return StageResult("passed")

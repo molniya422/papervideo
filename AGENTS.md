@@ -22,6 +22,10 @@
   visual_planner 出镜头规划与 pacing 裁定（shot_plan.json），登记表由 aggregator 从规格自动生成；
   相机运镜与粒子**无数量配额**，每个动作过三问（看什么/说明什么/为何动）；
   关键标签用 lib3d `labels2d` 屏幕标注层（投影/避让/引线，可被 DOM 布局审计看见）。
+- **产物溯源强制（2026-11-07 起）**：3-figures/4-video 生产产物必须溯源到 passed handoff
+  的 output-manifest 哈希（`handoff.trace_check`），编排方手写产物一律被门拒绝；角色关联的
+  SKILL.md 在派发时注入并锁定哈希（agents.yaml skills 字段）。编排方三不：不手写生产产物、
+  不代干子智能体的活、不发布未溯源产物。
 - **QA 三验收分离（2026-11-03 起）**：技术验收（流/规格/faststart/响度/布局审计/黑帧/冻结帧，
   执行器真实执行——布局 error 曾被静默放行，已修）→ 内容验收（`content-mapping-review`
   receipt：数值→几何映射与轴刻度同基准，ch18 教训）→ 观看验收（带时间码问题清单，导演+用户）；

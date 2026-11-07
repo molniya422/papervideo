@@ -34,7 +34,9 @@ def make_ctx(tmp):
     return RuntimeCtx(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                       rd, dict(DEFAULTS), rs)
 
-def pass_role(ctx, stage, role):
+def pass_role(ctx, stage, role, payloads=None):
+    """模拟子智能体完成：创建信封 → 写产出（payloads 提供与真实产物同构的内容）→ 回传+核验。
+    溯源机制生效后，空壳 verdict JSON 会被产物谓词/trace_check 拦截——测试必须写真实结构。"""
     items = dispatch.plan(stage)
     idx = next(i for i, h in enumerate(items) if h["role"] == role) + 1
     hid = f"{ctx.rs.data['run_id']}-{stage}-{role}-{idx:02d}"
@@ -47,11 +49,14 @@ def pass_role(ctx, stage, role):
     handoff.create(ctx, hid, role, stage, h["task"], h.get("input_paths", []))
     handoff.start(ctx, hid)
     ops = [p.replace("<id>", hid) for p in h.get("output_paths", [])]
+    payloads = payloads or {}
     for op in ops:
         fp = ctx.out(op)
         os.makedirs(os.path.dirname(fp) or ".", exist_ok=True)
-        if not os.path.exists(fp):
-            atomic_write_text(fp, json.dumps({"verdict": "pass"}, ensure_ascii=False))
+        content = payloads.get(op, payloads.get(role, json.dumps({"verdict": "pass"}, ensure_ascii=False)))
+        if not os.path.exists(fp) or content:
+            atomic_write_text(fp, content if isinstance(content, str) else
+                              json.dumps(content, ensure_ascii=False))
     handoff.submit_response(ctx, hid, {"verdict": "pass"}, ops)
     handoff.verify(ctx, hid)
     return hid
@@ -143,9 +148,10 @@ def main():
         atomic_write_text(ctx3.out("3-figures/dataviz_spec.json"), json.dumps(
             [{"chapter": 0, "component": "bars3d", "values": [1], "labels": ["a"]}], ensure_ascii=False))
         res = runner.run_stage(ctx3, "figures")
-        check("figures 因 handoff 未完成 → waiting_for_agent", res == "waiting_for_agent", res)
+        check("figures 因产物未溯源 → waiting_for_agent（溯源先于 handoff 门）",
+              res == "waiting_for_agent", res)
         err = (ctx3.rs.stage("figures")["error"] or {}).get("message", "")
-        check("错误消息列明未完成角色（含 blocked_by）", "blocked_by" in err or "pending" in err, err[:120])
+        check("错误消息列明未溯源产物", "未溯源" in err, err[:120])
 
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

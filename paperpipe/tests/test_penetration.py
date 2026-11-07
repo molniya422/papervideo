@@ -80,8 +80,9 @@ def main():
         ctx.rs.stage("acquire")["status"] = "passed"
         ctx.rs.stage("acquire")["input_hash"] = fingerprint(ctx, "acquire")
         ctx.rs.stage("xray")["status"] = "passed"
-        atomic_write_text(ctx.out("3-figures/README.md"),
-                          "| 章 | 标题 | 形式 | 产物 |\n|---|---|---|---|\n| k1 | A | visual-explainer | 4-video/narration.json |")
+        P_VALID_README = ("| 章 | 标题 | 形式 | 产物 |\n|---|---|---|---|\n"
+                          "| k1 | A | visual-explainer | 4-video/narration.json |")
+        atomic_write_text(ctx.out("3-figures/README.md"), P_VALID_README)
         atomic_write_text(ctx.out("3-figures/shot_plan.json"), json.dumps(
             {"shots": [{"chapter": 0, "verdict": "pass"}], "pacing": {"flagged": []}}))
         atomic_write_text(ctx.out("3-figures/model_manifest.json"), json.dumps(
@@ -94,22 +95,34 @@ def main():
                                   "2. 单次回归——它会怎么坏：多目标场景中心坍缩。\n"
                                   "3. 端到端训练——它会怎么坏：定位与分类梯度互相打架。\n")
             res = R.run_stage(ctx, "figures")
-        # 六角色 handoff 全部过审（figures passed 的前提）
+        # 先写与真实产物同构的规格，再 pass_role（finish 记录当前哈希 → 溯源一致）
+        P_VALID = {
+            "3-figures/examples_spec.json": json.dumps(
+                {"examples": [{"chapter": 0, "mechanism": "M",
+                               "scene_desc": "三辆车在路口排成一行，相机从东南侧俯视",
+                               "narration_text": "示例", "is_3d": True, "objects": ["car"]}]}, ensure_ascii=False),
+            "3-figures/dataviz_spec.json": json.dumps(
+                [{"chapter": 0, "component": "bars3d", "values": [1], "labels": ["a"]}], ensure_ascii=False),
+            "3-figures/style_refs.json": json.dumps(
+                {"library": "cap", "enabled": True, "refs": []}, ensure_ascii=False),
+            "3-figures/enriched_spec.json": json.dumps(
+                {"enriched_scenes": [{"chapter": 0, "camera_path": [{"t": 0.2, "az": 0.3, "elv": 0.2, "r": 10}],
+                                      "objects": [{"fn": "carMesh"}], "style_ref": {"style_id": "A3"}}]},
+                ensure_ascii=False),
+            "3-figures/model_manifest.json": json.dumps(
+                {"scenes": [{"chapter": 0, "module_js": "x"}], "fidelity": {"envMap": True}}, ensure_ascii=False),
+            "3-figures/shot_plan.json": json.dumps(
+                {"shots": [{"chapter": 0, "verdict": "pass"}], "pacing": {"flagged": []}}, ensure_ascii=False),
+        }
+        for rel, content in P_VALID.items():
+            fp = ctx.out(rel)
+            os.makedirs(os.path.dirname(fp), exist_ok=True)
+            atomic_write_text(fp, content)
+        # 六角色 handoff 全部过审（figures passed 的前提）——真实内容随 finish 落 manifest
         from paperpipe.tests.test_dispatch import pass_role
         for role in ("example_writer", "data_viz_builder", "style_director",
                      "spec_enricher", "model_builder", "visual_planner"):
-            pass_role(ctx, "figures", role)
-        # pass_role 的通用回传是空壳——谓词会拦，回填与真实产物同构的规格
-        atomic_write_text(ctx.out("3-figures/examples_spec.json"), json.dumps(
-            {"examples": [{"chapter": 0, "mechanism": "M", "scene_desc": "三辆车在路口排成一行，相机从东南侧俯视",
-                           "narration_text": "示例", "is_3d": True, "objects": ["car"]}]}, ensure_ascii=False))
-        atomic_write_text(ctx.out("3-figures/dataviz_spec.json"), json.dumps(
-            [{"chapter": 0, "component": "bars3d", "values": [1], "labels": ["a"]}], ensure_ascii=False))
-        atomic_write_text(ctx.out("3-figures/enriched_spec.json"), json.dumps(
-            {"enriched_scenes": [{"chapter": 0, "camera_path": [{"t": 0.2, "az": 0.3, "elv": 0.2, "r": 10}],
-                                  "objects": [{"fn": "carMesh"}], "style_ref": {"style_id": "A3"}}]}, ensure_ascii=False))
-        atomic_write_text(ctx.out("3-figures/model_manifest.json"), json.dumps(
-            {"scenes": [{"chapter": 0, "module_js": "x"}], "fidelity": {"envMap": True}}, ensure_ascii=False))
+            pass_role(ctx, "figures", role, payloads=P_VALID)
         # 未触发的条件技能一律显式 route-decision（verify_stage 设计纪律）
         from paperpipe import registry as RG
         for entry in RG.conditional_skills("figures"):
@@ -122,6 +135,17 @@ def main():
         atomic_write_text(ctx.out("3-figures/README.md"), "# 空登记\n")  # 通过后清空
         res = R.run_stage(ctx, "figures")
         check("缓存复验发现登记表被清 → 重跑拦下（不得 passed）", res == "waiting_for_agent", res)
+
+        print("X9 通过后篡改产物内容 → 溯源拦截")
+        # 恢复登记表，但篡改 examples_spec 内容（哈希 ≠ handoff 核验值）
+        atomic_write_text(ctx.out("3-figures/README.md"), P_VALID_README)
+        tampered = json.loads(P_VALID["3-figures/examples_spec.json"])
+        tampered["examples"][0]["narration_text"] = "被编排方悄悄改过的句子"
+        atomic_write_text(ctx.out("3-figures/examples_spec.json"), json.dumps(tampered, ensure_ascii=False))
+        res = R.run_stage(ctx, "figures")
+        err = (ctx.rs.stage("figures").get("error") or {}).get("message", "")
+        check("篡改产物 → 溯源拦截（不得 passed）", res == "waiting_for_agent" and "不一致" in err,
+              res + " | " + err[:120])
 
         print("X4 receipt 输入被改 → 凭据过期")
         ctx = make_ctx(tmp, "x4")

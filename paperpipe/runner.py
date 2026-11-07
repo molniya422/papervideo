@@ -135,6 +135,8 @@ def run_stage(ctx: RuntimeCtx, name: str) -> str:
                     st = rs.stage(name)
                     st["input_hash"] = fp
                     rs.save()
+                    st["attempts"] = 0
+                    rs.save()
                     rs.set_status(name, "waiting_for_agent",
                                   {"class": "agent", "message": "子智能体 handoff 未完成: " + "; ".join(hbad)})
                     return "waiting_for_agent"
@@ -145,6 +147,8 @@ def run_stage(ctx: RuntimeCtx, name: str) -> str:
                         log(rs, "warn", name, "receipt_missing", message=p)
                     st = rs.stage(name)
                     st["input_hash"] = fp
+                    rs.save()
+                    st["attempts"] = 0
                     rs.save()
                     rs.set_status(name, "waiting_for_agent",
                                   {"class": "agent", "message": "技能凭据缺失: " + "; ".join(rproblems)})
@@ -158,6 +162,7 @@ def run_stage(ctx: RuntimeCtx, name: str) -> str:
             if final.status in ("waiting_for_agent", "waiting_for_human"):
                 st = rs.stage(name)
                 st["input_hash"] = fp if final.status == "waiting_for_agent" else st["input_hash"]
+                st["attempts"] = 0   # waiting 不是失败——resume 必须有全新重试预算（X9 教训）
                 rs.save()
                 errd = {"cls": final.error.cls, "message": final.error.message} if final.error else None
                 rs.set_status(name, final.status, errd)

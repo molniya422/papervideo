@@ -54,7 +54,24 @@ def create(ctx, handoff_id: str, role: str, stage: str, task: str,
         "system_prompt_file": prompt_path or None,
         "system_prompt": prompt_text or None,
         "created_at": utcnow(), "state": "pending"})
-    atomic_write_json(os.path.join(d, "input-manifest.json"), _manifest(ctx, input_paths))
+    # 层2 技能随派发注入（体检三层机制）：角色关联的 SKILL.md 哈希进 input-manifest，
+    # request.required_reading 列出必读技能——"读没读技能"成为可审计事实。
+    req_read = []
+    im = _manifest(ctx, input_paths)
+    for sid in (agent_meta.get("skills") or []):
+        sp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          ".zcode", "skills", sid, "SKILL.md")
+        if os.path.isfile(sp):
+            key = "skill:" + sid
+            im[key] = sha256_file(sp)
+            req_read.append({"skill": sid, "path": ".zcode/skills/%s/SKILL.md" % sid,
+                             "sha256": im[key]})
+    atomic_write_json(os.path.join(d, "input-manifest.json"), im)
+    if req_read:
+        rq_p = os.path.join(d, "request.json")
+        rq = json.load(open(rq_p, encoding="utf-8"))
+        rq["required_reading"] = req_read
+        atomic_write_json(rq_p, rq)
     _set_state(d, "pending")
     return os.path.join("handoffs", handoff_id)
 
@@ -109,6 +126,42 @@ def verify(ctx, handoff_id: str) -> tuple[bool, list, list]:
                         note=f"handoff verified @ {utcnow()}")
     _set_state(d, "passed")
     return True, [], outputs
+
+def trace_check(ctx, stage: str, artifacts: list) -> list:
+    """层1 溯源谓词（2026-11-07）：生产产物必须溯源到最近一个 passed handoff 的 output-manifest 哈希。
+    编排方手写产物 / 子智能体交件后被改 → 都在这里现形。返回问题列表。"""
+    problems = []
+    d = ctx.out("handoffs")
+    for rel in artifacts:
+        ap = ctx.out(rel)
+        if not os.path.exists(ap):
+            continue  # 存在性由 schemas/check 负责
+        best = None
+        if os.path.isdir(d):
+            for hid in sorted(os.listdir(d)):
+                st_p = os.path.join(d, hid, "state.json")
+                om_p = os.path.join(d, hid, "output-manifest.json")
+                if not (os.path.isfile(st_p) and os.path.isfile(om_p)):
+                    continue
+                try:
+                    if json.load(open(st_p, encoding="utf-8")).get("state") != "passed":
+                        continue
+                    om = json.load(open(om_p, encoding="utf-8"))
+                except Exception:
+                    continue
+                if not isinstance(om, dict):
+                    continue
+                h = om.get(rel)
+                if h is None:
+                    k = next((k for k in om if k.endswith("/" + rel) or rel.endswith(k)), None)
+                    h = om.get(k) if k else None
+                if h:
+                    best = (hid, h)   # 字典序最大 = 最近
+        if best is None:
+            problems.append(rel + " 未溯源到任何 passed handoff（编排方手写产物？必须派发子智能体）")
+        elif sha256_file(ap) != best[1]:
+            problems.append(rel + " 与 handoff 核验哈希不一致（事后篡改？重派或重新 finish）")
+    return problems
 
 def get_state(ctx, handoff_id: str) -> str:
     return json.load(open(os.path.join(_dir(ctx, handoff_id), "state.json"), encoding="utf-8"))["state"]

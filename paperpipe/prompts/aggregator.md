@@ -23,7 +23,7 @@
 1. `hf/index.html` —— 根合成（全部章宿主 + captions 宿主 + audio，无 SFX 双发）
 2. `hf/compositions/ch00.html ~ ch21.html` —— 每章子合成
 3. `hf/compositions/captions.html` —— 全片字幕宿主（data-track-kind=captions）
-4. `4-video/narration.json` —— 逐句字幕时间轴
+4. （narration.json 已移交 narration_editor——你只负责 captions 宿主与 index 时间轴外壳）
 
 ## 汇总规则
 
@@ -33,7 +33,8 @@
 3. **时间轴连续**：第 N 章 end == 第 N+1 章 start（拍点对齐，全为 2s 整数倍）。
 4. **转场轮换**：5 种 opener（scale/shutter/explode/whip/iris）按 TRANSITIONS 表分配，相邻不重复。
 5. **字幕逐句**：每条字幕一个 `<div class="cap clip">`，data-start/data-duration 精确到 0.01s。
-6. **narration.json**：shots[].sentences[] 每句含 text/start/seconds/audio(null)；章节时间与 index.html 一致。
+6. **narration.json 归 narration_editor**：你把 enriched_spec 的 narration_cues 原样可读地留在
+   3-figures/enriched_spec.json（不改写不丢失），时间轴写入由 narration_editor handoff 完成。
 
 ## 铁律
 

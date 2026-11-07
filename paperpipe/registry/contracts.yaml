@@ -347,7 +347,13 @@ stages:
       - role: aggregator
         task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检；自动生成 3-figures/README.md 登记表（从规格合成）；如有 Blender 帧序列以视频层合入
         input_paths: ["3-figures/model_manifest.json", "3-figures/enriched_spec.json"]
-        output_paths: ["4-video/hf/index.html", "4-video/narration.json", "4-video/hf/compositions/captions.html", "3-figures/README.md"]
+        output_paths: ["4-video/hf/index.html", "4-video/hf/compositions/captions.html", "3-figures/README.md"]
+      - role: narration_editor
+        task: 旁白文本 humanize 六条清洗 + narration.json 唯一写窗口——start/seconds 原样取自
+          enriched_spec 的 narration_cues 拍点（单源），audio 恒 null；schema 谓词由执行器校验
+        input_paths: ["3-figures/enriched_spec.json", "2-xray/deep-read.md", "0-brief/brief.md"]
+        output_paths: ["4-video/narration.json"]
+        depends_on: [aggregator]
 
   qa:
     requires: [render]
@@ -383,6 +389,19 @@ stages:
     machine_gate: 三验收分离——技术验收（流/规格/faststart/响度/布局审计/黑帧/冻结帧，执行器真实执行）任一不达标 → failed_permanent；内容验收（content-mapping-review receipt）缺失 → waiting_for_agent；布局审计存在 content_overlap/container_overflow error → failed_permanent（零遮挡硬门槛）；观看验收（带时间码问题清单）由导演与用户完成，不进机器门
     human_gate: 人眼抽帧（首帧/转场/最密/末帧）+ 听审
     subagents: [technical_qa, visual_qa]
+    handoff_plan:
+      - role: technical_qa
+        task: 技术验收复检+补测（音画一致性/结尾三秒/seek 一致性）——报告 5-video-final/technical_qa.md，
+          每项 PASS/FAIL+命令+实测值
+        input_paths: ["4-video/final.mp4", "5-video-final/qa_report.json"]
+        output_paths: ["5-video-final/technical_qa.md"]
+        depends_on: []
+      - role: visual_qa
+        task: 观看验收——带时间码问题清单（六类：前2秒/章首3秒/标签可读/注意力竞争/节奏/解释闭环），
+          每条含"观众会怎么误解"；报告 5-video-final/visual_qa.md
+        input_paths: ["4-video/final.mp4", "3-figures/shot_plan.json"]
+        output_paths: ["5-video-final/visual_qa.md"]
+        depends_on: []
 
   retrospective:
     requires: [qa]
