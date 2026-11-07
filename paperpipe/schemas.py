@@ -191,8 +191,25 @@ def v_brief(txt: str) -> list:
             p.append(f"占位符残留: {bad}")
     return p
 
+def v_technical_qa(txt: str) -> list:
+    p = []
+    if "[PASS]" not in txt and "[FAIL]" not in txt:
+        p.append("缺 [PASS]/[FAIL] 判定行（每项必须带判定+命令+实测值）")
+    if "ffprobe" not in txt and "ffmpeg" not in txt:
+        p.append("缺实测命令证据（ffprobe/ffmpeg 原文）")
+    return p
+
+def v_visual_qa(txt: str) -> list:
+    p = []
+    if not re.search(r"\[\d{2}:\d{2}", txt):
+        p.append("问题清单缺时间码（每条必须 [mm:ss-ss] 起止）")
+    if "误解" not in txt:
+        p.append("缺『观众会怎么误解』栏（观看验收核心）")
+    return p
+
 TEXT_BY_NAME = [
     ("deep-read.md", v_deep_read), ("design-intake.md", v_design_intake), ("brief.md", v_brief),
+    ("technical_qa.md", v_technical_qa), ("visual_qa.md", v_visual_qa),
 ]
 
 def validate_text(path: str, txt: str) -> list:

@@ -732,6 +732,17 @@ class QaAdapter(Adapter):
         if cprobs:
             return StageResult("waiting_for_agent", error=StageError(
                 "agent", "qa 已触发条件技能产物缺失（复验）: " + "; ".join(cprobs)))
+        for rel in ("5-video-final/technical_qa.md", "5-video-final/visual_qa.md"):
+            fp2 = ctx.out(rel)
+            if os.path.exists(fp2):
+                probs2 = _schemas.validate_text(rel, open(fp2, encoding='utf-8').read())
+                if probs2:
+                    return StageResult("waiting_for_agent", error=StageError(
+                        "agent", rel.split("/")[-1] + " 谓词未过: " + "; ".join(probs2)))
+        tprobs = handoff.trace_check(ctx, "qa", ["5-video-final/technical_qa.md", "5-video-final/visual_qa.md"])
+        if tprobs:
+            return StageResult("waiting_for_agent", error=StageError(
+                "agent", "qa 报告溯源失败: " + "; ".join(tprobs)))
         rep = ctx.out("5-video-final", "qa_report.json")
         if not os.path.exists(rep):
             return StageResult("waiting_for_agent", error=StageError("agent", "qa_report.json 缺失（复验）"))

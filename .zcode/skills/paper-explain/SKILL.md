@@ -38,6 +38,7 @@ version: 3.0.0
 | 画机制图 | mechanism-figure | figures / figures | `paper-xray` + **一个**主图解技能（按内容形态二选一） |
 | 做快速视频 | quick-video | video / qa | `knowledge-explainer-skill`（路线 A） |
 | 做定制视频 | custom-video | publish / publish | `remotion-video`（路线 C，默认） |
+| 一键出片/跑全流程/重做 | one-shot-video | publish / publish | `/paper-video` 指令（hyperframes 主路径 + 预览门） |
 | 做组会分享 | seminar-slides | video / qa | `paper-to-beamer` + `paper-slides-to-video`（路线 B） |
 | 已有 HTML 动画转视频 | html-to-video | video / qa | `hyperframes`（路线 D） |
 | 只要封面 | cover-only | — | `paper-video-cover`（不建整条流水线） |
