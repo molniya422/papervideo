@@ -170,6 +170,27 @@ def verify_stage(ctx, stage: str) -> list:
                     problems.append(f"receipt {fn} 的输入已变更（凭据过期）: {ip}——重跑该技能再 resume")
     return problems
 
+def verify_chosen_artifacts(ctx, stage: str) -> list:
+    """Round 2 通用谓词：条件技能已触发（passed receipt）→ required_output 必须真实存在。
+    覆盖 contracts 中全部"已触发但产物无谓词"的声明（体检 Round 2 盘点 23 条）。"""
+    import glob as _g
+    problems = []
+    for entry in registry.stage_contract(stage).get("conditional_skills", []) or []:
+        sid = entry["skill"]
+        if not any(r.get("status") == "passed" for r in skill_receipts(ctx, stage, sid)):
+            continue
+        req = entry.get("required_output") or ""
+        for token in re.findall(r"([\w./\-*{}]+\.(?:json|md|mp4|png|html|wav))", req):
+            if token.startswith("receipts/"):
+                continue
+            pat = token.replace("{chapter}", "*").replace("<chapter>", "*")
+            full = ctx.out(pat)
+            hits = _g.glob(full, recursive=True) if any(c in pat for c in "*?[") else (
+                [full] if os.path.exists(full) else [])
+            if not hits:
+                problems.append(f"{sid} 已触发但产物缺失: {token}")
+    return problems
+
 def list_tool_receipts(ctx, stage: str, tool: str) -> list:
     """列出某阶段某工具的全部 tool receipt（供幂等缓存判断）。"""
     d = ctx.out("receipts", "tools")

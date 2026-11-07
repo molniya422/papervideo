@@ -388,6 +388,8 @@ class FiguresAdapter(Adapter):
                 probs.append("model_manifest.json: JSON 损坏 " + str(e))
         else:
             probs.append("model_manifest.json 缺失（model_builder 场景清单）")
+        cprobs = receipts.verify_chosen_artifacts(ctx, "figures")
+        probs += ["触发产物: " + x for x in cprobs]
         tprobs = handoff.trace_check(ctx, "figures", [
             "3-figures/examples_spec.json", "3-figures/dataviz_spec.json", "3-figures/style_refs.json",
             "3-figures/enriched_spec.json", "3-figures/shot_plan.json", "3-figures/model_manifest.json"])
@@ -726,6 +728,10 @@ class QaAdapter(Adapter):
                                                  "layout", "blackdetect", "freezedetect"]})
 
     def check(self, ctx: RuntimeCtx) -> StageResult:
+        cprobs = receipts.verify_chosen_artifacts(ctx, "qa")
+        if cprobs:
+            return StageResult("waiting_for_agent", error=StageError(
+                "agent", "qa 已触发条件技能产物缺失（复验）: " + "; ".join(cprobs)))
         rep = ctx.out("5-video-final", "qa_report.json")
         if not os.path.exists(rep):
             return StageResult("waiting_for_agent", error=StageError("agent", "qa_report.json 缺失（复验）"))

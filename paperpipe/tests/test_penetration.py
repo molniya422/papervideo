@@ -132,6 +132,15 @@ def main():
         res = R.run_stage(ctx, "figures")
         check("figures passed（六 handoff 过审 + 谓词合格）", res == "passed",
               res + " | " + json.dumps(ctx.rs.stage("figures").get("error"), ensure_ascii=False)[:260])
+
+        print("X10 已触发条件技能但产物缺失 → 拦截")
+        from paperpipe import receipts as _RC
+        from paperpipe.adapters import FiguresAdapter
+        _RC.write_skill_receipt(ctx, "figures", "blender-visual", "high_fidelity_chapter",
+                                ["3-figures/README.md"], agent_id="test")  # 声称触发但无 blender 产物
+        res = FiguresAdapter().check(ctx)
+        check("blender 已触发但帧序列缺失 → 拦截", res.status == "waiting_for_agent"
+              and "blender" in (res.error.message if res.error else ""), str(res.status))
         atomic_write_text(ctx.out("3-figures/README.md"), "# 空登记\n")  # 通过后清空
         res = R.run_stage(ctx, "figures")
         check("缓存复验发现登记表被清 → 重跑拦下（不得 passed）", res == "waiting_for_agent", res)

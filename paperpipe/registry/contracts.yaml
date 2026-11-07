@@ -237,7 +237,7 @@ stages:
         on_fail: waiting_for_human（等导演过审风格帧）
         optional: true
     outputs: [3-figures/README.md, 3-figures/shot_plan.json]
-    machine_gate: 登记表非空且每行含技能与产物路径；shot_plan.json 存在且 flagged 段有导演裁定记录；handoff example_writer+data_viz_builder+model_builder 均 passed
+    machine_gate: 登记表非空且每行含已注册技能与真实存在产物；六角色 handoff 全 passed 且产物溯源一致（trace_check）；shot_plan.json 存在且 flagged 段有导演裁定记录；已触发条件技能产物存在
     human_gate: 图解文案与隐喻 + 三张风格帧小样门（导演过审后才许批量生成章节）
     subagents: [example_writer, data_viz_builder, style_director, spec_enricher, model_builder, visual_planner]
     handoff_plan:
