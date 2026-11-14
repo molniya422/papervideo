@@ -78,8 +78,8 @@ remotion-studio/
    （`DataTexture` 必须设 `colorSpace = SRGBColorSpace`）、曲线是否锚定基线，再全片渲染。
 7. **抽帧验收**：按 20–30 秒抽帧，检查字幕随句切换、无遮挡、进度条一致；再量响度。
 
-参考实现：`remotion-studio/src/ai-paper/`（10 镜头 / 5 分 29 秒 / 1080p），
-说明见同目录 `HANDOFF.md`；旧版 `src/paper-attention/` 保留作对照。
+参考实现：`remotion-studio/src/ai-paper/`（10 镜头 / 5 分 29 秒 / 1080p）；
+旧版 `src/paper-attention/` 保留作对照。
 
 ## 与论文讲解工作流的关系
 

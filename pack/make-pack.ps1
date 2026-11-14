@@ -2,7 +2,7 @@
 # Produces TWO artifacts with separated responsibilities:
 #   1) paper-explain-skills-pack.zip  - skills pack: skills/ + WORKFLOW.md + design-picker.html + manifest + INSTALL.md
 #      (does NOT contain paperpipe; makes no executor claims)
-#   2) papervideo-workspace-pack.zip  - workspace pack: paperpipe/ + skills/ + docs + baseline report
+#   2) papervideo-workspace-pack.zip  - workspace pack: paperpipe/ + skills/ + docs
 #      (verified by running `python -X utf8 -m paperpipe --help` and `validate` in a temp dir)
 # Self-checks: local<->manifest bidirectional diff; SKILL.md present per skill;
 # exclude __pycache__/*.pyc; re-read zip entries after compression.
@@ -105,7 +105,7 @@ function Verify-Zip($zipPath, $expect) {
   } finally { $z.Dispose() }
 }
 Verify-Zip $SkillsZip @("skills/anatomy/SKILL.md", "skills/paper-explain/SKILL.md", "WORKFLOW.md")
-Verify-Zip $WorkspaceZip @("paperpipe/__init__.py", "paperpipe/registry/contracts.yaml", "WORKFLOW-MAP.md", "docs/baseline-2026-10-31.md")
+Verify-Zip $WorkspaceZip @("paperpipe/__init__.py", "paperpipe/registry/contracts.yaml", "WORKFLOW-MAP.md")
 Write-Host "Check2 OK: zip re-read complete"
 
 # -- Check 3: workspace pack runs in a temp dir (-X utf8 avoids GBK console issues) --

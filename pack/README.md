@@ -4,7 +4,7 @@
 
 ## 1. 技能包 `paper-explain-skills-pack.zip`（装技能，不含执行器）
 
-内容：`skills/`（66 个技能）+ `WORKFLOW.md`（流程总纲）+ `design-picker.html`（风格选择器）+ `paper-explain-skills-pack.json`（清单）+ `INSTALL.md`（本说明副本）。
+内容：`skills/`（74 个技能）+ `WORKFLOW.md`（流程总纲）+ `design-picker.html`（风格选择器）+ `paper-explain-skills-pack.json`（清单）+ `INSTALL.md`（本说明副本）。
 
 **不含 `paperpipe/`，不承诺可以直接运行执行器。** 装完即用技能方法论；
 要跑状态机请改用工作区包。
@@ -28,7 +28,7 @@ edge-tts / ffmpeg / MinerU（可选，需 GPU）。工作区包之外没有 Remo
 ## 2. 工作区包 `papervideo-workspace-pack.zip`（技能 + 执行器 + 文档）
 
 内容：`paperpipe/`（Python ≥3.10，零第三方依赖）+ `skills/` + `WORKFLOW.md` +
-`WORKFLOW-MAP.md`（组件地图）+ `AGENTS.md` + `README.md` + `docs/`（基线报告）+ 清单。
+`WORKFLOW-MAP.md`（组件地图）+ `AGENTS.md` + `README.md` + `docs/`+ 清单。
 
 在工作区根（即 paperpipe 的上级目录）执行：
 
@@ -47,13 +47,13 @@ python -X utf8 -m paperpipe publish --dry-run | --confirm <run_id>   # 双门
 
 ## 打包脚本自检（make-pack.ps1 v2）
 
-1. 本地 ↔ manifest **双向差集**；每个技能有 SKILL.md；manifest.count 一致（66）；
+1. 本地 ↔ manifest **双向差集**；每个技能有 SKILL.md；manifest.count 一致（74）；
 2. 排除 `__pycache__/ *.pyc / node_modules / *.mp4 / *.pdf / *.wav`；
 3. **zip 回读**：条目齐全、技能数一致、无排除物；
 4. 工作区包在临时目录解压后跑 `python -X utf8 -m paperpipe --help` 与 `validate --target md`。
 
 ## 清单
 
-- **66 个技能**（paperpipe/registry/skills.yaml 为技能注册表的唯一事实源，本 manifest 与其双向校验）
+- **74 个技能**（paperpipe/registry/skills.yaml 为技能注册表的唯一事实源，本 manifest 与其双向校验）
 - 路由表/阶段合同/子智能体角色：`paperpipe/registry/{routes,contracts,agents}.yaml`（工作区包）
 - 文档职责：`WORKFLOW.md` 流程权威 · `WORKFLOW-MAP.md` 组件地图 · `AGENTS.md` 入口规则 · 本文件只描述发行物

@@ -531,7 +531,7 @@ $FF -i raw.mp4 -c:v libx264 -preset slow -profile:v high \
 含：输入/产物哈希、尝试计数、transient 指数退避重试、文件锁、`.partial` 原子写、
 `run.log.jsonl` 事件日志、状态文件内 audit trail、按输入哈希的幂等续跑。
 **legacy**：旧 schema（paperpipe-state/1、/2）的 run 冻结只读（status 打 LEGACY 标记），
-resume/retry/publish 拒绝，重建用 `init --force`（见 docs/baseline-2026-10-31.md §4）。
+resume/retry/publish 拒绝，重建用 `init --force`。
 
 ### 命令
 

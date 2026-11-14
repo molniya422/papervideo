@@ -182,7 +182,7 @@ papervideo/
 ├── paperpipe/              # 执行器（9 阶段 DAG / 8 状态机 / receipts 凭据 / registry/*.yaml 唯一事实源）
 ├── assets/lib3d/           # 3D 规范源（lib3d.js 唯一事实源 + three.js vendor + _3dentry.build.js 构建配方）
 ├── engines/                # 引擎检出（不入库；按 docs/REFERENCED-REPOS.md 克隆恢复）
-├── docs/                   # 体检报告（workflow-audit-*.md）与引用仓库清单（REFERENCED-REPOS.md）
+├── docs/                   # 引用仓库清单（REFERENCED-REPOS.md）与选择器截图
 ├── WORKFLOW.md             # 工作流总纲（阶段/产物/门槛/排查）
 ├── WORKFLOW-MAP.md         # 组件地图（有什么/怎么做/具体路径速查）
 ├── design-picker.html      # 可视化风格选择器（单文件，61 决策维度·九区）

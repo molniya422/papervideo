@@ -20,3 +20,4 @@ __pycache__/
 
 # 临时素材下载目录
 .tmp-assets/
+.zcode/config.json
