@@ -1,0 +1,191 @@
+"""paperpipe.handoff — 子智能体交接信封（任务 4）。
+
+每个 handoff 一个目录：handoffs/<handoff_id>/
+  request.json          # 角色、阶段、任务说明、输出要求
+  input-manifest.json   # {相对路径: sha256} 输入快照（防止读的过程中输入漂移）
+  state.json            # pending → running → waiting_for_review → passed/failed
+  response.json         # 子智能体回传（结构化结论，不是自然语言聊天）
+  output-manifest.json  # {相对路径: sha256} 产出清单
+  failure.json          # 失败原因（failed 时）
+
+纪律：整合方把 response 转成标准产物并写 receipts/agents/<id>.json；
+不得把子智能体的自然语言回复直接当阶段通过。
+"""
+from __future__ import annotations
+import json, os, re
+
+from . import registry
+from .util import atomic_write_json, utcnow, sha256_file
+
+HANDOFF_SCHEMA = "paperpipe-handoff/1"
+STATES = ("pending", "running", "waiting_for_review", "passed", "failed")
+
+def _dir(ctx, handoff_id: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", handoff_id):
+        raise ValueError(f"非法 handoff_id: {handoff_id}")
+    d = ctx.out("handoffs", handoff_id)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+def _manifest(ctx, paths: list) -> dict:
+    from .util import safe_rel_path
+    out = {}
+    for p in paths:
+        rel = safe_rel_path(ctx.run_dir, p)   # 绝对路径/越界 → ValueError（Round 7 加固）
+        ap = ctx.out(rel)
+        if os.path.isfile(ap):
+            out[rel.replace("\\", "/")] = sha256_file(ap)
+    return out
+
+def create(ctx, handoff_id: str, role: str, stage: str, task: str,
+           input_paths: list, output_requirement: dict | None = None) -> str:
+    if role not in registry.agent_roles():
+        raise ValueError(f"未注册的子智能体角色: {role}（见 registry/agents.yaml）")
+    d = _dir(ctx, handoff_id)
+    # 系统提示词：从注册表解析 prompt 文件路径，内联到 request.json
+    agent_meta = next((a for a in registry.agents() if a["id"] == role), {})
+    prompt_path = agent_meta.get("system_prompt")
+    prompt_text = ""
+    if prompt_path:
+        pp = os.path.join(os.path.dirname(os.path.abspath(__file__)), prompt_path)
+        if os.path.isfile(pp):
+            prompt_text = open(pp, encoding="utf-8").read()
+    atomic_write_json(os.path.join(d, "request.json"), {
+        "schema": HANDOFF_SCHEMA, "handoff_id": handoff_id, "role": role, "stage": stage,
+        "task": task, "output_requirement": output_requirement or {},
+        "system_prompt_file": prompt_path or None,
+        "system_prompt": prompt_text or None,
+        "created_at": utcnow(), "state": "pending"})
+    # 层2 技能随派发注入（体检三层机制）：角色关联的 SKILL.md 哈希进 input-manifest，
+    # request.required_reading 列出必读技能——"读没读技能"成为可审计事实。
+    req_read = []
+    im = _manifest(ctx, input_paths)
+    for sid in (agent_meta.get("skills") or []):
+        sp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          ".zcode", "skills", sid, "SKILL.md")
+        if os.path.isfile(sp):
+            key = "skill:" + sid
+            im[key] = sha256_file(sp)
+            req_read.append({"skill": sid, "path": ".zcode/skills/%s/SKILL.md" % sid,
+                             "sha256": im[key]})
+    atomic_write_json(os.path.join(d, "input-manifest.json"), im)
+    if req_read:
+        rq_p = os.path.join(d, "request.json")
+        rq = json.load(open(rq_p, encoding="utf-8"))
+        rq["required_reading"] = req_read
+        atomic_write_json(rq_p, rq)
+    _set_state(d, "pending")
+    return os.path.join("handoffs", handoff_id)
+
+def start(ctx, handoff_id: str) -> None:
+    d = _dir(ctx, handoff_id)
+    _set_state(d, "running")
+
+def submit_response(ctx, handoff_id: str, response: dict, output_paths: list) -> None:
+    """子智能体回传结构化结论 + 产出清单；状态转 waiting_for_review（等整合方核验）。
+    产出路径必须为运行目录相对（绝对路径/越界 → FileNotFoundError，Round 7 加固）。"""
+    from .util import safe_rel_path
+    d = _dir(ctx, handoff_id)
+    try:
+        rels = [safe_rel_path(ctx.run_dir, p) for p in output_paths] if output_paths else []
+    except ValueError as e:
+        fail(ctx, handoff_id, f"产出路径非法: {e}")   # 越界/绝对路径也必须留失败痕
+        raise
+    atomic_write_json(os.path.join(d, "response.json"), {
+        "schema": HANDOFF_SCHEMA, "handoff_id": handoff_id,
+        "response": response, "submitted_at": utcnow()})
+    missing = [p for p in rels if not os.path.exists(ctx.out(p))]
+    if missing:
+        fail(ctx, handoff_id, f"声明的产出不存在: {missing}")
+        raise FileNotFoundError(f"声明的产出不存在: {missing}")
+    atomic_write_json(os.path.join(d, "output-manifest.json"), _manifest(ctx, rels))
+    _set_state(d, "waiting_for_review")
+
+def fail(ctx, handoff_id: str, reason: str) -> None:
+    d = _dir(ctx, handoff_id)
+    atomic_write_json(os.path.join(d, "failure.json"), {"reason": reason, "failed_at": utcnow()})
+    _set_state(d, "failed")
+
+def verify(ctx, handoff_id: str) -> tuple[bool, list, list]:
+    """整合方核验：response 存在、output-manifest 哈希与磁盘一致。
+    通过 → 写 receipts/agents/<id>.json，状态 passed。返回 (ok, problems, outputs)。"""
+    d = _dir(ctx, handoff_id)
+    req = json.load(open(os.path.join(d, "request.json"), encoding="utf-8"))
+    problems, outputs = [], []
+    resp_p = os.path.join(d, "response.json")
+    om_p = os.path.join(d, "output-manifest.json")
+    if not os.path.exists(resp_p):
+        problems.append("response.json 缺失（子智能体未回传）")
+    if not os.path.exists(om_p):
+        problems.append("output-manifest.json 缺失")
+    if not problems:
+        om = json.load(open(om_p, encoding="utf-8"))
+        for p, h in om.items():
+            ap = ctx.out(p)
+            if not os.path.exists(ap):
+                problems.append(f"产出缺失: {p}")
+            elif sha256_file(ap) != h:
+                problems.append(f"产出哈希不符（交接后被改动）: {p}")
+            else:
+                outputs.append(p)
+    if problems:
+        return False, problems, outputs
+    from .receipts import write_agent_receipt
+    write_agent_receipt(ctx, req["stage"], handoff_id, req["role"], outputs,
+                        note=f"handoff verified @ {utcnow()}")
+    _set_state(d, "passed")
+    return True, [], outputs
+
+def trace_check(ctx, stage: str, artifacts: list) -> list:
+    """层1 溯源谓词（2026-11-07）：生产产物必须溯源到最近一个 passed handoff 的 output-manifest 哈希。
+    编排方手写产物 / 子智能体交件后被改 → 都在这里现形。返回问题列表。"""
+    problems = []
+    d = ctx.out("handoffs")
+    for rel in artifacts:
+        ap = ctx.out(rel)
+        if not os.path.exists(ap):
+            continue  # 存在性由 schemas/check 负责
+        best = None
+        if os.path.isdir(d):
+            for hid in sorted(os.listdir(d)):
+                st_p = os.path.join(d, hid, "state.json")
+                om_p = os.path.join(d, hid, "output-manifest.json")
+                if not (os.path.isfile(st_p) and os.path.isfile(om_p)):
+                    continue
+                try:
+                    if json.load(open(st_p, encoding="utf-8")).get("state") != "passed":
+                        continue
+                    om = json.load(open(om_p, encoding="utf-8"))
+                except Exception:
+                    continue
+                if not isinstance(om, dict):
+                    continue
+                h = om.get(rel)
+                if h is None:
+                    k = next((k for k in om if k.endswith("/" + rel) or rel.endswith(k)), None)
+                    h = om.get(k) if k else None
+                if h:
+                    best = (hid, h)   # 字典序最大 = 最近
+        if best is None:
+            problems.append(rel + " 未溯源到任何 passed handoff（编排方手写产物？必须派发子智能体）")
+        elif sha256_file(ap) != best[1]:
+            problems.append(rel + " 与 handoff 核验哈希不一致（事后篡改？重派或重新 finish）")
+    return problems
+
+def get_state(ctx, handoff_id: str) -> str:
+    return json.load(open(os.path.join(_dir(ctx, handoff_id), "state.json"), encoding="utf-8"))["state"]
+
+def list_handoffs(ctx) -> list:
+    d = ctx.out("handoffs")
+    if not os.path.isdir(d):
+        return []
+    out = []
+    for hid in sorted(os.listdir(d)):
+        p = os.path.join(d, hid, "state.json")
+        if os.path.isfile(p):
+            out.append({"handoff_id": hid, "state": json.load(open(p, encoding="utf-8"))["state"]})
+    return out
+
+def _set_state(d: str, state: str):
+    assert state in STATES, state
+    atomic_write_json(os.path.join(d, "state.json"), {"state": state, "updated_at": utcnow()})

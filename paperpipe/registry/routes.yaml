@@ -1,0 +1,84 @@
+# paperpipe 注册表 · routes —— 用户意图 → 最短路径路由表（唯一事实源）
+# 路由器（paper-explain 技能）按此表选择 target 与主技能；
+# 未选择的条件技能必须写 route-decision（含理由），不得静默跳过。
+# 默认原则：没有明确要求发布 → 不进上传流程；没有要求视频 → 不执行 render/音频/视频 QA。
+
+routes:
+  - id: explain-only
+    intent: 只讲论文 / 学习笔记
+    input: PDF 或 arXiv
+    target: md
+    terminal: xray
+    skills: [paper-xray]
+    route_hints: 产物为 deep-read.md；不需要图解/渲染/QA
+  - id: mechanism-figure
+    intent: 画机制图 / 模型图
+    input: PDF 或 arXiv
+    target: figures
+    terminal: figures
+    skills: [paper-xray, visual-explainer]
+    route_hints: 主图解技能按内容形态二选一（AI 模型→flowchart，通用→visual-explainer，工程架构→dynamic-archify，协议→network-protocol-viz，物理直觉→anatomy）；未选中的写 route-decision
+  - id: quick-video
+    intent: 做快速视频（草稿/内部过稿）
+    input: 论文或文稿
+    target: video
+    terminal: qa
+    skills: [prompt-forge, paper-xray, knowledge-explainer-skill, video-qa-frameproof]
+    route_hints: 路线 A 模板成片；跳过 Remotion 定制
+  - id: custom-video
+    intent: 做定制讲解视频（正式交付）
+    input: 论文或 arXiv
+    target: publish
+    terminal: publish
+    skills: [design-intake, prompt-forge, paper-xray, remotion-video, video-qa-frameproof, video-retrospective]
+    route_hints: 本工作区主路径（EP 系列）；retrospective+publish 需要人在环
+  - id: seminar-slides
+    intent: 做组会分享
+    input: 论文
+    target: video
+    terminal: qa
+    skills: [paper-xray, paper-to-beamer, paper-slides-to-video, sustech-beamer-theme-fix]
+    route_hints: 路线 B。beamer/slides 技能当前为"技能自管"（注册表已注册但无阶段合同引用——
+      不经 paperpipe 阶段门，编排方按技能自行产 receipt 留痕）；xray/复盘门照常；
+      只要 PDF 则 target=md；SUSTECH 主题渲染异常时用 theme-fix
+  - id: html-to-video
+    intent: 已有 HTML 动画转视频
+    input: HTML 页面
+    target: video
+    terminal: qa
+    skills: [hyperframes, video-qa-frameproof]
+    route_hints: 路线 D。执行器无跳阶段机制——xray 门仍必经，可执行路径：acquire 复制源
+      （init 指向 HTML 目录）→ xray：researcher 信封里把 deep-read 写成"机制点=该 HTML 讲什么"
+      的极简版（谓词仍要求 3 处"会怎么坏"，照实写动画讲解的失败模式），
+      `paperpipe decide xray paper-xray --reason "非论文输入"` 后由人工/agent 补 deep-read；
+      figures/render/qa 照常（三张风格帧门对已有 HTML 可用 route-decision 豁免——
+      素材已存在，`decide figures preview-review --reason "复用既有 HTML"`）
+  - id: cover-only
+    intent: 只要封面
+    input: 视频或元数据
+    target: publish
+    terminal: publish
+    skills: [paper-video-cover]
+    route_hints: 只执行封面相关动作，不触发整条流水线
+  - id: publish-bilibili
+    intent: 发布到 B 站
+    input: 已有成片或完整流水线
+    target: publish
+    terminal: publish
+    skills: [video-qa-frameproof, paper-video-cover, paper-bilibili-uploader]
+    route_hints: 必须 QA → 封面 → dry-run → 人工确认 → 上传；缺一不停留
+  - id: rework-previous
+    intent: 上一版返工
+    input: 既有 run
+    target: publish
+    terminal: publish
+    skills: [video-retrospective]
+    route_hints: 读取旧状态 → 复盘 → 改 brief → 指纹缓存自动只重跑受影响阶段
+  - id: one-shot-video
+    intent: 一键出片 / 跑全流程 / 重做（/paper-video 指令入口）
+    input: PDF、arXiv、目录或旧 run
+    target: publish
+    terminal: publish
+    skills: [paper-video, design-intake, prompt-forge, paper-xray, preview-review, video-qa-frameproof, video-retrospective]
+    route_hints: 直通车道——按 paper-video 技能 PHASE A→I 推进（hyperframes 路线 + 14 角子智能体链 + 小样门/预览门）；
+      目标不明确时回退 custom-video 或 explain-only；返工开 -vN 新 run 绝不改旧 run

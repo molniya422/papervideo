@@ -1,0 +1,526 @@
+# paperpipe 注册表 · contracts —— 阶段合同（唯一事实源）
+# 字段：requires(前置阶段) / primary_skill(主技能) / conditional_skills(条件技能，七字段：
+#   trigger 触发条件（人读） · trigger_when 触发谓词（机器判，语法见 registry.parse_trigger；
+#   缺省 = 必须凭据或 route-decision） · hard 硬触发（true 时 route-decision 不可豁免，
+#   只认真实产出的 passed receipt） · required_output 必需产物 · acceptance 验收判据 ·
+#   on_fail 失败行为 · optional 可替代组)
+# / outputs / machine_gate(机器门) / human_gate(人工门) / subagents(子智能体角色，见 agents.yaml)
+# target 终止阶段：md→xray · figures→figures · video→qa · publish→publish
+# 参考素材约定：用户给了参考视频/帧时，编排方把素材放 3-figures/reference_media/
+# （file=3-figures/reference_media 谓词据此判定参考类技能是否触发）。
+
+targets:
+  md:
+    stages: [intake, brief, acquire, xray]
+    terminal: xray
+  figures:
+    stages: [intake, brief, acquire, xray, figures]
+    terminal: figures
+  video:
+    stages: [intake, brief, acquire, xray, figures, render, qa, retrospective]
+    terminal: qa
+  publish:
+    stages: [intake, brief, acquire, xray, figures, render, qa, retrospective, publish]
+    terminal: publish
+
+stages:
+  intake:
+    requires: []
+    primary_skill: design-intake
+    conditional_skills:
+      - skill: design-intake
+        trigger: 有视频/图解/幻灯等视觉交付目标
+        required_output: 0-brief/design-intake.md
+        acceptance: 含选择表与一句话风格内核；用户不在线时逐项标注"默认"假设；如引用 code-animation-prompts 风格须写编号
+        on_fail: waiting_for_agent（等访谈结果或默认假设落盘）
+    outputs: [0-brief/design-intake.md]
+    machine_gate: 文件存在且含"风格内核"小节
+    human_gate: 用户在线时应回答访谈（不强制）
+    subagents: []
+
+  brief:
+    requires: [intake]
+    primary_skill: prompt-forge
+    conditional_skills:
+      - skill: video-production-guide
+        trigger: 有视频交付目标（通读生产总指南，约束后续所有阶段）
+        trigger_when: video_target
+        required_output: 0-brief/brief.md 末尾含"指南要点摘录"小节（≥5 条影响本片的要点）
+        acceptance: 摘录与 brief 的验收问题清单互相引用；不是复制粘贴目录
+        on_fail: waiting_for_agent（未通读不得写 brief）
+        optional: true
+    outputs: [0-brief/brief.md]
+    machine_gate: brief.md 存在且含 <acceptance>；storyboard 占位视为未定稿
+    human_gate: 三套方案取舍应由用户拍板（可默认并标注）
+    subagents: []
+
+  acquire:
+    requires: [brief]
+    primary_skill: paper-download-arxiv-paper-source
+    conditional_skills:
+      - skill: paper-download-arxiv-paper-source
+        trigger: 输入为 arXiv id
+        trigger_when: input=arxiv
+        required_output: paper_src/（TeX 源码）
+        acceptance: paper_src 非空、公式为 LaTeX
+        on_fail: failed_retryable（网络类可重试）
+      - skill: pdf-to-markdown
+        trigger: 输入为本地 PDF 且需要结构化文本（公式/表格）
+        trigger_when: input=pdf
+        required_output: paper_src/paper.md
+        acceptance: Markdown 可读、图片路径有效
+        on_fail: route-decision 记录跳过理由（如无 GPU），回退直接读 PDF
+        optional: true
+    outputs: [paper_src/]
+    machine_gate: paper_src 目录非空
+    human_gate: null
+    subagents: []
+
+  xray:
+    requires: [acquire]
+    primary_skill: paper-xray
+    conditional_skills:
+      - skill: paper-xray
+        trigger: 需要论文事实/机制说明（所有 target）
+        required_output: 2-xray/deep-read.md
+        acceptance: 每个机制点有"会怎么坏"；推断标注【文中有据/推断/猜测】；数字对原文核对
+        on_fail: waiting_for_agent（骨架已生成，等 agent 按技能补全）
+    outputs: [2-xray/deep-read.md]
+    machine_gate: deep-read.md 存在、非骨架（无模板提示行）、含机制点清单；handoff researcher+fact_checker 均 passed
+    human_gate: 深读内容本身
+    subagents: [researcher, fact_checker]
+    handoff_plan:
+      - role: researcher
+        task: 按 paper-xray 技能补全 deep-read.md（机制点/会怎么坏/可手算例/证据分级）
+        input_paths: ["paper_src/"]
+        output_paths: ["2-xray/deep-read.md"]
+      - role: fact_checker
+        task: 逐条核对 deep-read 数字与公式断言（并行于 researcher 的输出快照）
+        input_paths: ["2-xray/deep-read.md", "paper_src/"]
+        output_paths: ["handoffs/<id>/response.json"]
+
+  figures:
+    requires: [xray]
+    primary_skill: visual-explainer
+    conditional_skills:
+      - skill: flowchart
+        trigger: AI/ML 模型原理图
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 一图对应 deep-read 一个机制点；浏览器无脚本错误
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: visual-explainer
+        trigger: 通用系统/流程/对比图解
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: dynamic-archify
+        trigger: 工程架构/数据流图解
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: network-protocol-viz
+        trigger: 网络协议类内容
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: anatomy
+        trigger: 需要物理结构直觉（等距机械插画）
+        required_output: 3-figures/*.html + 登记表行
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: scholar-notes
+        trigger: 用户要学习笔记页
+        required_output: 3-figures/*.html
+        acceptance: 同上
+        on_fail: route-decision 记录未选择理由
+        optional: true
+      - skill: motion-doctrine
+        trigger: 实际制作任何动效之前
+        required_output: 0-brief/brief.md 中含动效法则读后摘要（Vector Law 等落点）
+        acceptance: 登记表每章动效有法则依据；exit 方向=entry 方向已核对
+        on_fail: waiting_for_agent（动效代码退回）
+      - skill: wise-motion
+        trigger: Remotion 运行时动效（route=remotion）
+        trigger_when: route=remotion
+        required_output: 3-figures/README.md 动效匹配登记（含 export 组件路径）或 route-decision 缺口理由
+        acceptance: 每章先 match.mjs 检索并登记命中/缺口
+        on_fail: waiting_for_agent（登记表补齐）
+        optional: true
+      - skill: motion-lab
+        trigger: HTML/CSS 动效（HTML 图解页、非 Remotion 运行时）
+        trigger_when: route!=remotion
+        required_output: 3-figures/README.md 动效匹配登记或 route-decision 缺口理由
+        acceptance: 同上
+        on_fail: waiting_for_agent（登记表补齐）
+        optional: true
+      - skill: design-taste-frontend
+        trigger: 任何视觉生成
+        required_output: 0-brief/brief.md 含审美清单（概念从主题长出来的落点）
+        acceptance: 拒绝默认"居中标题+三卡+渐变"已有显式对应
+        on_fail: waiting_for_agent
+      - skill: blender-visual
+        trigger: 镜头涉及布料/流体/碎片等物理模拟（three.js 无确定性物理——硬触发，不可用 route-decision 豁免）
+        trigger_when: physics_sim
+        hard: true
+        required_output: 4-video/blender/<chapter>/frame_*.png 或 .mp4（bake 后确定性帧序列）
+        acceptance: 物理模拟已 bake（bpy.ops.ptcache.bake_all）；固定 seed/固定相机路径；1920×1080@30fps；无黑帧/丢帧
+        on_fail: waiting_for_agent（物理模拟镜头缺 Blender 层不许过 figures 门）
+      - skill: blender-visual
+        trigger: 封面帧或英雄镜头需写实级精度（单帧成本可接受时导演可选）
+        trigger_when: cfg:design.hero_blender=true
+        required_output: 4-video/blender/<chapter>/frame_*.png 或封面素材帧
+        acceptance: 同上；写实层与 three.js 风格化场景不得同章混搭（风格一致性优先）
+        on_fail: failed_retryable
+        optional: true
+      - skill: code-animation-prompts
+        trigger: 需要风格化视觉语言（文字动效/粒子/光效/版式/转场）或用户按编号指定风格
+        required_output: 3-figures/README.md 动效匹配列含 cap:<id> 登记，或 route-decision 未选择理由
+        acceptance: 引用保留编号与名称；无静帧条目注明"文字参考"；不改原素材库
+        on_fail: waiting_for_agent（风格引用未登记）
+        optional: true
+      - skill: threejs-visual-example
+        trigger: 有视频交付目标且例子涉及具象对象（检测目标/物理实体/几何结构）
+        trigger_when: video_target
+        required_output: 3-figures/README.md 登记表含「three.js · 3D」例示行 + model_manifest.fidelity 字段
+        acceptance: 具象对象例子有 3D 建模演示且过**精度四项**（①场景挂环境反射 ②真接触阴影 ③结构细节≥4处 ④玻璃/透光件非裸Box）；
+          纯表格例示 = 0（伴随标注除外）；抽象数学例已写 route-decision 豁免；新模型/改模型先过资产小样门
+        on_fail: waiting_for_agent（例子退回重做为 3D）
+      - skill: 3d-asset-pipeline
+        trigger: 任何 3D 资产生产/引入（与 model-asset-brief 配对——brief 之后走本管线五阶段）
+        required_output: 3-figures/asset_registry.json（外部/AI 资产另需 4-video/hf/assets/LICENSES/<asset>.md）
+        acceptance: 每个 hf/assets/models/*.glb 有注册表条目（name/brief/source/license/route/quality_gate）；
+          R1/R2 路线许可证存证齐；GLB 满足接入合同（Y-up/+Z 前/脚底原点/场景单位）
+        on_fail: waiting_for_agent（未登记/未存证的 GLB 不进场景）
+      - skill: model-asset-brief
+        trigger: 任何 3D 资产建模/AI 生成/外部资产引入之前（Blender 脚本/AI 生成/CC0 下载/程序化 lib3d 全部触发）
+        required_output: 3-figures/asset_briefs/<asset>.md（一资产一份，12 字段齐）
+        acceptance: 身份到品种级；AI 提示词 15-40 词结构化；三视图 turnaround 齐；比例数值化；材质/色彩逐部位；下载记许可证
+        on_fail: waiting_for_agent（无 brief 不建模——导演过 brief 才许动手）
+      - skill: storyboard-extract
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: storyboard-understand
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: storyboard-ocr
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: storyboard-transitions
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: segment-evidence
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: segment-storyboard
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: video-shots
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: source-media-signals
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: video-artifact-intake
+        trigger: 用户提供了参考视频/参考帧（锁定参考步①：拆解构图/字体/资产质感/动作顺序/持时/转场/声音）
+        trigger_when: file=3-figures/reference_media
+        required_output: 3-figures/reference-breakdown.md 对应小节（注明实际看过的内容）
+        acceptance: 拆解逐项落表且与登记表关联；不冒充没看过的内容
+        on_fail: waiting_for_agent（参考拆解缺失不得批量生成）
+        optional: true
+      - skill: preview-review
+        trigger: model_builder 批量生成章节前（三张风格帧小样门）
+        required_output: 3-figures/style_frames/{entity,mechanism,data}.png（真实渲染器产出的风格帧）
+        acceptance: 实体演示/机制推导/数据比较各一帧，导演过审并登记 receipt；未过审不得批量生成章节
+        on_fail: waiting_for_human（等导演过审风格帧）
+        optional: true
+    outputs: [3-figures/README.md, 3-figures/shot_plan.json]
+    machine_gate: 登记表非空且每行含已注册技能与真实存在产物；六角色 handoff 全 passed 且产物溯源一致（trace_check）；shot_plan.json 存在且 flagged 段有导演裁定记录；已触发条件技能产物存在；风格帧小样门——model_manifest 已产出（=批量生成已发生）时 3-figures/style_frames/{entity,mechanism,data}.png 三帧必须存在且有 preview-review 过审凭据；资产注册表每个 GLB 条目须有资产层预览图（3-figures/asset_previews/<asset>/a1..a3.png，assetview 转台三机位——每个建模必须有用户可审的预览图，preview --assets-only 生成）
+    human_gate: 图解文案与隐喻 + 三张风格帧小样门（导演过审后才许批量生成章节）
+    subagents: [example_writer, data_viz_builder, style_director, spec_enricher, model_builder, visual_planner]
+    handoff_plan:
+      - role: example_writer
+        task: 把 deep-read 机制点转成例举规格 JSON——每个机制点产出 {objects:[], scene_desc, narration_text, is_3d, exempt_reason}
+        input_paths: ["2-xray/deep-read.md", "0-brief/brief.md"]
+        output_paths: ["3-figures/examples_spec.json"]
+        depends_on: []
+      - role: data_viz_builder
+        task: 把论文数字/表格/公式转成 3D 数据组件规格 JSON——{component: bars3d|lossSurface|heatColumns|gauge3d|tubeFromPoints, values, labels}
+        input_paths: ["2-xray/deep-read.md"]
+        output_paths: ["3-figures/dataviz_spec.json"]
+        depends_on: []
+      - role: style_director
+        task: 从 341 风格库为每章指定参考风格（编号+职责：文字/氛围/转场/整帧），标注有无静帧
+        input_paths: ["0-brief/brief.md", "0-brief/design-intake.md"]
+        output_paths: ["3-figures/style_refs.json"]
+        depends_on: []
+      - role: spec_enricher
+        task: 熔炼裸规格+风格指定→制作级规格（相机/布点/检测框/数据定位/字幕节拍/特效/style_ref 落章）
+        input_paths: ["3-figures/examples_spec.json", "3-figures/dataviz_spec.json", "3-figures/style_refs.json", "0-brief/brief.md"]
+        output_paths: ["3-figures/enriched_spec.json"]
+        depends_on: [example_writer, data_viz_builder, style_director]
+      - role: model_builder
+        task: 吃 enriched_spec.json 产出 three.js 场景代码（ES module + lib3d 调用；关键标签用 labels2d 标注层）
+        input_paths: ["3-figures/enriched_spec.json"]
+        output_paths: ["3-figures/model_manifest.json"]
+        depends_on: [spec_enricher]
+      - role: visual_planner
+        task: 镜头规划——每章镜头序列（先看什么/持时/purpose）+ pacing 裁定（拖沓/信息量不足→向导演提退回建议）；
+          并从规格+图解产物合成 3-figures/README.md 登记表初版（render 阶段 aggregator 按最终合成刷新）
+        input_paths: ["3-figures/enriched_spec.json", "0-brief/brief.md"]
+        output_paths: ["3-figures/shot_plan.json", "3-figures/README.md"]
+        depends_on: [spec_enricher]
+
+  render:
+    requires: [figures]
+    primary_skill: remotion-video
+    conditional_skills:
+      - skill: humanize-writing
+        trigger: 旁白已起草、尚未进 TTS（narration.json 存在即触发）
+        trigger_when: file=4-video/narration.json
+        required_output: receipts/skills/render-humanize-writing-*.json
+        acceptance: 一句一个语义单元、无"首先/其次/值得注意的是"、术语与 xray 一致
+        on_fail: waiting_for_agent（旁白退回改写）
+      - skill: remotion-video
+        trigger: route=remotion（定制视频）
+        trigger_when: route=remotion
+        required_output: 4-video/render-raw.mp4
+        acceptance: 渲染命令成功且产物存在；纯函数动画（useCurrentFrame+interpolate/spring）
+        on_fail: failed_retryable（渲染失败重试）
+        optional: true
+      - skill: knowledge-explainer-skill
+        trigger: route=template（快速视频）
+        trigger_when: route=template
+        required_output: 4-video/render-raw.mp4
+        acceptance: 同上
+        on_fail: failed_retryable
+        optional: true
+      - skill: hyperframes
+        trigger: route=hyperframes（HTML→确定性 MP4）
+        trigger_when: route=hyperframes
+        required_output: 4-video/render-raw.mp4
+        acceptance: hyperframes check 通过 + snapshot 静帧审 + 渲染产物存在
+        on_fail: failed_retryable
+        optional: true
+      - skill: cut-the-curve
+        trigger: 使用自定义缓动曲线
+        trigger_when: cfg:render.custom_easing=true
+        required_output: 0-brief/brief.md 或代码注释标注 easing 选型出处
+        acceptance: 无"凭感觉"的缓动
+        on_fail: waiting_for_agent
+      - skill: seam-craft
+        trigger: 自定义转场接缝（非内置 opener 的章间衔接）
+        trigger_when: cfg:render.custom_transitions=true
+        required_output: 转场接缝登记（章节对 + 接缝类型 + exit/entry 向量）
+        acceptance: Vector Law（同轴/同向/同速/切在运动中）逐缝核对
+        on_fail: waiting_for_agent（接缝动量断裂退回）
+        optional: true
+      - skill: oversized-cursor
+        trigger: 有光标驱动的 UI/操作演示镜头
+        trigger_when: cfg:render.cursor_demo=true
+        required_output: 光标运动 tween（确定性 f(t)）与点击反馈动效
+        acceptance: 光标路径无瞬移；点击与被点元素动效对齐
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: hyperframes-cli
+        trigger: route=hyperframes（路线 D 渲染的 CLI 细则：check/snapshot/render 参数与排障）
+        trigger_when: route=hyperframes
+        required_output: 渲染命令 tool receipt（含 --browser-timeout 等实际参数）
+        acceptance: 命令与耗时落 receipt；失败按 CLI 排障表处置
+        on_fail: failed_retryable
+        optional: true
+      - skill: remotion-to-hyperframes
+        trigger: 从 remotion-studio 工程迁移到路线 D
+        trigger_when: cfg:render.migrate_from_remotion=true
+        required_output: 迁移对照表（Composition→composition.html 映射 + 差异说明）
+        acceptance: 迁移后 hyperframes check 六门全绿
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: code-mv-render
+        trigger: route=code-mv（代码 MV 类成片）
+        trigger_when: route=code-mv
+        required_output: 4-video/render-raw.mp4
+        acceptance: 与 hyperframes 同级检查通过
+        on_fail: failed_retryable
+        optional: true
+      - skill: captions-overlay
+        trigger: 有字幕（所有讲解视频）
+        required_output: 4-video/narration.json 逐句字幕与音频同源
+        acceptance: 字幕由逐句音频驱动，禁按权重切分
+        on_fail: failed_permanent（违反铁律）
+    outputs: [4-video/narration.json, 4-video/render-raw.mp4, 4-video/audio_master.wav, 5-video-final/final.mp4, 4-video/preview/index.html]
+    machine_gate: narration 存在→渲染→产物存在；渲染后执行器自动音频后处理（audio_master.wav loudnorm 母带 + remux 出 5-video-final/final.mp4，无音轨→waiting_for_agent，命令与耗时写 tool receipt）；handoff aggregator passed；Blender 帧序列（如有）须确定性且无丢帧（check 逐章断言 frame_NNNN 连续）；混合管线（4-video/blender 有帧）须有 remux tool receipt；渲染预览门= preview 过审且意见全 resolved（两条路线同门，执行器强制）；预览包必须有图像证据——逐章实渲帧（4-video/preview/frames/chXX_f1..f3.png）与每资产转台预览图（3-figures/asset_previews/<asset>/a1..a3.png）齐备才许 confirm，缺图/删图门自动关闭（无图预览=审批系统失效，2026-11-07 修复；--serve 起页面内反馈服务）
+    human_gate: 渲染前人工预览审核（preview 生成预览包 → 用户逐章审看 → revise 分类意见 → 修复 → 全部 resolved → preview --confirm）；交付前听审
+    subagents: [model_builder, aggregator, render_worker, narration_editor]
+    handoff_plan:
+      - role: aggregator
+        task: 把 model_builder 场景代码 + captions + narration.json 组装成完整 compositions 目录；风格一致性 + 零遮挡自检；自动生成 3-figures/README.md 登记表（从规格合成）；如有 Blender 帧序列以视频层合入
+        input_paths: ["3-figures/model_manifest.json", "3-figures/enriched_spec.json"]
+        output_paths: ["4-video/hf/index.html", "4-video/hf/compositions/captions.html", "3-figures/README.md"]
+      - role: narration_editor
+        task: 旁白文本 humanize 六条清洗 + narration.json 唯一写窗口——start/seconds 原样取自
+          enriched_spec 的 narration_cues 拍点（单源），audio 恒 null；schema 谓词由执行器校验
+        input_paths: ["3-figures/enriched_spec.json", "2-xray/deep-read.md", "0-brief/brief.md"]
+        output_paths: ["4-video/narration.json"]
+        depends_on: [aggregator]
+
+  qa:
+    requires: [render]
+    primary_skill: video-qa-frameproof
+    conditional_skills:
+      - skill: video-qa-frameproof
+        trigger: 视频渲染完成
+        required_output: 5-video-final/qa_report.json（机器检查）
+        acceptance: 流/规格/faststart/响度硬校验全过（本执行器内置同源检查）
+        on_fail: failed_permanent（QA 不达标不得交付）
+      - skill: video-technical-review
+        trigger: QA 机器检查通过后、交付前
+        required_output: receipts/skills/qa-video-technical-review*.json
+        acceptance: 内容级审查无画面缺陷结论
+        on_fail: waiting_for_agent（等审查 receipt）
+      - skill: layout-safety-review
+        trigger: 同上
+        required_output: receipts/skills/qa-layout-safety-review*.json
+        acceptance: 安全区/遮挡/字幕审查通过（labels2d 标注层使 3D 标签可被 DOM 审计看到）
+        on_fail: waiting_for_agent（等审查 receipt）
+      - skill: compare-video-runs
+        trigger: output/ 存在同源多版本 run（v2/v3 返工对比）
+        trigger_when: cfg:qa.compare_runs=true
+        required_output: receipts/skills/qa-compare-video-runs*.json（逐节拍 A/B 结论）
+        acceptance: 对比基于同时间码抽帧；"更好看"与"更容易懂"分开下结论
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: content-mapping-review
+        trigger: 图表/数据组件入片后（内容验收）
+        required_output: receipts/skills/qa-content-mapping-review*.json
+        acceptance: 每个数据组件的数值→几何映射与轴刻度同基准（如 75 的柱在 0-80 轴上=75/80×轴高，ch18 教训）；教学示意的数值标注了示意性质，不冒充论文实测
+        on_fail: failed_permanent（映射错误=事实错误）
+    outputs: [5-video-final/qa_report.json]
+    machine_gate: 三验收分离——技术验收（流/规格/faststart/响度/布局审计/黑帧/冻结帧，执行器真实执行）任一不达标 → failed_permanent；内容验收（content-mapping-review receipt）缺失 → waiting_for_agent；布局审计存在 content_overlap/container_overflow error → failed_permanent（零遮挡硬门槛）；观看验收（带时间码问题清单）由导演与用户完成，不进机器门
+    human_gate: 人眼抽帧（首帧/转场/最密/末帧）+ 听审
+    subagents: [technical_qa, visual_qa]
+    handoff_plan:
+      - role: technical_qa
+        task: 技术验收复检+补测（音画一致性/结尾三秒/seek 一致性）——报告 5-video-final/technical_qa.md，
+          每项 PASS/FAIL+命令+实测值
+        input_paths: ["4-video/final.mp4", "5-video-final/qa_report.json"]
+        output_paths: ["5-video-final/technical_qa.md"]
+        depends_on: []
+      - role: visual_qa
+        task: 观看验收——带时间码问题清单（六类：前2秒/章首3秒/标签可读/注意力竞争/节奏/解释闭环），
+          每条含"观众会怎么误解"；报告 5-video-final/visual_qa.md
+        input_paths: ["4-video/final.mp4", "3-figures/shot_plan.json"]
+        output_paths: ["5-video-final/visual_qa.md"]
+        depends_on: []
+
+  retrospective:
+    requires: [qa]
+    primary_skill: video-retrospective
+    conditional_skills:
+      - skill: video-retrospective
+        trigger: 视频交付后
+        required_output: 6-review/retrospective.md + lessons.md
+        acceptance: 六维全部有分且有证据；低分合法（不诱导作者自证合格），但 <8 项必须附整改决定（整改/退回/拒收/删除/重做）；允许拒收结论并退回对应阶段；lessons ≥1 条具体规则
+        on_fail: waiting_for_human（复盘是人工门）
+    outputs: [6-review/retrospective.md, 6-review/lessons.md]
+    machine_gate: validate_review：评分齐+证据齐+无占位符
+    human_gate: 复盘结论与技能写回
+    subagents: []
+
+  publish:
+    requires: [qa, retrospective]
+    primary_skill: paper-video-cover
+    conditional_skills:
+      - skill: paper-to-bilibili
+        trigger: 上传 B 站（一键编排器：slides/video/bilibili 三模式调度）
+        trigger_when: cfg:publish.enabled=true
+        required_output: 5-video-final/upload_receipt.json（经 paper-bilibili-uploader）
+        acceptance: 回执 exit=0；无回执绝不置 uploaded
+        on_fail: failed_retryable
+        optional: true
+      - skill: hell-grind-aigc-skill
+        trigger: 封面/概念图需要 AIGC 素材
+        trigger_when: cfg:publish.aigc_cover=true
+        required_output: AIGC 提示词与素材产出（登记 receipt）
+        acceptance: 提示词七层架构完整；素材用途与封面构图说明绑定
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: review-bundle
+        trigger: 发布前需要打包审查材料（成片+报告+清单）
+        trigger_when: cfg:publish.review_bundle=true
+        required_output: 审查包（成片副本 + qa_report + 复盘 + 意见账本导出）
+        acceptance: 包内文件与哈希一致；可直接发给独立评审
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: skill-catalog
+        trigger: pack 打包或发布前刷新技能目录清单
+        trigger_when: cfg:publish.refresh_catalog=true
+        required_output: pack/paper-explain-skills-pack.json 与 README 技能表同步（数量一致）
+        acceptance: 磁盘=registry=manifest 三账对齐（paperpipe validate 通过）
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: package-review-prompt
+        trigger: 生成给独立评审的审查提示词包
+        trigger_when: cfg:publish.review_prompt=true
+        required_output: 审查提示词文件（带时间码问题清单模板）
+        acceptance: 提示词含三验收分离结构，不接受"打个分"
+        on_fail: waiting_for_agent
+        optional: true
+      - skill: paper-video-cover
+        trigger: 用户要求发布或平台要求封面
+        required_output: 5-video-final/cover.png（或 cover.jpg）
+        acceptance: 16:10 封面存在且登记 receipt
+        on_fail: waiting_for_agent（封面缺失不进真实上传）
+      - skill: paper-bilibili-uploader
+        trigger: 真实上传（publish --confirm 且配置 publish.command）
+        trigger_when: cfg:publish.enabled=true
+        required_output: 5-video-final/upload_receipt.json
+        acceptance: 上传回执 exit=0；无回执绝不置 uploaded
+        on_fail: failed_retryable（可重试）
+    outputs: [5-video-final/publish_plan.json]
+    machine_gate: review.confirmed + 哈希匹配 + 封面存在 + 回执存在才 uploaded
+    human_gate: review --confirm（人审哈希绑定）+ publish --confirm（双门）
+    subagents: [release_reviewer]
+    handoff_plan:
+      - role: release_reviewer
+        task: 确认发布条件（QA passed / 复盘 confirmed / 哈希一致 / 封面存在 / 上传回执）——
+          逐项核对后写发布检查单（每项 PASS/FAIL+证据），只验证与出具结论，不执行上传
+        input_paths: ["pipeline-state.json", "5-video-final/"]
+        output_paths: ["5-video-final/release_checklist.json"]
+        depends_on: []

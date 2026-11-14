@@ -1,0 +1,16 @@
+{
+  "name": "wise-aboutlove-motion",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio index.jsx",
+    "render": "remotion render index.jsx Motion out/motion.mp4",
+    "check:source": "node catalog/assets/aboutlove/verify-source.mjs"
+  },
+  "dependencies": {
+    "remotion": "4.0.532",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@remotion/cli": "4.0.532"
+  }
+}

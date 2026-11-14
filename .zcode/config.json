@@ -1,0 +1,10 @@
+{
+  "plugins": {
+    "enabledPlugins": {
+      "computer-use@zcode-plugins-official": true,
+      "design@zcode-plugins-official": true,
+      "visualize@zcode-plugins-official": true
+    },
+    "visualizeDefaultOffMigrated": true
+  }
+}

@@ -1,0 +1,97 @@
+// 自定义模板示例
+// 当 script.md 里写 ## MyCustomScene 而 builtin 里没有时,
+// agent 应该在 skill/custom/MyCustomScene.jsx 创建一个文件,
+// 文件结构如下:
+
+import React from 'react';
+import {useCurrentFrame, useVideoConfig, interpolate, spring, AbsoluteFill} from 'remotion';
+
+const FONT = '"Hiragino Sans GB", -apple-system, "PingFang SC", sans-serif';
+const clamp = () => ({extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+
+// 必须 export 一个跟文件名同名的 component
+// props 来自 script.md 里 ## MyCustomScene 段下面的 key: value
+export const MyCustomScene = ({
+  // 把 script.md 里的字段都列在这里,带默认值
+  myProp = '默认值',
+  myList = [],
+  myColor = '#6c5ce7',
+}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+
+  // 入场动画
+  const op = interpolate(frame, [0, 22], [0, 1], clamp());
+
+  return (
+    <AbsoluteFill style={{
+      background: '#0a0a0f',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: FONT, opacity: op,
+    }}>
+      {/* 你的 Remotion 动画代码 */}
+      {/* 可以画 SVG / 排版 / 逐次浮现 / 真实视频 / 等等 */}
+      <h1 style={{fontSize: 48, color: '#fff'}}>{myProp}</h1>
+    </AbsoluteFill>
+  );
+};
+
+/*
+=== 优先看现有 showcase 找范式(三种典型)===
+
+1. **物理仿真 / 微分方程** → 抄 custom/DoublePendulum.jsx
+   - 模式:useMemo(() => simulate(初始条件, totalFrames, fps), [deps])
+   - simulate 内部跑 Euler/RK4 积分,输出每一帧的状态数组
+   - 渲染时 useCurrentFrame 索引数组,project 到 SVG 坐标
+
+2. **数据可视化 / 指数 / 时间累积** → 抄 custom/PaperFold.jsx
+   - 模式:frame → ease → 单调递增的"逻辑量"(如 fold count)
+   - 用 log scale 把指数级量化映射到线性视觉(柱条/坐标)
+   - 里程碑标在固定 Y,passed 时高亮;数值显示根据量级切单位
+
+3. **离散状态机 / 时间轴脚本** → 抄 custom/AlgorithmBubble.jsx
+   - 模式:在组件外 buildTimeline() 预生成"每帧的 state 数组"
+   - 每帧从数组取 state,用 CSS transform / 颜色 / 透明度展示
+   - 配合"事件"(在指定 frame 触发动画反馈,如 ❤️ 浮起)
+
+=== Remotion 常用 API 速查 ===
+
+useCurrentFrame()      — 当前帧 (0 起算)
+useVideoConfig()       — {fps, width, height, durationInFrames}
+useMemo(fn, deps)      — 跨帧缓存:仿真预计算的标配
+
+interpolate(value, [from1, from2], [to1, to2], {
+  extrapolateLeft: 'clamp',
+  extrapolateRight: 'clamp',
+})
+— 把 value 从一个范围线性映射到另一个范围
+
+spring({
+  frame, fps, from: 0, to: 1,
+  durationInFrames: 22,
+  config: {damping: 100, stiffness: 200},
+})
+— 弹簧动画,自然过渡
+
+AbsoluteFill           — 全屏容器
+Img / OffthreadVideo  — 静态图 / 视频元素
+staticFile('xxx.png') — 引用 public/ 目录下的资源
+Sequence               — 时间段切片
+
+=== 反模式(不要这样写)===
+
+× setTimeout / setInterval / requestAnimationFrame
+  Remotion 是逐帧渲染,所有状态都从 frame 推导,异步函数不会按预期执行
+
+× useState 跟踪动画状态
+  没有"上一帧"的概念,每帧都是从头来,要用 frame 计算状态
+
+× 在 component body 里直接写 Math.random()
+  不同帧会得到不同结果导致闪烁,要用确定性随机或 useMemo
+
+=== 颜色/字号建议 ===
+背景: #0a0a0f, #1a1a2e
+品牌色: #6c5ce7 (紫), #00cec9 (青), #fd79a8 (粉),#fdcb6e (黄), #e17055 (橙), #74b9ff (蓝)
+文字: #fff (主), #a1a1aa (次), #71717a (淡)
+字号: 14 标签 / 22 正文 / 28-44 标题 / 60+ 大字
+*/
